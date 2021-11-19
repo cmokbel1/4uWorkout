@@ -1,0 +1,10 @@
+.ingredient{
+    color: rgb(116, 160, 255);
+    padding: 10px;
+    background-color: rgb(255, 214, 81);
+}
+
+.drinkName{
+    color: aliceblue;
+    background-color: rgb(255, 98, 98);
+}
