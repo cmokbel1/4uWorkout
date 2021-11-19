@@ -1,18 +1,25 @@
-axios.get(`https://www.thecocktaildb.com/api/json/v1/1/random.php/`)
+axios.get(`https://exercisedb.p.rapidapi.com/exercises?rapidapi-key=8d36f60e47msha974aed1faa2b08p16ca05jsna91e6d65d953`)
         .then(res => {
           const beer = res.data
           let dataLog = console.log(beer)
-          let cocktailName = (beer.drinks[0].strDrink);
-          let cocktailPic = beer.drinks[0].strDrinkThumb
-          let cocktailIng1 = beer.drinks[0].strIngredient1
-          let cocktailIng2 = beer.drinks[0].strIngredient2
-          console.log(cocktailName);
+
  
             document.getElementById('cocktailHTML').innerHTML = `
-            <h1 class = "drinkName">${cocktailName}</h1>
-            <img src='${cocktailPic}' alt = "Picture of Cocktail">
-            <h2 class = "ingredient">Main Ingredient: ${cocktailIng1}</h2>
-            <h2 class = "ingredient">Secondary Ingredient: ${cocktailIng2}</h2>
+
+            `
+ 
+
+        })
+        .catch(err => console.log(err))
+
+        axios.get(`https://deezerdevs-deezer.p.rapidapi.com/genre/%7Bid%7D?rapidapi-key=8d36f60e47msha974aed1faa2b08p16ca05jsna91e6d65d953`)
+        .then(mus => {
+          const music = mus.data
+          let dataLog = console.log(music)
+
+ 
+            document.getElementById('cocktailHTML').innerHTML = `
+
             `
  
 
