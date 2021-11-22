@@ -1,26 +1,35 @@
-document.getElementById('search')addEventListener('click', event => {
-  event.preventDefault()
-    const cocktail = document.getElementById('randomCocktail')
+//Workout API
+axios.get(`https://exercisedb.p.rapidapi.com/exercises?rapidapi-key=8d36f60e47msha974aed1faa2b08p16ca05jsna91e6d65d953`)
+  .then(res => {
+    const exercise = res.data
+    let dataLog = console.log(exercise)
 
-  axios.get(`https://www.thecocktaildb.com/api/json/v1/1/random.php/`)
-    .then(res => {
-      const beer = res.data
-      let dataLog = console.log(beer)
-      let cocktailName = (beer.drinks[0].strDrink);
-      let cocktailPic = beer.drinks[0].strDrinkThumb
-      let cocktailIng1 = beer.drinks[0].strIngredient1
-      let cocktailIng2 = beer.drinks[0].strIngredient2
-      console.log(cocktailName);
 
-      document.getElementById('cocktailHTML').innerHTML = `
-            <h1 class = "drinkName">${cocktailName}</h1>
-            <img src='${cocktailPic}' alt = "Picture of Cocktail">
-            <h2 class = "ingredient">Main Ingredient: ${cocktailIng1}</h2>
-            <h2 class = "ingredient">Secondary Ingredient: ${cocktailIng2}</h2>
+    document.getElementById('cocktailHTML').innerHTML = `
             `
-    })
-    .catch(err => console.log(err))
+
 
   })
+  .catch(err => console.log(err))
 
 
+
+  
+//Music API//
+const options = {
+  method: 'GET',
+  url: 'https://shazam-core.p.rapidapi.com/v1/charts/genre-country',
+  params: { country_code: 'US', genre_code: 'POP', limit: '10' },
+  headers: {
+    'x-rapidapi-host': 'shazam-core.p.rapidapi.com',
+    'x-rapidapi-key': '8d36f60e47msha974aed1faa2b08p16ca05jsna91e6d65d953'
+  }
+};
+
+axios.request(options).then(function (response) {
+  console.log(response.data);
+
+
+}).catch(function (error) {
+  console.error(error);
+});
