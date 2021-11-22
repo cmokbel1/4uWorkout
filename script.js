@@ -56,11 +56,11 @@ document.getElementById('randomMusic').addEventListener('click', event => {
 
   axios.request(options).then(function (music) {
     console.log(music.data);
-
+let randomNum = Math.floor(Math.random() * 50)
 
     document.getElementById('musicHTML').innerHTML = `
-  <h1>${music.data[0].title}</h1>
-  <img src="${music.data[0].images.background}" alt="">
+  <h1>${music.data[randomNum].title}</h1>
+  <img src="${music.data[randomNum].images.background}" alt="">
   `
 
 
