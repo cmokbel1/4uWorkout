@@ -11,10 +11,11 @@ axios.get(`https://exercisedb.p.rapidapi.com/exercises?rapidapi-key=8d36f60e47ms
             <h1>${exercise[0].bodyPart}</h1>
             <img src="${exercise[0].gifUrl}" alt="">
             `
- 
+    })
+    .catch(err => console.log(err))
 
-        })
-        .catch(err => console.log(err))
+  })
+
 
 
  
