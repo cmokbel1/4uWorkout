@@ -3,6 +3,7 @@ axios.get(`https://exercisedb.p.rapidapi.com/exercises?rapidapi-key=8d36f60e47ms
           const exercise = res.data
           let dataLog = console.log(exercise)
           console.log(exercise[0]);
+          console.log(exercise.length);
 
           
             document.getElementById('workoutHTML').innerHTML = `
