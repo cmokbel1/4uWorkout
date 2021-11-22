@@ -38,10 +38,13 @@
 
 // RANDOMIZE DA MUSIC //
     //added 11/22/21//
+    // genre array
 genres = ['POP', 'HIP_HOP_RAP', 'DANCE', 'ELECTRONIC', 'SOUL_RNB', 'ALTERNATIVE', 'ROCK', 'LATIN', 'FILM_TV', 'COUNTRY', 'AFRO_BEATS', 'WORLDWIDE', 'REGGAE_DANCE_HALL', 'HOUSE', 'K_POP', 'FRENCH_POP', 'SINGER_SONGWRITER', 'REG_MEXICO']
 //api code added 11/19/21//
 document.getElementById('randomMusic').addEventListener('click', event => {
+  // generate random number //
   let randomGenre = Math.floor(Math.random() * genres.length)
+  // select random genre from genres array //
   let song = genres[randomGenre];
   console.log(song)
   const options = {
@@ -53,16 +56,17 @@ document.getElementById('randomMusic').addEventListener('click', event => {
       'x-rapidapi-key': '8d36f60e47msha974aed1faa2b08p16ca05jsna91e6d65d953'
     }
   };
-
+  // requesting data from api //
   axios.request(options).then(function (music) {
     console.log(music.data);
 let randomNum = Math.floor(Math.random() * 50)
-
+    // change html to match request //
     document.getElementById('musicHTML').innerHTML = `
   <h1>${music.data[randomNum].title}</h1>
   <img src="${music.data[randomNum].images.background}" alt="">
   `
-
+   // splice song from array once used //
+    music.splice(randomNum, 1);
 
   }).catch(function (error) {
     console.error(error);
