@@ -9,18 +9,62 @@
 </head>
 <body>
 
-    <div id="workoutHTML">
-        <img src="" alt="">
-        <button id="randomWorkout">Randomize Workout</button>
+<div data-role="appbar">
+    <a href="#" class="brand">Home</a>
+    <a href="#" class="brand">About Squad</a>
+</div>
+
+
+<div class="container">
+
+    <div class="row">
+        <div class="cell">
+
+            <div class="card">
+                <div class="card-header">
+                    Workout
+                </div>
+                <div class="card-content p-2">
+                    <div>
+                        <div id="workoutHTML">
+                            <img src="" alt="">
+                        </div>
+                        <button id="randomWorkout" class="randomWorkout button primary">Random Workout</button>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    Card Footer
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="cell">
+
+            <ul class="app-bar-menu">
+                <li><a href="#">Home</a></li>
+                <li>
+                    <a href="#" class="dropdown-toggle">Genre</a>
+                    <ul class="d-menu" data-role="dropdown">
+                        <li><a href="#">Rock</a></li>
+                        <li><a href="#">Hip Hop</a></li>
+                    </ul>
+                </li>
+            </ul>
+
+
+            <div>
+                <div id="musicHTML">
+                    <img src="" alt="">
+                </div>
+                <button id="randomMusic" class="randomMusic button primary">Random Music</button>
+            </div>
+        </div>
     </div>
 
-    <!-- <iframe id="video" src=""></iframe> -->
-
-
-    <div id="musicHTML">
-        <img src="" alt="">
-    </div>
-
+</div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="./script.js"></script>
     
