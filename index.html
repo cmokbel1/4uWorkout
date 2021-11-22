@@ -6,32 +6,76 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-//Framework link to Metro4 
-<link rel="stylesheet" href="https://cdn.metroui.org.ua/v4.3.2/css/metro-all.min.css">
+    //Framework link to Metro4
+    <link rel="stylesheet" href="https://cdn.metroui.org.ua/v4.3.2/css/metro-all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<div class="container">
-
-
-</div>  
-
-
-
-    <div id="workoutHTML">
-        <img src="" alt="">
+    <div data-role="appbar">
+        <a href="#" class="brand">Home</a>
+        <a href="#" class="brand">About Squad</a>
     </div>
-    <button class="randomWorkout">Random Workout</button>
+
+
+    <div class="container">
+
+        <div class="row">
+            <div class="cell">
+
+                <div class="card">
+                    <div class="card-header">
+                        Workout
+                    </div>
+                    <div class="card-content p-2">
+                        <div>
+                            <div id="workoutHTML">
+                                <img src="" alt="">
+                            </div>
+                            <button class="randomWorkout button primary">Random Workout</button>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        Card Footer
+                    </div>
+                </div>
+
+            </div>
+
+
+            <div class="cell">
+
+    <ul class="app-bar-menu">
+        <li><a href="#">Home</a></li>
+        <li>
+            <a href="#" class="dropdown-toggle">Genre</a>
+            <ul class="d-menu" data-role="dropdown">
+                <li><a href="#">Rock</a></li>
+                <li><a href="#">Hip Hop</a></li>
+            </ul>
+        </li>
+    </ul>
+
+
+                <div>
+                    <div id="musicHTML">
+                        <img src="" alt="">
+                    </div>
+                    <button class="randomMusic button primary">Random Music</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+
 
     <!-- <iframe id="video" src=""></iframe> -->
 
 
-    <div id="musicHTML">
-        <img src="" alt="">
-    </div>
-    <button class="randomMusic">Random Music</button>
+
 
 
 
