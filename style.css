@@ -1,10 +1,8 @@
-.ingredient{
-    color: rgb(116, 160, 255);
-    padding: 10px;
-    background-color: rgb(255, 214, 81);
+body {
+    background-color: gray;
 }
 
-.drinkName{
-    color: aliceblue;
-    background-color: rgb(255, 98, 98);
+img {
+    width: 50%;
+    border: 2px solid black;
 }
