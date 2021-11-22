@@ -12,39 +12,6 @@ axios.get(`https://exercisedb.p.rapidapi.com/exercises?rapidapi-key=8d36f60e47ms
         })
         .catch(err => console.log(err))
 
-        // axios.get(`https://theaudiodb.p.rapidapi.com/mostloved.php?rapidapi-key=8d36f60e47msha974aed1faa2b08p16ca05jsna91e6d65d953`)
-        // .then(mus => {
-        //   const music = mus
-        //   let dataLog = console.log(music)
-
- 
-        //     document.getElementById('cocktailHTML').innerHTML = `
-
-        //     `
- 
-
-        // })
-        // .catch(err => console.log(err))
-
-
-        // const options = {
-        //   method: 'GET',
-        //   url: 'https://theaudiodb.p.rapidapi.com/mostloved.php',
-        //   params: {format: 'track'},
-        //   headers: {
-        //     'x-rapidapi-host': 'theaudiodb.p.rapidapi.com',
-        //     'x-rapidapi-key': '8d36f60e47msha974aed1faa2b08p16ca05jsna91e6d65d953'
-        //   }
-        // };
-        
-        // axios.request(options).then(function (response) {
-        //     let randomVid = Math.floor(Math.random() * (50 - 1) + 1);
-        //     console.log(randomVid);
-        //     console.log(response.data.loved);
-        //     console.log(response.data.loved[randomVid].strMusicVid);
-        // }).catch(function (error) {
-        //     console.error(error);
-        // });
 
 
 
