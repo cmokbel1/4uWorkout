@@ -1,7 +1,7 @@
 axios.get(`https://exercisedb.p.rapidapi.com/exercises?rapidapi-key=8d36f60e47msha974aed1faa2b08p16ca05jsna91e6d65d953`)
         .then(res => {
-          const beer = res.data
-          let dataLog = console.log(beer)
+          const exercise = res.data
+          let dataLog = console.log(exercise)
 
  
             document.getElementById('cocktailHTML').innerHTML = `
