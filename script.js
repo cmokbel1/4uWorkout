@@ -48,3 +48,7 @@ axios.request(options).then(function (music) {
 // document.getElementById("workoutHTML").innerHTML = `
 // <h1>qwd</h1>
 // `
+
+$('#btn').click(function () {
+  console.log('ping')
+})
