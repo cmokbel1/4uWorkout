@@ -15,8 +15,6 @@ axios.get(`https://exercisedb.p.rapidapi.com/exercises?rapidapi-key=8d36f60e47ms
   .catch(err => console.log(err))
 
 
-
-
 const options = {
   method: 'GET',
   url: 'https://shazam-core.p.rapidapi.com/v1/charts/genre-country',
