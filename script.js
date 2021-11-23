@@ -13,14 +13,7 @@
             let dataLog = console.log(exercise);
             // select random excercise from muscle group //
             let randomWorkout = Math.floor(Math.random() * exercise.length);
-            var options = {
-              method: 'GET',
-              url: `https://exercisedb.p.rapidapi.com/exercises/bodyPart/${randomWorkout}`,
-              headers: {
-                'x-rapidapi-host': 'exercisedb.p.rapidapi.com',
-                'x-rapidapi-key': '96154b7598mshc548ed73c637939p15a21bjsn5c928f7eb144'
-              }
-            };
+           
             // edit HTML to match //
             document.getElementById('workoutHTML').innerHTML = `
             <h1>${exercise[randomWorkout].bodyPart}</h1>
@@ -76,33 +69,53 @@ let randomNum = Math.floor(Math.random() * 50)
 
 
 // DEFINE USER WORKOUT //
-let userWorkout = document.getElementById('inputWorkout').value;
+
 // WORKOUT SEARCH BUTTON //
 document.getElementById('searchWorkout').addEventListener('click', event => {
-  axios.get(`https://exercisedb.p.rapidapi.com/exercises?rapidapi-key=8d36f60e47msha974aed1faa2b08p16ca05jsna91e6d65d953`)
-    .then(res => {
-
-      const exercise = res.data;
-      let dataLog = console.log(exercise);
-      // select random excercise from muscle group //
+  
+  axios.get(`https://exercisedb.p.rapidapi.com/exercises?rapidapi-key=96154b7598mshc548ed73c637939p15a21bjsn5c928f7eb144`)
+     .then(res => {
+       let userWorkout = document.getElementById('inputWorkout').value.toLowerCase();
+       console.log(userWorkout)
       var options = {
         method: 'GET',
-        url: `https://exercisedb.p.rapidapi.com/exercises/bodyPart/${userWorkout}`,
+        url: `https://exercisedb.p.rapidapi.com/exercises/bodyPart/%7B${userWorkout}%7D`,
         headers: {
           'x-rapidapi-host': 'exercisedb.p.rapidapi.com',
           'x-rapidapi-key': '96154b7598mshc548ed73c637939p15a21bjsn5c928f7eb144'
-        }
-      };
-      // edit HTML to match //
-      document.getElementById('workoutHTML').innerHTML = `
-            <h1>${exercise[userWorkout].bodyPart}</h1>
-            <img src="${exercise[userWorkout].gifUrl}" alt="">
-            `;
-      // splice workout from array once used //
-      exercise.splice('userWorkout', 1);
+              }
+            };
+        const exercise = res.data;
+       let waistArray = [];
+       let upperLegsArray = [];
+       let backArray = [];
+       let chestArray = [];
+       let upperArmsArray = [];
+       let cardioArray = [];
+       let shoulderArray = [];
+       let lowerLegsArray = [];
+       let lowerArmsArray = [];
+        console.log(exercise)
 
-    })
-    .catch(err => console.log(err));
-})
+       for (let i = 0; i < exercise.length; i++) {
+            if(exercise[i].bodyPart === `${userWorkout}`) {
+              `${userWorkout}Array`.push(exercise[i])
+            }
+          }
+           let  randomWorkout = Math.floor(Math.random() * `${userWorkout}Array`.length)
+
+                   // edit HTML to match //
+        document.getElementById('workoutHTML').innerHTML = `
+            <h1>${userWorkout}[randomWorkout]</h1 >
+            <img src=${userWorkout}[randomWorkout].gifUrl alt="">
+            `;
+            // splice workout from array once used //
+              `${userWorkout}Array`.splice('randomWorkout', 1);
+
+        });
+      }).catch(function (error) {
+        console.error(error);
+      });
+
 
 
