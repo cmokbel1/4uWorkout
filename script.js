@@ -5,6 +5,13 @@ axios.get(`https://exercisedb.p.rapidapi.com/exercises?rapidapi-key=8d36f60e47ms
           console.log(exercise[0]);
           console.log(exercise.length);
 
+          let input = prompt("Enter lower")
+          let lowerArray = [];
+          for (let i = 0; i < lowerArray.length; i++) {
+            `${input}Array`.push(lowerArray)
+            
+          }
+
           let waistCounter = 0;
           let upperLegsCounter = 0;
           let backCounter = 0;
