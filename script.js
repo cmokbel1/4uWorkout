@@ -61,8 +61,8 @@ document.getElementById('randomMusic').addEventListener('click', event => {
 let randomNum = Math.floor(Math.random() * 50)
     // change html to match request //
     document.getElementById('musicHTML').innerHTML = `
-    <h1>${music.data[randomNum].subtitle}</h1>
-    <h3>${music.data[randomNum].title}</h3>
+    <h1>${music.data[randomNum].title}</h1>
+    <h2>${music.data[randomNum].subtitle}</h2>
   <img src="${music.data[randomNum].images.background}" alt="">
 
   `
