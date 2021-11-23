@@ -1,72 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    //Framework link to Metro4
+    <link rel="stylesheet" href="https://cdn.metroui.org.ua/v4.3.2/css/metro-all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-<div data-role="appbar">
-    <a href="#" class="brand">Home</a>
-    <a href="#" class="brand">About Squad</a>
-</div>
-
-
-<div class="container">
-
-    <div class="row">
-        <div class="cell">
-
-            <div class="card">
-                <div class="card-header">
-                    Workout
-                </div>
-                <div class="card-content p-2">
-                    <div>
-                        <div id="workoutHTML">
-                            <img src="" alt="">
-                        </div>
-                        <button id="randomWorkout" class="randomWorkout button primary">Random Workout</button>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    Card Footer
-                </div>
-            </div>
-
-        </div>
-
-
-        <div class="cell">
-
-            <ul class="app-bar-menu">
-                <li><a href="#">Home</a></li>
-                <li>
-                    <a href="#" class="dropdown-toggle">Genre</a>
-                    <ul class="d-menu" data-role="dropdown">
-                        <li><a href="#">Rock</a></li>
-                        <li><a href="#">Hip Hop</a></li>
-                    </ul>
-                </li>
-            </ul>
-
-
-            <div>
-                <div id="musicHTML">
-                    <img src="" alt="">
-                </div>
-                <button id="randomMusic" class="randomMusic button primary">Random Music</button>
-            </div>
-        </div>
+    <div data-role="appbar">
+        <a href="#" class="brand">Home</a>
+        <a href="#" class="brand">About Squad</a>
     </div>
 
-</div>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <div class="container">
+        <br>
+        <div class="row">
+            <div class="cell">
+
+                <div class="card">
+                    <h1>What muscle group would you like to target?</h1>
+                    <div class="card-header">
+                        Targeted muscle group:
+                        <input id="inputWorkout" type="text" placeholder="Search..">
+                        <button id="searchWorkout" class="randomWorkout button primary">Search Workout</button>
+                    </div>
+                    <div class="card-content p-2">
+                        <div>
+                            <div id="workoutHTML">
+                                <img src="" alt="">
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button id="randomWorkout" class="randomWorkout button primary hide">Randomized Workout</button>
+                        <button id="skipWorkout">Skip Workout</button>
+                    </div>
+                </div>
+
+            </div>
+
+
+            <div class="cell">
+
+
+                <div class="card">
+                    <h1>A song to go with that:</h1>
+                    <div class="card-header">
+
+                        <button class="app-bar-menu button seconday">
+
+                            <a href="#" class="dropdown-toggle">Genre:</a>
+                            <ul class="d-menu" data-role="dropdown">
+                                <li><a href="#">Pop</a></li>
+                                <li><a href="#">Hip Hop</a></li>
+                                <li><a href="#">Rock</a></li>
+                            </ul>
+
+                        </button>
+
+
+                    </div>
+                    <div class="card-content p-2">
+                        <div>
+                            <div id="musicHTML">
+                                <img src="" alt="">
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button id="randomMusic" class="randomMusic button primary">Randomized Song</button>
+
+                    </div>
+                </div>
+
+
+
+
+
+
+            </div>
+        </div>
+
+    </div>
+
+
+
+
+    <!-- <iframe id="video" src=""></iframe> -->
+
+
+
+
+
+
+
+    <script src="https://cdn.metroui.org.ua/v4.3.2/js/metro.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="./script.js"></script>
-    
+
 </body>
+
 </html>
