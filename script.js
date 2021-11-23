@@ -75,4 +75,34 @@ let randomNum = Math.floor(Math.random() * 50)
 })
 
 
+// DEFINE USER WORKOUT //
+let userWorkout = document.getElementById('inputWorkout').value;
+// WORKOUT SEARCH BUTTON //
+document.getElementById('searchWorkout').addEventListener('click', event => {
+  axios.get(`https://exercisedb.p.rapidapi.com/exercises?rapidapi-key=8d36f60e47msha974aed1faa2b08p16ca05jsna91e6d65d953`)
+    .then(res => {
+
+      const exercise = res.data;
+      let dataLog = console.log(exercise);
+      // select random excercise from muscle group //
+      var options = {
+        method: 'GET',
+        url: `https://exercisedb.p.rapidapi.com/exercises/bodyPart/${userWorkout}`,
+        headers: {
+          'x-rapidapi-host': 'exercisedb.p.rapidapi.com',
+          'x-rapidapi-key': '96154b7598mshc548ed73c637939p15a21bjsn5c928f7eb144'
+        }
+      };
+      // edit HTML to match //
+      document.getElementById('workoutHTML').innerHTML = `
+            <h1>${exercise[userWorkout].bodyPart}</h1>
+            <img src="${exercise[userWorkout].gifUrl}" alt="">
+            `;
+      // splice workout from array once used //
+      exercise.splice('userWorkout', 1);
+
+    })
+    .catch(err => console.log(err));
+})
+
 
