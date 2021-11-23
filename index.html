@@ -24,11 +24,12 @@
         <div class="row">
             <div class="cell">
 
-                <div class="card">
+                <div class="card">  
+                        <h1>What muscle group would you like to target?</h1>
                     <div class="card-header">
                         Targeted muscle group:
-                        <input type="text" placeholder="Search..">
-                        <button class="randomWorkout button primary">Search Workout</button>
+                        <input id="inputWorkout" type="text" placeholder="Search..">
+                        <button id ="searchWorkout" class="randomWorkout button primary">Search Workout</button>
                     </div>
                     <div class="card-content p-2">
                         <div>
@@ -39,7 +40,8 @@
                         </div>
                     </div>
                     <div class="card-footer">
-                        [Placeholder for something]
+                    <button id="randomWorkout" class="randomWorkout button primary hide">Randomized Workout</button>
+                    <button id="skipWorkout">Skip Workout</button>
                     </div>
                 </div>
 
@@ -50,8 +52,8 @@
 
 
     <div class="card">
+        <h1>A song to go with that:</h1>
         <div class="card-header">
-            Music
 
 <button class="app-bar-menu button seconday">
 
@@ -59,7 +61,6 @@
         <ul class="d-menu" data-role="dropdown">
             <li><a href="#">Pop</a></li>
             <li><a href="#">Hip Hop</a></li>
-            <li class="bg-lightGray"></li>
             <li><a href="#">Rock</a></li>
         </ul>
 
@@ -76,8 +77,7 @@
             </div>
         </div>
         <div class="card-footer">
-          
-                    <button class="randomMusic button primary">Generate Playlist</button>
+                    <button id="randomMusic" class="randomMusic button primary">Randomized Song</button>
         
         </div>
     </div>

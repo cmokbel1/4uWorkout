@@ -8,3 +8,10 @@ img {
     margin: auto;
     display: block;
 }
+.card {
+    padding: 10px;
+}
+
+h1 {
+    padding: 20px;
+}

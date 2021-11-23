@@ -21,7 +21,7 @@ document.getElementById('randomWorkout').addEventListener('click', event => {
       };
       // edit HTML to match //
       document.getElementById('workoutHTML').innerHTML = `
-            <h1>${exercise[randomWorkout].bodyPart}</h1>
+            <h2>${exercise[randomWorkout].bodyPart}</h2>
             <img src="${exercise[randomWorkout].gifUrl}" alt="">
             `;
       // splice workout from array once used //
@@ -59,8 +59,8 @@ document.getElementById('randomMusic').addEventListener('click', event => {
     let randomNum = Math.floor(Math.random() * 50)
     // change html to match request //
     document.getElementById('musicHTML').innerHTML = `
-    <h1>${music.data[randomNum].subtitle}</h1>
-    <h3>${music.data[randomNum].title}</h3>
+    <h3>${music.data[randomNum].subtitle}</h3>
+    <h2>${music.data[randomNum].title}</h2>
   <img src="${music.data[randomNum].images.background}" alt="">
   `
     // splice song from array once used //
@@ -70,3 +70,4 @@ document.getElementById('randomMusic').addEventListener('click', event => {
     console.error(error);
   });
 })
+
