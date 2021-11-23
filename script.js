@@ -5,73 +5,81 @@ axios.get(`https://exercisedb.p.rapidapi.com/exercises?rapidapi-key=8d36f60e47ms
           console.log(exercise[0]);
           console.log(exercise.length);
 
-          let input = prompt("Enter lower")
-          let lowerArray = [];
-          for (let i = 0; i < lowerArray.length; i++) {
-            `${input}Array`.push(lowerArray)
-            
-          }
-
-          let waistCounter = 0;
-          let upperLegsCounter = 0;
-          let backCounter = 0;
-          let chestCounter = 0;
-          let upperArmsCounter = 0;
-          let cardioCounter = 0;
-          let shoulderCounter = 0;
-          let lowerLegsCounter = 0;
-          let lowerArmsCounter = 0;
 
           let bodyParts = ["lower legs", "upper legs", "lower arms", "upper arms", "chest", "cardio","shoulders", "back", "waist"]
+
+          let waistArrayUrl = [];
+          let upperLegsArrayUrl = [];
+          let backArrayUrl = [];
+          let chestArrayUrl = [];
+          let upperArmsArrayUrl = [];
+          let cardioArrayUrl = [];
+          let shoulderArrayUrl = [];
+          let lowerLegsArrayUrl = [];
+          let lowerArmsArrayUrl = [];
+
+          let waistArrayName = [];
+          let upperLegsArrayName = [];
+          let backArrayName = [];
+          let chestArrayName = [];
+          let upperArmsArrayName = [];
+          let cardioArrayName = [];
+          let shoulderArrayName = [];
+          let lowerLegsArrayName = [];
+          let lowerArmsArrayName = [];
+
           
             document.getElementById('workoutHTML').innerHTML = `
             <h1>${exercise[0].bodyPart}</h1>
             <img src="${exercise[0].gifUrl}" alt="">
             `
           for (let i = 0; i < exercise.length; i++) {
-            // console.log(exercise[i].bodyPart);
+
             if (exercise[i].bodyPart == "waist") {
-              waistCounter++
+              waistArrayUrl.push(exercise[i].gifUrl)
+              waistArrayName.push(exercise[i].name)
             }
             if (exercise[i].bodyPart == "upper legs") {
-              upperLegsCounter++
+              upperLegsArrayUrl.push(exercise[i].gifUrl)
+              upperLegsArrayName.push(exercise[i].name)
             }
             if (exercise[i].bodyPart == "back") {
-              backCounter++
+              backArrayUrl.push(exercise[i].gifUrl)
+              backArrayName.push(exercise[i].name)
             }
             if (exercise[i].bodyPart == "chest") {
-              chestCounter++
+              chestArrayUrl.push(exercise[i].gifUrl)
+              chestArrayName.push(exercise[i].name)
             }
             if (exercise[i].bodyPart == "upper arms") {
-              upperArmsCounter++
+              upperArmsArrayUrl.push(exercise[i].gifUrl)
+              upperArmsArrayName.push(exercise[i].name)
             }
             if (exercise[i].bodyPart == "cardio") {
-              cardioCounter++
+              cardioArrayUrl.push(exercise[i].gifUrl)
+              cardioArrayName.push(exercise[i].name)
             }
             if (exercise[i].bodyPart == "shoulders") {
-              shoulderCounter++
+              shoulderArrayUrl.push(exercise[i].gifUrl)
+              shoulderArrayName.push(exercise[i].name)
             }
             if (exercise[i].bodyPart == "lower legs") {
-              lowerLegsCounter++
+              lowerLegsArrayUrl.push(exercise[i].gifUrl)
+              lowerLegsArrayName.push(exercise[i].name)
             }
             if (exercise[i].bodyPart == "lower arms") {
-              lowerArmsCounter++
+              lowerArmsArrayUrl.push(exercise[i].gifUrl)
+              lowerArmsArrayName.push(exercise[i].name)
             }
             
           }
 
-          console.log(waistCounter);
-          console.log(upperLegsCounter);
-          console.log(backCounter);
-          console.log(chestCounter);
-          console.log(upperArmsCounter);
-          console.log(cardioCounter);
-          console.log(shoulderCounter);
-          console.log(lowerLegsCounter);
-          console.log(lowerArmsCounter);
+          console.log(waistArrayUrl);
+          console.log(waistArrayName); // these console legs test to print both arrays of the url and the name, the numbers correspond.
+          // to implement, just change the html to the url and the name at the index of the randomly generator index.
 
 
-          console.log(waistCounter + upperLegsCounter + backCounter + chestCounter + upperArmsCounter + cardioCounter+ shoulderCounter+ lowerLegsCounter+ lowerArmsCounter +" out of 1327");
+          
 
         })
         .catch(err => console.log(err))
@@ -107,9 +115,7 @@ axios.get(`https://exercisedb.p.rapidapi.com/exercises?rapidapi-key=8d36f60e47ms
 
 
 
-// document.getElementById("workoutHTML").innerHTML = `
-// <h1>qwd</h1>
-// `
+
 
 $('#btn').click(function () {
   console.log('ping')
