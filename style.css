@@ -4,6 +4,16 @@ body {
     -moz-background-size: cover;
     -o-background-size: cover;
     background-size: cover;
+    font-family: 'Barlow', sans-serif;
+    font-family: 'Dongle', sans-serif;
+    font-family: 'Zen Kaku Gothic Antique', sans-serif;
+    color: white;
+}
+
+#btnText{
+    font-family: 'Barlow', sans-serif;
+    font-family: 'Dongle', sans-serif;
+    font-family: 'Zen Kaku Gothic Antique', sans-serif; 
 }
 
 img {
@@ -57,4 +67,28 @@ h4 {
 
 .hiddenBtns {
     float: right;
+}
+
+.container{
+    font-family: 'Barlow', sans-serif;
+    font-family: 'Dongle', sans-serif;
+    font-family: 'Zen Kaku Gothic Antique', sans-serif;
+}
+
+.d-menu{
+    font-family: 'Barlow', sans-serif;
+    font-family: 'Dongle', sans-serif;
+    font-family: 'Zen Kaku Gothic Antique', sans-serif;
+}
+
+.dropdown-toggle{
+    font-family: 'Barlow', sans-serif;
+    font-family: 'Dongle', sans-serif;
+    font-family: 'Zen Kaku Gothic Antique', sans-serif;
+}
+
+.button{
+    font-family: 'Barlow', sans-serif;
+    font-family: 'Dongle', sans-serif;
+    font-family: 'Zen Kaku Gothic Antique', sans-serif;
 }
