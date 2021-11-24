@@ -91,11 +91,13 @@ function showCards() {
 
 
 //-------------------------------------------------------- BELOW IS MUSIC GENRE EVENT LISTENERS
-
+// hide favorite button elements 
 document.getElementById("favoriteBtnIcon").style.display = "none"
 document.getElementById("favoriteBtnText").style.display = "none"
 document.getElementById("favoriteBtn").style.display = "none"
+// hide favorite button elements
 
+//changes drop down text to the currently selected genre
 popDrop.addEventListener("click", Event =>{
   document.getElementById("titleDrop").innerText = `Pop`
 
@@ -120,7 +122,10 @@ alternativeDrop.addEventListener("click", Event =>{
   document.getElementById("titleDrop").innerText = `Alternative`
 
 })
+//changes drop down text to the currently selected genre
 
+
+// EVENT CLICK FOR BUILD PLAYLIST BUTTON
 playlistMusic.addEventListener("click", Event =>{
 
 let genre = titleDrop.innerText
@@ -149,15 +154,20 @@ if(genre == "Alternative"){
   genre = "ALTERNATIVE"
   console.log(genre);
 }
+// EVENT CLICK FOR BUILD PLAYLIST BUTTON
+
+
 
 // Remove displays and appear favorite button.
 document.getElementById("playlistMusic").style.display = "none"
 document.getElementById("favoriteBtnIcon").style.display = "inline"
 document.getElementById("favoriteBtnText").style.display = "inline"
 document.getElementById("favoriteBtn").style.display = "inline"
-
 // Remove displays and appear favorite button.
 
+
+
+// API REQUEST
 const options = {
   method: 'GET',
   url: 'https://shazam-core.p.rapidapi.com/v1/charts/genre-country',
@@ -167,7 +177,7 @@ const options = {
     // 'x-rapidapi-key': '321bd4bca0msh582df64d6374373p15da64jsn5c07f585d9d7'
   }
 };
-// requesting data from api //
+
 axios.request(options).then(function (music) {
   console.log(music.data);
 
@@ -180,7 +190,7 @@ axios.request(options).then(function (music) {
 }).catch(function (error) {
   console.error(error);
 });
-
+// API REQUEST
 
 
 
