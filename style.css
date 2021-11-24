@@ -73,6 +73,7 @@ h4 {
     font-family: 'Barlow', sans-serif;
     font-family: 'Dongle', sans-serif;
     font-family: 'Zen Kaku Gothic Antique', sans-serif;
+
 }
 
 .d-menu{
@@ -91,4 +92,13 @@ h4 {
     font-family: 'Barlow', sans-serif;
     font-family: 'Dongle', sans-serif;
     font-family: 'Zen Kaku Gothic Antique', sans-serif;
+}
+
+/* FAVORITE BUTTON COLORS BELOW */
+#favoriteBtnText{
+    color: red;
+}
+
+#favoriteBtnIcon{
+    color: red;
 }
