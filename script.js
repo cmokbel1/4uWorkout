@@ -181,37 +181,3 @@ axios.request(options).then(function (music) {
 })
 
 //-------------------------------------------------------- ABOVE IS MUSIC GENRE EVENT LISTENERS
-
-
-// document.getElementById('playlistMusic').addEventListener('click', event => {
-
-//   let randomGenre = Math.floor(Math.random() * genres.length)
-//   let song = genres[randomGenre];
-//   console.log(song)
-
-//   const options = {
-//     method: 'GET',
-//     url: 'https://shazam-core.p.rapidapi.com/v1/charts/genre-country',
-//     params: { country_code: 'US', genre_code: `${genre}`, limit: '50' },
-//     headers: {
-//       'x-rapidapi-host': 'shazam-core.p.rapidapi.com',
-//       'x-rapidapi-key': '321bd4bca0msh582df64d6374373p15da64jsn5c07f585d9d7'
-//     }
-//   };
-//   // requesting data from api //
-//   axios.request(options).then(function (music) {
-//     console.log(music.data);
-//     let randomNum = Math.floor(Math.random() * 50)
-
-//     document.getElementById('musicHTML').innerHTML = `
-//     <h3>${music.data[randomNum].subtitle}</h3>
-//     <h2>${music.data[randomNum].title}</h2>
-//   <img src="${music.data[randomNum].images.background}" alt="">
-//   `
-//     // splice song from array once used //
-//     music.data.splice(randomNum, 1)
-
-//   }).catch(function (error) {
-//     console.error(error);
-//   });
-// })
