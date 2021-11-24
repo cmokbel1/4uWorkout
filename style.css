@@ -4,9 +4,14 @@ body {
 
 img {
     width: 50%;
-    border: 2px solid black;
     margin: auto;
     display: block;
+}
+input {
+    margin-top: 10px;
+}
+button {
+    margin-top: 10px;
 }
 .card {
     padding: 10px;
@@ -14,4 +19,12 @@ img {
 
 h1 {
     padding: 20px;
+}
+
+#musicHTML {
+    background-color: black;
+}
+
+.hiddenBtns {
+    float: right;
 }

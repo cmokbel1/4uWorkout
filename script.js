@@ -1,6 +1,7 @@
 // SEARCH BUTTON FUNCTIONS //
 // added 11/22/2021//
 //random workout button //
+
 document.getElementById('randomWorkout').addEventListener('click', event => {
   // API search for excercise //
   // added 11/19/2021
@@ -8,9 +9,14 @@ document.getElementById('randomWorkout').addEventListener('click', event => {
     .then(res => {
 
       const exercise = res.data;
+      // local storage to set data for exercise
+      localStorage.setItem('data', JSON.stringify(exercise))
       let dataLog = console.log(exercise);
       // select random excercise from muscle group //
       let randomWorkout = Math.floor(Math.random() * exercise.length);
+      // local storage for skip button for specific bodyPart
+      localStorage.setItem('type', JSON.stringify(exercise[randomWorkout].bodyPart))
+      console.log(exercise[randomWorkout])
       var options = {
         method: 'GET',
         url: `https://exercisedb.p.rapidapi.com/exercises/bodyPart/${randomWorkout}`,
@@ -70,4 +76,34 @@ document.getElementById('randomMusic').addEventListener('click', event => {
     console.error(error);
   });
 })
+ 
+
+// let bodyParts = ["lower legs", "upper legs", "lower arms", "upper arms", "chest", "cardio", "shoulders", "back", "waist"]
+
+//Skip Workout button
+document.getElementById('skipWorkout').addEventListener('click', skip)
+
+function skip() {
+  //retrieve bodyPart workout
+  let exerciseType = JSON.parse(localStorage.getItem("type"))
+  //retrieve data for exercises
+  let exercises = JSON.parse(localStorage.getItem("data"))
+  // console.log(exerciseType)
+  //filter exercises to specific bodyPart
+  let filteredExercises = exercises.filter(item => item.bodyPart === exerciseType) 
+  console.log(filteredExercises)
+  //randomize filteredExercises for specific bodyPart
+  let specificBodypartWorkout = filteredExercises[Math.floor(Math.random() * filteredExercises.length)];
+  console.log(specificBodypartWorkout)
+  document.getElementById('workoutHTML').innerHTML = `
+        <h2>${specificBodypartWorkout.bodyPart}</h2>
+        <img src="${specificBodypartWorkout.gifUrl}" alt="">
+            `;
+}
+
+//function to hide buttons before search button
+function showButtons() {
+  document.getElementById('showButtons').style.display = "block";
+}
+
 

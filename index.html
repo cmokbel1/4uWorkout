@@ -23,13 +23,21 @@
 <br>
         <div class="row">
             <div class="cell">
-
                 <div class="card">  
                         <h1>What muscle group would you like to target?</h1>
                     <div class="card-header">
-                        Targeted muscle group:
+                        <strong>Targeted muscle group</strong><i>
+                            (lower legs, upper legs, lower arms, upper arms, chest, cardio, shoulders, back, waist)
+                        </i>
+                        <strong>:</strong>
                         <input id="inputWorkout" type="text" placeholder="Search..">
-                        <button id ="searchWorkout" class="randomWorkout button primary">Search Workout</button>
+                        <button id ="searchWorkout" class="randomWorkout button primary" onclick="showButtons()" >Search Workout</button>
+
+                        <div id="showButtons" class="hiddenBtns" style="display: none;">
+                            <button id="randomWorkout" class="randomWorkout button secondary hide">Randomized Workout</button>
+                        
+                            <button id="skipWorkout" class="skip button secondary hide">Next Workout</button>
+                        </div>
                     </div>
                     <div class="card-content p-2">
                         <div>
@@ -38,49 +46,37 @@
                             </div>
                         
                         </div>
+                </div>
+            </div>
+            </div>
+
+
+            <div class="cell">
+                <div class="card">
+                    <h1>A song to go with that:</h1>
+                    <div class="card-header">
+            <button class="app-bar-menu button seconday">
+                    <a href="#" class="dropdown-toggle">Genre:</a>
+                    <ul class="d-menu" data-role="dropdown">
+                        <li><a href="#">Pop</a></li>
+                        <li><a href="#">Hip Hop</a></li>
+                        <li><a href="#">Rock</a></li>
+                    </ul>
+            </button>
                     </div>
-                    <div class="card-footer">
-                    <button id="randomWorkout" class="randomWorkout button primary hide">Randomized Workout</button>
-                    <button id="skipWorkout">Skip Workout</button>
+                <div class="card-content p-2">
+                    <div>
+                            <div id="musicHTML">
+                                <img src="" alt="">
+                            </div>
+            
                     </div>
                 </div>
-
+                <div class="card-footer">
+                            <button id="randomMusic" class="randomMusic button primary">Randomized Song</button>
+                
+                </div>
             </div>
-
-
-<div class="cell">
-
-
-    <div class="card">
-        <h1>A song to go with that:</h1>
-        <div class="card-header">
-
-<button class="app-bar-menu button seconday">
-
-        <a href="#" class="dropdown-toggle">Genre:</a>
-        <ul class="d-menu" data-role="dropdown">
-            <li><a href="#">Pop</a></li>
-            <li><a href="#">Hip Hop</a></li>
-            <li><a href="#">Rock</a></li>
-        </ul>
-
-</button>
-
-
-        </div>
-        <div class="card-content p-2">
-            <div>
-                    <div id="musicHTML">
-                        <img src="" alt="">
-                    </div>
-    
-            </div>
-        </div>
-        <div class="card-footer">
-                    <button id="randomMusic" class="randomMusic button primary">Randomized Song</button>
-        
-        </div>
-    </div>
 
 
 
