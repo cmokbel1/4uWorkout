@@ -92,6 +92,9 @@ function showCards() {
 
 //-------------------------------------------------------- BELOW IS MUSIC GENRE EVENT LISTENERS
 
+document.getElementById("favoriteBtnIcon").style.display = "none"
+document.getElementById("favoriteBtnText").style.display = "none"
+document.getElementById("favoriteBtn").style.display = "none"
 
 popDrop.addEventListener("click", Event =>{
   document.getElementById("titleDrop").innerText = `Pop`
@@ -147,9 +150,13 @@ if(genre == "Alternative"){
   console.log(genre);
 }
 
+// Remove displays and appear favorite button.
+document.getElementById("playlistMusic").style.display = "none"
+document.getElementById("favoriteBtnIcon").style.display = "inline"
+document.getElementById("favoriteBtnText").style.display = "inline"
+document.getElementById("favoriteBtn").style.display = "inline"
 
-
-
+// Remove displays and appear favorite button.
 
 const options = {
   method: 'GET',
@@ -157,7 +164,7 @@ const options = {
   params: { country_code: 'US', genre_code: `${genre}`, limit: '50' },
   headers: {
     'x-rapidapi-host': 'shazam-core.p.rapidapi.com',
-    'x-rapidapi-key': '321bd4bca0msh582df64d6374373p15da64jsn5c07f585d9d7'
+    // 'x-rapidapi-key': '321bd4bca0msh582df64d6374373p15da64jsn5c07f585d9d7'
   }
 };
 // requesting data from api //
