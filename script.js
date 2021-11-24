@@ -30,8 +30,8 @@ document.getElementById('randomWorkout').addEventListener('click', event => {
       // edit HTML to match //
       document.getElementById('workoutHTML').innerHTML = `
             <h3>Muscle group: ${exercise[randomWorkout].bodyPart}</h3>
-            <h4>Target: ${exercise[randomWorkout].target}</h4>
-            <h4>Name: ${exercise[randomWorkout].name}</h4>
+            <h4>Target(s): ${exercise[randomWorkout].target}</h4>
+            <h4>Name of Workout: ${exercise[randomWorkout].name}</h4>
             <img src="${exercise[randomWorkout].gifUrl}" alt="">
             `;
       // splice workout from array once used //
@@ -102,8 +102,8 @@ function skip() {
   console.log(specificBodypartWorkout)
   document.getElementById('workoutHTML').innerHTML = `
         <h3>Muscle Group: ${specificBodypartWorkout.bodyPart}</h3>
-        <h4>Target: ${specificBodypartWorkout.target}</h4>
-        <h4>Name: ${specificBodypartWorkout.name}</h4>
+        <h4>Target(s): ${specificBodypartWorkout.target}</h4>
+        <h4>Name of Workout: ${specificBodypartWorkout.name}</h4>
         <img src="${specificBodypartWorkout.gifUrl}" alt="">
             `;
 }
