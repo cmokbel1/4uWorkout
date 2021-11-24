@@ -80,7 +80,7 @@ document.getElementById('randomMusic').addEventListener('click', event => {
     console.error(error);
   });
 })
- 
+
 
 // let bodyParts = ["lower legs", "upper legs", "lower arms", "upper arms", "chest", "cardio", "shoulders", "back", "waist"]
 
@@ -95,7 +95,7 @@ function skip() {
 
   // console.log(exerciseType)
   //filter exercises to specific bodyPart
-  let filteredExercises = exercises.filter(item => item.bodyPart === exerciseType || item.name === exerciseType || item.target === exerciseType) 
+  let filteredExercises = exercises.filter(item => item.bodyPart === exerciseType || item.name === exerciseType || item.target === exerciseType)
   console.log(filteredExercises)
   //randomize filteredExercises for specific bodyPart
   let specificBodypartWorkout = filteredExercises[Math.floor(Math.random() * filteredExercises.length)];
@@ -106,6 +106,17 @@ function skip() {
         <h4>Name of Workout: ${specificBodypartWorkout.name}</h4>
         <img src="${specificBodypartWorkout.gifUrl}" alt="">
             `;
+}
+
+function saveSongs() {
+
+  let save = document.getElementById('workoutHTML').innerHTML;
+  console.log(save)
+  localStorage.setItem("workoutBodypart", save);
+  let saveType = localStorage.getItem("workoutBodypart")
+
+  console.log(saveType)
+
 }
 
 //function to hide buttons before search button
@@ -119,5 +130,11 @@ function showCards() {
   document.getElementById('startScreen').style.display = "none";
 
 }
+
+function hideMusicContent() {
+
+}
+
+
 
 
