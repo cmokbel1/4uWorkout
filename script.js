@@ -185,7 +185,7 @@ const options = {
   params: { country_code: 'US', genre_code: `${genre}`, limit: '50' },
   headers: {
     'x-rapidapi-host': 'shazam-core.p.rapidapi.com',
-    // 'x-rapidapi-key': '321bd4bca0msh582df64d6374373p15da64jsn5c07f585d9d7'
+    'x-rapidapi-key': '321bd4bca0msh582df64d6374373p15da64jsn5c07f585d9d7'
   }
 };
 
