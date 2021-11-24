@@ -135,6 +135,94 @@ function hideMusicContent() {
 
 }
 
+document.getElementById("favoriteBtnIcon").style.display = "none"
+document.getElementById("favoriteBtnText").style.display = "none"
+document.getElementById("favoriteBtn").style.display = "none"
 
+popDrop.addEventListener("click", Event => {
+  document.getElementById("titleDrop").innerText = `Pop`
+
+})
+hiphopDrop.addEventListener("click", Event => {
+  document.getElementById("titleDrop").innerText = `Hip Hop`
+
+})
+rockDrop.addEventListener("click", Event => {
+  document.getElementById("titleDrop").innerText = `Rock`
+
+})
+filmDrop.addEventListener("click", Event => {
+  document.getElementById("titleDrop").innerText = `Film`
+
+})
+electronicDrop.addEventListener("click", Event => {
+  document.getElementById("titleDrop").innerText = `Electronic`
+
+})
+alternativeDrop.addEventListener("click", Event => {
+  document.getElementById("titleDrop").innerText = `Alternative`
+
+})
+
+playlistMusic.addEventListener("click", Event => {
+
+  let genre = titleDrop.innerText
+
+  if (genre == "Pop") {
+    genre = "POP"
+    console.log(genre);
+  }
+  if (genre == "Hip Hop") {
+    genre = "HIP_HOP_RAP"
+    console.log(genre);
+  }
+  if (genre == "Rock") {
+    genre = "ROCK"
+    console.log(genre);
+  }
+  if (genre == "Film") {
+    genre = "FILM_TV"
+    console.log(genre);
+  }
+  if (genre == "Electronic") {
+    genre = "ELECTRONIC"
+    console.log(genre);
+  }
+  if (genre == "Alternative") {
+    genre = "ALTERNATIVE"
+    console.log(genre);
+  }
+
+  // Remove displays and appear favorite button.
+  document.getElementById("playlistMusic").style.display = "none"
+  document.getElementById("favoriteBtnIcon").style.display = "inline"
+  document.getElementById("favoriteBtnText").style.display = "inline"
+  document.getElementById("favoriteBtn").style.display = "inline"
+
+  // Remove displays and appear favorite button.
+
+  const options = {
+    method: 'GET',
+    url: 'https://shazam-core.p.rapidapi.com/v1/charts/genre-country',
+    params: { country_code: 'US', genre_code: `${genre}`, limit: '50' },
+    headers: {
+      'x-rapidapi-host': 'shazam-core.p.rapidapi.com',
+      // 'x-rapidapi-key': '321bd4bca0msh582df64d6374373p15da64jsn5c07f585d9d7'
+    }
+  };
+  // requesting data from api //
+  axios.request(options).then(function (music) {
+    console.log(music.data);
+
+
+
+
+    let randomNum = Math.floor(Math.random() * 50)
+    music.data.splice(randomNum, 1)
+
+  }).catch(function (error) {
+    console.error(error);
+  });
+})
 
 
