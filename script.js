@@ -89,6 +89,17 @@ function showCards() {
 
 }
 
+function saveSongs() {
+
+  let save = document.getElementById('workoutHTML').innerHTML;
+  console.log(save)
+  localStorage.setItem("workoutBodypart", save);
+  let saveType = localStorage.getItem("workoutBodypart")
+
+  console.log(saveType)
+
+}
+
 
 //-------------------------------------------------------- BELOW IS MUSIC GENRE EVENT LISTENERS
 // hide favorite button elements 
