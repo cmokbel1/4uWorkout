@@ -24,7 +24,7 @@ document.getElementById('randomWorkout').addEventListener('click', event => {
         url: `https://exercisedb.p.rapidapi.com/exercises/bodyPart/${randomWorkout}`,
         headers: {
           'x-rapidapi-host': 'exercisedb.p.rapidapi.com',
-          'x-rapidapi-key': '96154b7598mshc548ed73c637939p15a21bjsn5c928f7eb144'
+          'x-rapidapi-key': '21bd4bca0msh582df64d6374373p15da64jsn5c07f585d9d7'
         }
       };
       // edit HTML to match //
