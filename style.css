@@ -20,18 +20,6 @@ button {
     margin-top: 10px;
 }
 
-.card {
-    background-color: gray;
-    padding: 10px;
-}
-
-#startScreen {
-    width: 40%;
-    margin: auto;
-    display: auto;
-    margin-top: 200px;
-}
-
 h1 {
     padding: 20px;
 }
@@ -53,6 +41,18 @@ h4 {
 
 #musicHTML {
     background-color: black;
+}
+
+#startScreen {
+    width: 40%;
+    margin: auto;
+    display: auto;
+    margin-top: 200px;
+}
+
+.card {
+    background-color: gray;
+    padding: 10px;
 }
 
 .hiddenBtns {
