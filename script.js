@@ -131,9 +131,9 @@ function showCards() {
 
 }
 
-function hideMusicContent() {
+// function hideMusicContent() {
 
-}
+// }
 
 document.getElementById("favoriteBtnIcon").style.display = "none"
 document.getElementById("favoriteBtnText").style.display = "none"
