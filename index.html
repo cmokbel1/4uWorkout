@@ -14,25 +14,36 @@
 <body>
 
     <div data-role="appbar">
-        <a href="#" class="brand">Home</a>
+        <a href="index.html" class="brand">Home</a>
         <a href="#" class="brand">About Squad</a>
     </div>
 
+    <div id="startScreen" class="container img-container">
+        <h1>4UWORKOUT</h1>
+        <img id="workoutImage" src="https://www.muscleandfitness.com/wp-content/uploads/2019/07/Hands-Clapping-Chaulk-Kettlebell.jpg?quality=86&strip=all" alt="Snow">
+        <div id="btn" onclick="showCards()" class="image-overlay op-red"><h1>Click to begin</h1></div>
+        <!-- <button id="btn" onclick="showCards()" class="button primary">Button</button> -->
 
-    <div class="container">
+    </div>
+
+
+
+
+    
+    <div id ="showFunctionCards" class="container" style="display: none;">
 
 <br>
         <div class="row">
             <div class="cell">
                 <div class="card">  
-                        <h1>What muscle group would you like to target?</h1>
+                        <h2>What muscle group would you like to target?</h2>
                     <div class="card-header">
                         <strong>Targeted muscle group</strong><i>
                             (lower legs, upper legs, lower arms, upper arms, chest, cardio, shoulders, back, waist)
                         </i>
                         <strong>:</strong>
                         <input id="inputWorkout" type="text" placeholder="Search..">
-                        <button id ="searchWorkout" class="randomWorkout button primary" onclick="showButtons()" >Search Workout</button>
+                        <button id ="searchWorkout" class="randomWorkout button alert" onclick="showButtons()" >Search Workout</button>
 
                         <div id="showButtons" class="hiddenBtns" style="display: none;">
                             <button id="randomWorkout" class="randomWorkout button secondary hide">Randomized Workout</button>
@@ -53,7 +64,7 @@
 
             <div class="cell">
                 <div class="card">
-                    <h1>A song to go with that:</h1>
+                    <h2>A song to go with that:</h2>
                     <div class="card-header">
             <button class="app-bar-menu button seconday">
                     <a href="#" class="dropdown-toggle">Genre:</a>
@@ -73,7 +84,7 @@
                     </div>
                 </div>
                 <div class="card-footer">
-                            <button id="randomMusic" class="randomMusic button primary">Randomized Song</button>
+                            <button id="randomMusic" class="randomMusic button alert">Randomized Song</button>
                 
                 </div>
             </div>

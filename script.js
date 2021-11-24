@@ -17,6 +17,8 @@ document.getElementById('randomWorkout').addEventListener('click', event => {
       // local storage for skip button for specific bodyPart
       localStorage.setItem('type', JSON.stringify(exercise[randomWorkout].bodyPart))
       console.log(exercise[randomWorkout])
+      localStorage.setItem('type', JSON.stringify(exercise[randomWorkout].name))
+      localStorage.setItem('type', JSON.stringify(exercise[randomWorkout].target))
       var options = {
         method: 'GET',
         url: `https://exercisedb.p.rapidapi.com/exercises/bodyPart/${randomWorkout}`,
@@ -27,7 +29,9 @@ document.getElementById('randomWorkout').addEventListener('click', event => {
       };
       // edit HTML to match //
       document.getElementById('workoutHTML').innerHTML = `
-            <h2>${exercise[randomWorkout].bodyPart}</h2>
+            <h3>Muscle group: ${exercise[randomWorkout].bodyPart}</h3>
+            <h4>Target: ${exercise[randomWorkout].target}</h4>
+            <h4>Name: ${exercise[randomWorkout].name}</h4>
             <img src="${exercise[randomWorkout].gifUrl}" alt="">
             `;
       // splice workout from array once used //
@@ -88,15 +92,18 @@ function skip() {
   let exerciseType = JSON.parse(localStorage.getItem("type"))
   //retrieve data for exercises
   let exercises = JSON.parse(localStorage.getItem("data"))
+
   // console.log(exerciseType)
   //filter exercises to specific bodyPart
-  let filteredExercises = exercises.filter(item => item.bodyPart === exerciseType) 
+  let filteredExercises = exercises.filter(item => item.bodyPart === exerciseType || item.name === exerciseType || item.target === exerciseType) 
   console.log(filteredExercises)
   //randomize filteredExercises for specific bodyPart
   let specificBodypartWorkout = filteredExercises[Math.floor(Math.random() * filteredExercises.length)];
   console.log(specificBodypartWorkout)
   document.getElementById('workoutHTML').innerHTML = `
-        <h2>${specificBodypartWorkout.bodyPart}</h2>
+        <h3>Muscle Group: ${specificBodypartWorkout.bodyPart}</h3>
+        <h4>Target: ${specificBodypartWorkout.target}</h4>
+        <h4>Name: ${specificBodypartWorkout.name}</h4>
         <img src="${specificBodypartWorkout.gifUrl}" alt="">
             `;
 }
@@ -104,6 +111,13 @@ function skip() {
 //function to hide buttons before search button
 function showButtons() {
   document.getElementById('showButtons').style.display = "block";
+}
+
+//function to hide start screen, hide image and btn
+function showCards() {
+  document.getElementById('showFunctionCards').style.display = "block";
+  document.getElementById('startScreen').style.display = "none";
+
 }
 
 
