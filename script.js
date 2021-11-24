@@ -1,122 +1,157 @@
-axios.get(`https://exercisedb.p.rapidapi.com/exercises?rapidapi-key=8d36f60e47msha974aed1faa2b08p16ca05jsna91e6d65d953`)
-        .then(res => {
-          const exercise = res.data
-          let dataLog = console.log(exercise)
-          console.log(exercise[0]);
-          console.log(exercise.length);
+// SEARCH BUTTON FUNCTIONS //
+// added 11/22/2021//
+//random workout button //
+
+document.getElementById('randomWorkout').addEventListener('click', event => {
+  // API search for excercise //
+  // added 11/19/2021
+  axios.get(`https://exercisedb.p.rapidapi.com/exercises?rapidapi-key=8d36f60e47msha974aed1faa2b08p16ca05jsna91e6d65d953`)
+    .then(res => {
+
+      const exercise = res.data;
+      // local storage to set data for exercise
+      localStorage.setItem('data', JSON.stringify(exercise))
+      let dataLog = console.log(exercise);
+      // select random excercise from muscle group //
+      let randomWorkout = Math.floor(Math.random() * exercise.length);
+      // local storage for skip button for specific bodyPart
+      localStorage.setItem('type', JSON.stringify(exercise[randomWorkout].bodyPart))
+      console.log(exercise[randomWorkout])
+      localStorage.setItem('type', JSON.stringify(exercise[randomWorkout].name))
+      localStorage.setItem('type', JSON.stringify(exercise[randomWorkout].target))
+      var options = {
+        method: 'GET',
+        url: `https://exercisedb.p.rapidapi.com/exercises/bodyPart/${randomWorkout}`,
+        headers: {
+          'x-rapidapi-host': 'exercisedb.p.rapidapi.com',
+          'x-rapidapi-key': '96154b7598mshc548ed73c637939p15a21bjsn5c928f7eb144'
+        }
+      };
+      // edit HTML to match //
+      document.getElementById('workoutHTML').innerHTML = `
+            <h3>Muscle group: ${exercise[randomWorkout].bodyPart}</h3>
+            <h4>Target(s): ${exercise[randomWorkout].target}</h4>
+            <h4>Name of Workout: ${exercise[randomWorkout].name}</h4>
+            <img src="${exercise[randomWorkout].gifUrl}" alt="">
+            `;
+      // splice workout from array once used //
+      exercise.splice('randomWorkout', 1);
+
+    })
+    .catch(err => console.log(err));
 
 
-          let bodyParts = ["lower legs", "upper legs", "lower arms", "upper arms", "chest", "cardio","shoulders", "back", "waist"]
+})
 
-          let waistArrayUrl = [];
-          let upperLegsArrayUrl = [];
-          let backArrayUrl = [];
-          let chestArrayUrl = [];
-          let upperArmsArrayUrl = [];
-          let cardioArrayUrl = [];
-          let shoulderArrayUrl = [];
-          let lowerLegsArrayUrl = [];
-          let lowerArmsArrayUrl = [];
+// RANDOMIZE DA MUSIC //
+//added 11/22/21//
+// genre array
+genres = ['POP', 'HIP_HOP_RAP', 'DANCE', 'ELECTRONIC', 'SOUL_RNB', 'ALTERNATIVE', 'ROCK', 'LATIN', 'FILM_TV', 'COUNTRY', 'AFRO_BEATS', 'WORLDWIDE', 'REGGAE_DANCE_HALL', 'HOUSE', 'K_POP', 'FRENCH_POP', 'SINGER_SONGWRITER', 'REG_MEXICO']
+//api code added 11/19/21//
+document.getElementById('randomMusic').addEventListener('click', event => {
+  // generate random number //
+  let randomGenre = Math.floor(Math.random() * genres.length)
+  // select random genre from genres array //
+  let song = genres[randomGenre];
+  console.log(song)
+  const options = {
+    method: 'GET',
+    url: 'https://shazam-core.p.rapidapi.com/v1/charts/genre-country',
+    params: { country_code: 'US', genre_code: `${song}`, limit: '50' },
+    headers: {
+      'x-rapidapi-host': 'shazam-core.p.rapidapi.com',
+      'x-rapidapi-key': '321bd4bca0msh582df64d6374373p15da64jsn5c07f585d9d7'
+    }
+  };
+  // requesting data from api //
+  axios.request(options).then(function (music) {
+    console.log(music.data);
+    let randomNum = Math.floor(Math.random() * 50)
+    // change html to match request //
+    document.getElementById('musicHTML').innerHTML = `
+    <h3>${music.data[randomNum].subtitle}</h3>
+    <h2>${music.data[randomNum].title}</h2>
+  <img src="${music.data[randomNum].images.background}" alt="">
+  `
+    // splice song from array once used //
+    music.data.splice(randomNum, 1)
 
-          let waistArrayName = [];
-          let upperLegsArrayName = [];
-          let backArrayName = [];
-          let chestArrayName = [];
-          let upperArmsArrayName = [];
-          let cardioArrayName = [];
-          let shoulderArrayName = [];
-          let lowerLegsArrayName = [];
-          let lowerArmsArrayName = [];
+  }).catch(function (error) {
+    console.error(error);
+  });
+})
+ 
 
-          
-            document.getElementById('workoutHTML').innerHTML = `
-            <h1>${exercise[0].bodyPart}</h1>
-            <img src="${exercise[0].gifUrl}" alt="">
-            `
-          for (let i = 0; i < exercise.length; i++) {
+// let bodyParts = ["lower legs", "upper legs", "lower arms", "upper arms", "chest", "cardio", "shoulders", "back", "waist"]
 
-            if (exercise[i].bodyPart == "waist") {
-              waistArrayUrl.push(exercise[i].gifUrl)
-              waistArrayName.push(exercise[i].name)
-            }
-            if (exercise[i].bodyPart == "upper legs") {
-              upperLegsArrayUrl.push(exercise[i].gifUrl)
-              upperLegsArrayName.push(exercise[i].name)
-            }
-            if (exercise[i].bodyPart == "back") {
-              backArrayUrl.push(exercise[i].gifUrl)
-              backArrayName.push(exercise[i].name)
-            }
-            if (exercise[i].bodyPart == "chest") {
-              chestArrayUrl.push(exercise[i].gifUrl)
-              chestArrayName.push(exercise[i].name)
-            }
-            if (exercise[i].bodyPart == "upper arms") {
-              upperArmsArrayUrl.push(exercise[i].gifUrl)
-              upperArmsArrayName.push(exercise[i].name)
-            }
-            if (exercise[i].bodyPart == "cardio") {
-              cardioArrayUrl.push(exercise[i].gifUrl)
-              cardioArrayName.push(exercise[i].name)
-            }
-            if (exercise[i].bodyPart == "shoulders") {
-              shoulderArrayUrl.push(exercise[i].gifUrl)
-              shoulderArrayName.push(exercise[i].name)
-            }
-            if (exercise[i].bodyPart == "lower legs") {
-              lowerLegsArrayUrl.push(exercise[i].gifUrl)
-              lowerLegsArrayName.push(exercise[i].name)
-            }
-            if (exercise[i].bodyPart == "lower arms") {
-              lowerArmsArrayUrl.push(exercise[i].gifUrl)
-              lowerArmsArrayName.push(exercise[i].name)
-            }
-            
-          }
+//Skip Workout button
+document.getElementById('skipWorkout').addEventListener('click', skip)
 
-          console.log(waistArrayUrl);
-          console.log(waistArrayName); // these console legs test to print both arrays of the url and the name, the numbers correspond.
-          // to implement, just change the html to the url and the name at the index of the randomly generator index.
+function skip() {
+  //retrieve bodyPart workout
+  let exerciseType = JSON.parse(localStorage.getItem("type"))
+  //retrieve data for exercises
+  let exercises = JSON.parse(localStorage.getItem("data"))
 
+  // console.log(exerciseType)
+  //filter exercises to specific bodyPart
+  let filteredExercises = exercises.filter(item => item.bodyPart === exerciseType || item.name === exerciseType || item.target === exerciseType) 
+  console.log(filteredExercises)
+  //randomize filteredExercises for specific bodyPart
+  let specificBodypartWorkout = filteredExercises[Math.floor(Math.random() * filteredExercises.length)];
+  console.log(specificBodypartWorkout)
+  document.getElementById('workoutHTML').innerHTML = `
+        <h3>Muscle Group: ${specificBodypartWorkout.bodyPart}</h3>
+        <h4>Target(s): ${specificBodypartWorkout.target}</h4>
+        <h4>Name of Workout: ${specificBodypartWorkout.name}</h4>
+        <img src="${specificBodypartWorkout.gifUrl}" alt="">
+            `;
+}
 
-          
+//function to hide buttons before search button
+function showButtons() {
+  document.getElementById('showButtons').style.display = "block";
+}
 
-        })
-        .catch(err => console.log(err))
+//function to hide start screen, hide image and btn
+function showCards() {
+  document.getElementById('showFunctionCards').style.display = "block";
+  document.getElementById('startScreen').style.display = "none";
 
-
-
-
-// const options = {
-//   method: 'GET',
-//   url: 'https://shazam-core.p.rapidapi.com/v1/charts/genre-country',
-//   params: {country_code: 'US', genre_code: 'POP', limit: '50'},
-//   headers: {
-//     'x-rapidapi-host': 'shazam-core.p.rapidapi.com',
-//     'x-rapidapi-key': '8d36f60e47msha974aed1faa2b08p16ca05jsna91e6d65d953'
-//   }
-// };
-
-// axios.request(options).then(function (music) {
-// 	console.log(music.data[0]);
-
-          
-//   document.getElementById('musicHTML').innerHTML = `
-//   <h1>${music.data[0].title}</h1>
-//   <img src="${music.data[0].images.background}" alt="">
-//   `
+}
 
 
-// }).catch(function (error) {
-// 	console.error(error);
-// });
-
-//------------------------------------------------------------------------------------------------ ABOVE IS API FUNCTIONS, NO NEED TO EDIT ----
+//-------------------------------------------------------- BELOW IS MUSIC GENRE EVENT LISTENERS
 
 
+popDrop.addEventListener("click", Event =>{
+  document.getElementById("titleDrop").innerText = `Pop`
+
+})
+hiphopDrop.addEventListener("click", Event =>{
+  document.getElementById("titleDrop").innerText = `Hip Hop`
+
+})
+rockDrop.addEventListener("click", Event =>{
+  document.getElementById("titleDrop").innerText = `Rock`
+
+})
+filmDrop.addEventListener("click", Event =>{
+  document.getElementById("titleDrop").innerText = `Film`
+
+})
+electronicDrop.addEventListener("click", Event =>{
+  document.getElementById("titleDrop").innerText = `Electronic`
+
+})
+alternativeDrop.addEventListener("click", Event =>{
+  document.getElementById("titleDrop").innerText = `Alternative`
+
+})
+
+playlistMusic.addEventListener("click", Event =>{
+console.log(titleDrop.innerText);
 
 
 
-$('#btn').click(function () {
-  console.log('ping')
 })

@@ -1,33 +1,128 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    //Framework link to Metro4
+    <link rel="stylesheet" href="https://cdn.metroui.org.ua/v4.3.2/css/metro-all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-    <div id="workoutHTML" class="container">
-        <img src="" alt="">
+    <div data-role="appbar">
+        <a href="index.html" class="brand">Home</a>
+        <a href="#" class="brand">About Squad</a>
+    </div>
+
+    <div id="startScreen" class="container img-container">
+        <h1>4UWORKOUT</h1>
+        <img id="workoutImage" src="https://www.muscleandfitness.com/wp-content/uploads/2019/07/Hands-Clapping-Chaulk-Kettlebell.jpg?quality=86&strip=all" alt="Snow">
+        <div id="btn" onclick="showCards()" class="image-overlay op-red"><h1>Click to begin</h1></div>
+        <!-- <button id="btn" onclick="showCards()" class="button primary">Button</button> -->
+
     </div>
 
 
-    <div id="musicHTML" class="container">
-        <img src="" alt="">
-    </div>
 
-    <button id="btn">qwd</button>
-
-
-
-    <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="./script.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
     
+    <div id ="showFunctionCards" class="container" style="display: none;">
+
+<br>
+        <div class="row">
+            <div class="cell">
+                <div class="card">  
+                        <h2>What bodypart would you like to target?</h2>
+                    <div class="card-header">
+                        <i>
+                            (lower legs, upper legs, lower arms, upper arms, chest, cardio, shoulders, back, waist)
+                        </i>
+                        <strong>:</strong>
+                        <input id="inputWorkout" type="text" placeholder="Search..">
+                        <button id ="searchWorkout" class="randomWorkout button alert" onclick="showButtons()" >Search Workout</button>
+
+                        <div id="showButtons" class="hiddenBtns" style="display: none;">
+                            <button id="randomWorkout" class="randomWorkout button secondary hide">Randomized Workout</button>
+                        
+                            <button id="skipWorkout" class="skip button secondary hide">Next Workout</button>
+                        </div>
+                    </div>
+                    <div class="card-content p-2">
+                        <div>
+                            <div id="workoutHTML">
+                                <img src="" alt="">
+                            </div>
+                        </div>
+                </div>
+            </div>
+            </div>
+
+
+            <div class="cell">
+                <div class="card">
+                    <h2>A song to go with that:</h2>
+                    <div class="card-header">
+            <button class="app-bar-menu button seconday" id="dropBtn">
+                    <a href="#" class="dropdown-toggle" id="titleDrop">Genre:</a>
+                    <ul class="d-menu" data-role="dropdown">
+                        <li id="popDrop">Pop</li>
+                        <li id="hiphopDrop"><a href="#">Hip Hop</a></li>
+                        <li id="rockDrop"><a href="#">Rock</a></li>
+                        <li id="filmDrop"><a href="#">Film</a></li>
+                        <li id="electronicDrop"><a href="#">Electronic</a></li>
+                        <li id="alternativeDrop"><a href="#">Alternative</a></li>
+                    </ul>
+            </button>
+            <button class="button">
+                <span class="icon mif-favorite"></span>
+                <span class="label">Favorites</span>
+            </button>
+                    </div>
+                <div class="card-content p-2">
+                    <div>
+                            <div id="musicHTML">
+                                <img src="" alt="">
+                            </div>
+            
+                    </div>
+                </div>
+                <div class="card-footer">
+                            <button id="randomMusic" class="randomMusic button alert">Randomized Song</button>
+                            <button id="playlistMusic" class="randomMusic button alert">Build playlist</button>
+                
+                </div>
+
+            </div>
+
+
+
+
+
+
+            </div>
+        </div>
+
+    </div>
+
+
+
+
+    <!-- <iframe id="video" src=""></iframe> -->
+
+
+
+
+
+
+
+    <script src="https://cdn.metroui.org.ua/v4.3.2/js/metro.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="./script.js"></script>
+
 </body>
+
 </html>

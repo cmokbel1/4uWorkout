@@ -1,10 +1,60 @@
-.ingredient{
-    color: rgb(116, 160, 255);
-    padding: 10px;
-    background-color: rgb(255, 214, 81);
+body {
+    background: url("https://www.teahub.io/photos/full/353-3531306_olympics-weightlifting-wallpaper-fitness-backgrounds.jpg") no-repeat center center fixed;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
 }
 
-.drinkName{
-    color: aliceblue;
-    background-color: rgb(255, 98, 98);
+img {
+    width: 50%;
+    margin: auto;
+    display: block;
+}
+
+input {
+    margin-top: 10px;
+}
+
+button {
+    margin-top: 10px;
+}
+
+.card {
+    background-color: gray;
+    padding: 10px;
+}
+
+#startScreen {
+    width: 40%;
+    margin: auto;
+    display: auto;
+    margin-top: 200px;
+}
+
+h1 {
+    padding: 20px;
+}
+
+h2 {
+    padding: 20px;
+}
+
+h3 {
+    text-transform: capitalize;
+    padding: 5px;
+    border-bottom: 1px dashed #EF233C;
+}
+
+h4 {
+    font-size: 15px;
+    text-transform: capitalize;
+}
+
+#musicHTML {
+    background-color: black;
+}
+
+.hiddenBtns {
+    float: right;
 }
