@@ -53,21 +53,33 @@
                             (lower legs, upper legs, lower arms, upper arms, chest, cardio, shoulders, back, waist)
                         </i>
                         <strong>:</strong>
-                        <input id="inputWorkout" type="text" placeholder="Search..">
+                        <input id="searchBar" type="text" placeholder="Search..">
+
+
                         <button id="searchWorkout" class="randomWorkout button alert" onclick="showButtons()">Search
                             Workout</button>
 
                         <div id="showButtons" class="hiddenBtns" style="display: none;">
+                            <button id="workoutSave" type="button" class="button primary"
+                                onclick="saveWorkout()">Save</button>
+
                             <button id="randomWorkout" class="randomWorkout button secondary hide">Randomized
                                 Workout</button>
+
                             <button id="skipWorkout" class="skip button secondary hide">Next Workout</button>
                         </div>
                     </div>
                     <div class="card-content p-2">
                         <div>
-                            <div id="workoutHTML">
-                                <img src="" alt="">
-                            </div>
+                            <div id="workoutHTML"></div>
+                        </div>
+                    </div>
+
+                    <div class="card-content p-2">
+                        <h2 id="saved" style="display: none;">Saved Workouts</h2>
+                        <div>
+                            <div id="savedWorkout"></div>
+                    
                         </div>
                     </div>
                 </div>
@@ -102,6 +114,8 @@
 
                         </div>
                     </div>
+
+
                     <div class="card-footer">
                         <!-- <button id="randomMusic" class="randomMusic button alert">Randomized Song</button> -->
                         <button id="playlistMusic" class="randomMusic button alert">Build playlist</button>
