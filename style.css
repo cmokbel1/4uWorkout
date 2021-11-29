@@ -109,6 +109,13 @@ h4 {
     font-family: 'Zen Kaku Gothic Antique', sans-serif;
 }
 
+#card1,
+#card2,
+#card3,
+#card4 {
+    text-align:center;
+}
+
 #card1 img,
 #card2 img,
 #card3 img,
