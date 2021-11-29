@@ -198,6 +198,13 @@ axios.request(options).then(function (music) {
   let randomNum = Math.floor(Math.random() * 50)
   music.data.splice(randomNum, 1)
 
+
+  document.getElementById("musicHTML").innerHTML = `
+<h1>${music.data[0].title}</h1>
+<img src="${music.data[0].images.coverart}" alt="">
+<h1>${music.data[0].artist}</h1>
+`
+
 }).catch(function (error) {
   console.error(error);
 });
