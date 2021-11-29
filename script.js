@@ -86,6 +86,13 @@ function skip() {
     return
   }
 }
+let saveType = []
+
+
+document.getElementById('scrollbox').style.display="none";
+document.getElementById('savedTitle').style.display="none";
+
+
 
 //function to hide buttons before search button
 function showButtons() {
