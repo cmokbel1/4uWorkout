@@ -120,11 +120,13 @@ let saveType = []
 
 
 document.getElementById('scrollbox').style.display="none";
+document.getElementById('savedTitle').style.display="none";
 
 //function save and display workout(s)
 function saveWorkout() {
-  document.getElementById('scrollbox').style.display="inline";
-  document.getElementById('saved').style.display = "block";
+  document.getElementById('scrollbox').style.display="block";
+  document.getElementById('savedTitle').style.display = "block";
+  // document.getElementById('saved').style.display = "block";
   let save = document.getElementById('workoutHTML').innerHTML
   localStorage.setItem("workoutBodypart", save);
   let saveTypes = localStorage.getItem("workoutBodypart")
