@@ -10,10 +10,10 @@ body {
     color: white;
 }
 
-#btnText{
+#btnText {
     font-family: 'Barlow', sans-serif;
     font-family: 'Dongle', sans-serif;
-    font-family: 'Zen Kaku Gothic Antique', sans-serif; 
+    font-family: 'Zen Kaku Gothic Antique', sans-serif;
 }
 
 img {
@@ -69,42 +69,55 @@ h4 {
     float: right;
 }
 
-.container{
+.container {
     font-family: 'Barlow', sans-serif;
     font-family: 'Dongle', sans-serif;
     font-family: 'Zen Kaku Gothic Antique', sans-serif;
 
 }
 
-.d-menu{
+.d-menu {
     font-family: 'Barlow', sans-serif;
     font-family: 'Dongle', sans-serif;
     font-family: 'Zen Kaku Gothic Antique', sans-serif;
 }
 
-.dropdown-toggle{
+.dropdown-toggle {
     font-family: 'Barlow', sans-serif;
     font-family: 'Dongle', sans-serif;
     font-family: 'Zen Kaku Gothic Antique', sans-serif;
 }
 
-.button{
+.button {
     font-family: 'Barlow', sans-serif;
     font-family: 'Dongle', sans-serif;
     font-family: 'Zen Kaku Gothic Antique', sans-serif;
 }
 
 /* FAVORITE BUTTON COLORS BELOW */
-#favoriteBtnText{
+#favoriteBtnText {
     color: red;
 }
 
-#favoriteBtnIcon{
+#favoriteBtnIcon {
     color: red;
 }
 
-#inputWorkout{
+#inputWorkout {
     font-family: 'Barlow', sans-serif;
     font-family: 'Dongle', sans-serif;
     font-family: 'Zen Kaku Gothic Antique', sans-serif;
+}
+
+#card1 img,
+#card2 img,
+#card3 img,
+#card4 img {
+    background-size: cover;
+    height: 225px;
+    width: 150px;
+}
+
+#us {
+    background-color: gray;
 }
