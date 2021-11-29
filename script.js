@@ -116,16 +116,19 @@ function skip() {
 }
 
 
+let saveType =[]
+
 //function save and display workout(s)
 function saveWorkout() {
   document.getElementById('saved').style.display = "block";
-  let save = document.getElementById('workoutHTML').innerHTML;
+  let save = document.getElementById('workoutHTML').innerHTML =
   localStorage.setItem("workoutBodypart", save);
-  let saveType = localStorage.getItem("workoutBodypart") 
-  console.log(saveType)
+  let saveTypes = localStorage.getItem("workoutBodypart")
+  // console.log(saveType)
   document.getElementById('savedWorkout').innerHTML = saveType
 
-  append()
+saveType.push(saveTypes)
+  // append()
 }
 
 //function to hide buttons before search button
