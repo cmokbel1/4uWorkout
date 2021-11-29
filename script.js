@@ -83,7 +83,6 @@ genres = ['POP', 'HIP_HOP_RAP', 'DANCE', 'ELECTRONIC', 'SOUL_RNB', 'ALTERNATIVE'
 //api code added 11/19/21//
 
 
-
 // let bodyParts = ["lower legs", "upper legs", "lower arms", "upper arms", "chest", "cardio", "shoulders", "back", "waist"]
 
 //Skip Workout button
@@ -151,11 +150,15 @@ function showCards() {
 }
 
 
+
 //-------------------------------------------------------- BELOW IS MUSIC GENRE EVENT LISTENERS
 // hide favorite button elements 
-document.getElementById("favoriteBtnIcon").style.display = "none"
-document.getElementById("favoriteBtnText").style.display = "none"
-document.getElementById("favoriteBtn").style.display = "none"
+// document.getElementById("favoriteBtnIcon").style.display = "none"
+// document.getElementById("favoriteBtnText").style.display = "none"
+// document.getElementById("favoriteBtn").style.display = "none"
+document.getElementById("backwardBtn").style.display = "none"
+document.getElementById("nextBtn").style.display = "none"
+
 // hide favorite button elements
 
 //changes drop down text to the currently selected genre
@@ -187,6 +190,8 @@ alternativeDrop.addEventListener("click", Event => {
 
 
 // EVENT CLICK FOR BUILD PLAYLIST BUTTON
+let songCounter = 0;
+
 playlistMusic.addEventListener("click", Event => {
 
   let genre = titleDrop.innerText
@@ -215,15 +220,21 @@ playlistMusic.addEventListener("click", Event => {
     genre = "ALTERNATIVE"
     console.log(genre);
   }
+
+
   // EVENT CLICK FOR BUILD PLAYLIST BUTTON
 
 
 
   // Remove displays and appear favorite button.
   document.getElementById("playlistMusic").style.display = "none"
+  document.getElementById("titleDrop").style.display = "none"
+  document.getElementById("dropBtn").style.display = "none"
   document.getElementById("favoriteBtnIcon").style.display = "inline"
   document.getElementById("favoriteBtnText").style.display = "inline"
   document.getElementById("favoriteBtn").style.display = "inline"
+  document.getElementById("nextBtn").style.display = " inline"
+
   // Remove displays and appear favorite button.
 
 
@@ -248,6 +259,47 @@ playlistMusic.addEventListener("click", Event => {
     let randomNum = Math.floor(Math.random() * 50)
     music.data.splice(randomNum, 1)
 
+
+    nextBtn.addEventListener("click", Event => {
+      songCounter++
+
+      if (songCounter >= 1) {
+        document.getElementById("backwardBtn").style.display = "inline"
+      } else {
+        document.getElementById("backwardBtn").style.display = "none"
+      }
+
+      document.getElementById("musicHTML").innerHTML = `
+    <h1>${music.data[songCounter].title}</h1>
+    <img src="${music.data[songCounter].images.coverart}" alt="">
+    <h1>By ${music.data[songCounter].subtitle}</h1>
+    `
+
+    })
+
+    backwardBtn.addEventListener("click", Event => {
+      songCounter--
+
+      if (songCounter >= 1) {
+        document.getElementById("backwardBtn").style.display = "inline"
+      } else {
+        document.getElementById("backwardBtn").style.display = "none"
+      }
+
+      document.getElementById("musicHTML").innerHTML = `
+    <h1>${music.data[songCounter].title}</h1>
+    <img src="${music.data[songCounter].images.coverart}" alt="">
+    <h1>By ${music.data[songCounter].subtitle}</h1>
+    `
+
+    })
+
+    document.getElementById("musicHTML").innerHTML = `
+<h1>${music.data[songCounter].title}</h1>
+<img src="${music.data[songCounter].images.coverart}" alt="">
+<h1>By ${music.data[songCounter].subtitle}</h1>
+`
+
   }).catch(function (error) {
     console.error(error);
   });
@@ -257,5 +309,3 @@ playlistMusic.addEventListener("click", Event => {
 
 
 })
-
-//-------------------------------------------------------- ABOVE IS MUSIC GENRE EVENT LISTENERS
