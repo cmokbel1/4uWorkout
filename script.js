@@ -116,18 +116,23 @@ function skip() {
 }
 
 
-let saveType =[]
+let saveType = []
+
+
+document.getElementById('scrollbox').style.display="none";
 
 //function save and display workout(s)
 function saveWorkout() {
+  document.getElementById('scrollbox').style.display="inline";
   document.getElementById('saved').style.display = "block";
-  let save = document.getElementById('workoutHTML').innerHTML =
+  let save = document.getElementById('workoutHTML').innerHTML
   localStorage.setItem("workoutBodypart", save);
   let saveTypes = localStorage.getItem("workoutBodypart")
   // console.log(saveType)
-  document.getElementById('savedWorkout').innerHTML = saveType
+  saveType.push(saveTypes)
+  document.getElementById('savedWorkout').innerHTML = `${saveType}`
 
-saveType.push(saveTypes)
+
   // append()
 }
 
