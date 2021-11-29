@@ -27,6 +27,7 @@ document.getElementById('searchWorkout').addEventListener('click', search)
 document.getElementById('randomWorkout').addEventListener('click', event => {
   // API search for excercise //
   // added 11/19/2021
+  searchType = "random"
   axios.get(`https://exercisedb.p.rapidapi.com/exercises?rapidapi-key=321bd4bca0msh582df64d6374373p15da64jsn5c07f585d9d7`)
     .then(res => {
 
