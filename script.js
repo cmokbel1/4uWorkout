@@ -106,6 +106,9 @@ function saveSongs() {
 document.getElementById("favoriteBtnIcon").style.display = "none"
 document.getElementById("favoriteBtnText").style.display = "none"
 document.getElementById("favoriteBtn").style.display = "none"
+document.getElementById("backwardBtn").style.display = "none"
+document.getElementById("nextBtn").style.display = "none"
+
 // hide favorite button elements
 
 //changes drop down text to the currently selected genre
@@ -137,6 +140,8 @@ alternativeDrop.addEventListener("click", Event =>{
 
 
 // EVENT CLICK FOR BUILD PLAYLIST BUTTON
+let songCounter = 0;
+
 playlistMusic.addEventListener("click", Event =>{
 
 let genre = titleDrop.innerText
@@ -165,6 +170,8 @@ if(genre == "Alternative"){
   genre = "ALTERNATIVE"
   console.log(genre);
 }
+
+
 // EVENT CLICK FOR BUILD PLAYLIST BUTTON
 
 
@@ -176,6 +183,8 @@ document.getElementById("dropBtn").style.display = "none"
 document.getElementById("favoriteBtnIcon").style.display = "inline"
 document.getElementById("favoriteBtnText").style.display = "inline"
 document.getElementById("favoriteBtn").style.display = "inline"
+document.getElementById("nextBtn").style.display = " inline"
+
 // Remove displays and appear favorite button.
 
 
@@ -201,10 +210,44 @@ axios.request(options).then(function (music) {
   music.data.splice(randomNum, 1)
 
 
+  nextBtn.addEventListener("click", Event =>{
+    songCounter++
+
+    if (songCounter >= 1){
+      document.getElementById("backwardBtn").style.display = "inline"
+    } else {
+      document.getElementById("backwardBtn").style.display = "none"
+    }
+  
+    document.getElementById("musicHTML").innerHTML = `
+    <h1>${music.data[songCounter].title}</h1>
+    <img src="${music.data[songCounter].images.coverart}" alt="">
+    <h1>By ${music.data[songCounter].subtitle}</h1>
+    `
+
+  })
+
+  backwardBtn.addEventListener("click", Event =>{
+    songCounter--
+
+    if (songCounter >= 1){
+      document.getElementById("backwardBtn").style.display = "inline"
+    } else {
+      document.getElementById("backwardBtn").style.display = "none"
+    }
+  
+    document.getElementById("musicHTML").innerHTML = `
+    <h1>${music.data[songCounter].title}</h1>
+    <img src="${music.data[songCounter].images.coverart}" alt="">
+    <h1>By ${music.data[songCounter].subtitle}</h1>
+    `
+
+  })
+
   document.getElementById("musicHTML").innerHTML = `
-<h1>${music.data[0].title}</h1>
-<img src="${music.data[0].images.coverart}" alt="">
-<h1>By ${music.data[0].subtitle}</h1>
+<h1>${music.data[songCounter].title}</h1>
+<img src="${music.data[songCounter].images.coverart}" alt="">
+<h1>By ${music.data[songCounter].subtitle}</h1>
 `
 
 }).catch(function (error) {
