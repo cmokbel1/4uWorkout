@@ -80,24 +80,11 @@ genres = ['POP', 'HIP_HOP_RAP', 'DANCE', 'ELECTRONIC', 'SOUL_RNB', 'ALTERNATIVE'
 document.getElementById('skipWorkout').addEventListener('click', skip)
 
 function skip() {
-  //retrieve bodyPart workout
-  let exerciseType = JSON.parse(localStorage.getItem("type"))
-  //retrieve data for exercises
-  let exercises = JSON.parse(localStorage.getItem("data"))
-
-  // console.log(exerciseType)
-  //filter exercises to specific bodyPart
-  let filteredExercises = exercises.filter(item => item.bodyPart === exerciseType || item.name === exerciseType || item.target === exerciseType) 
-  console.log(filteredExercises)
-  //randomize filteredExercises for specific bodyPart
-  let specificBodypartWorkout = filteredExercises[Math.floor(Math.random() * filteredExercises.length)];
-  console.log(specificBodypartWorkout)
-  document.getElementById('workoutHTML').innerHTML = `
-        <h3>Muscle Group: ${specificBodypartWorkout.bodyPart}</h3>
-        <h4>Target(s): ${specificBodypartWorkout.target}</h4>
-        <h4>Name of Workout: ${specificBodypartWorkout.name}</h4>
-        <img src="${specificBodypartWorkout.gifUrl}" alt="">
-            `;
+  if(searchType === "search") {
+    searchIndex++
+    search()
+    return
+  }
 }
 
 //function to hide buttons before search button
