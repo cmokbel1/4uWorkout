@@ -133,22 +133,71 @@ document.getElementById('searchWorkout').addEventListener('click', event => {
               }
             };
         const exercise = res.data;
-       let waistArray = [];
-       let upperLegsArray = [];
-       let backArray = [];
-       let chestArray = [];
-       let upperArmsArray = [];
-       let cardioArray = [];
-       let shoulderArray = [];
-       let lowerLegsArray = [];
-       let lowerArmsArray = [];
-        console.log(exercise)
+       let waistArrayUrl = [];
+       let upperLegsArrayUrl = [];
+       let backArrayUrl = [];
+       let chestArrayUrl = [];
+       let upperArmsArrayUrl = [];
+       let cardioArrayUrl = [];
+       let shoulderArrayUrl = [];
+       let lowerLegsArrayUrl = [];
+       let lowerArmsArrayUrl = [];
 
+       let waistArrayName = [];
+       let upperLegsArrayName = [];
+       let backArrayName = [];
+       let chestArrayName = [];
+       let upperArmsArrayName = [];
+       let cardioArrayName = [];
+       let shoulderArrayName = [];
+       let lowerLegsArrayName = [];
+       let lowerArmsArrayName = [];
+
+
+       document.getElementById('workoutHTML').innerHTML = `
+            <h1>${exercise[0].bodyPart}</h1>
+            <img src="${exercise[0].gifUrl}" alt="">
+            `
        for (let i = 0; i < exercise.length; i++) {
-            if(exercise[i].bodyPart === `${userWorkout}`) {
-              `${userWorkout}Array`.push(exercise[i])
-            }
-          }
+
+         if (exercise[i].bodyPart == "waist") {
+           waistArrayUrl.push(exercise[i].gifUrl)
+           waistArrayName.push(exercise[i].name)
+         }
+         if (exercise[i].bodyPart == "upper legs") {
+           upperLegsArrayUrl.push(exercise[i].gifUrl)
+           upperLegsArrayName.push(exercise[i].name)
+         }
+         if (exercise[i].bodyPart == "back") {
+           backArrayUrl.push(exercise[i].gifUrl)
+           backArrayName.push(exercise[i].name)
+         }
+         if (exercise[i].bodyPart == "chest") {
+           chestArrayUrl.push(exercise[i].gifUrl)
+           chestArrayName.push(exercise[i].name)
+         }
+         if (exercise[i].bodyPart == "upper arms") {
+           upperArmsArrayUrl.push(exercise[i].gifUrl)
+           upperArmsArrayName.push(exercise[i].name)
+         }
+         if (exercise[i].bodyPart == "cardio") {
+           cardioArrayUrl.push(exercise[i].gifUrl)
+           cardioArrayName.push(exercise[i].name)
+         }
+         if (exercise[i].bodyPart == "shoulders") {
+           shoulderArrayUrl.push(exercise[i].gifUrl)
+           shoulderArrayName.push(exercise[i].name)
+         }
+         if (exercise[i].bodyPart == "lower legs") {
+           lowerLegsArrayUrl.push(exercise[i].gifUrl)
+           lowerLegsArrayName.push(exercise[i].name)
+         }
+         if (exercise[i].bodyPart == "lower arms") {
+           lowerArmsArrayUrl.push(exercise[i].gifUrl)
+           lowerArmsArrayName.push(exercise[i].name)
+         }
+
+       }
            let  randomWorkout = Math.floor(Math.random() * `${userWorkout}Array`.length)
 
                    // edit HTML to match //
