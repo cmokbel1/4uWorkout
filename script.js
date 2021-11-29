@@ -1,6 +1,28 @@
 // SEARCH BUTTON FUNCTIONS //
 // added 11/22/2021//
 //random workout button //
+let searchBar = document.getElementById('searchBar')
+let searchType = ""
+let searchIndex = 0
+// let workouts = [];
+// console.log(searchBar);
+// console.log(searchBar)
+
+function search() {
+  searchType = "search"
+  let search = searchBar.value
+  axios.get('https://exercisedb.p.rapidapi.com/exercises/bodyPart/' + search + '?rapidapi-key=321bd4bca0msh582df64d6374373p15da64jsn5c07f585d9d7')
+    .then(exercise => {
+      console.log(exercise)
+      document.getElementById('workoutHTML').innerHTML = `
+            <h3>Muscle group: ${exercise.data[searchIndex].bodyPart}</h3>
+            <h4>Target(s): ${exercise.data[searchIndex].target}</h4>
+            <h4>Name of Workout: ${exercise.data[searchIndex].name}</h4>
+            <img src="${exercise.data[searchIndex].gifUrl}" alt="">
+            `;
+    })
+}
+document.getElementById('searchWorkout').addEventListener('click', search)
 
 document.getElementById('randomWorkout').addEventListener('click', event => {
   // API search for excercise //
