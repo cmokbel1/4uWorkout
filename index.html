@@ -12,21 +12,27 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@1,500&family=Dongle:wght@400;700&family=Zen+Kaku+Gothic+Antique:wght@900&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@1,500&family=Dongle:wght@400;700&family=Zen+Kaku+Gothic+Antique:wght@900&display=swap"
+        rel="stylesheet">
 
 </head>
 
 <body>
 
     <div data-role="appbar">
-        <a href="index.html" class="brand" id="homeBtn">Home</a>
-        <a href="#" class="brand" id="aboutBtn">About Squad</a>
+        <a href="index.html" class="brand">Home</a>
+        <a href="#" class="brand">About Squad</a>
     </div>
 
     <div id="startScreen" class="container img-container">
         <h1>4UWORKOUT</h1>
-        <img id="workoutImage" src="https://www.muscleandfitness.com/wp-content/uploads/2019/07/Hands-Clapping-Chaulk-Kettlebell.jpg?quality=86&strip=all" alt="Snow">
-        <div onclick="showCards()" class="image-overlay op-red"><h1>Click to begin</h1></div>
+        <img id="workoutImage"
+            src="https://www.muscleandfitness.com/wp-content/uploads/2019/07/Hands-Clapping-Chaulk-Kettlebell.jpg?quality=86&strip=all"
+            alt="Snow">
+        <div onclick="showCards()" class="image-overlay op-red">
+            <h1>Click to begin</h1>
+        </div>
         <!-- <button id="btn" onclick="showCards()" class="button primary">Button</button> -->
 
     </div>
@@ -34,22 +40,22 @@
 
 
 
-    
-    <div id ="showFunctionCards" class="container" style="display: none;">
 
-<br>
+    <div id="showFunctionCards" class="container" style="display: none;">
+
+        <br>
         <div class="row">
             <div class="cell">
-                <div class="card">  
-                        <h2>What bodypart would you like to target?</h2>
+                <div class="card">
+                    <h2>What bodypart would you like to target?</h2>
                     <div class="card-header">
                         <i>
                             (lower legs, upper legs, lower arms, upper arms, chest, cardio, shoulders, back, waist)
                         </i>
                         <strong>:</strong>
-                        <input id="inputWorkout" type="text" placeholder="Search..">
+                        <input id="searchBar" type="text" placeholder="Search..">
 
-                        
+
                         <button id="searchWorkout" class="randomWorkout button alert" onclick="showButtons()">Search
                             Workout</button>
 
@@ -65,12 +71,20 @@
                     </div>
                     <div class="card-content p-2">
                         <div>
-                            <div id="workoutHTML">
-                                <img src="" alt="">
+                            <div id="workoutHTML"></div>
+                        </div>
+                    </div>
+
+                    <div class="card-content">
+                        <h5 id="savedTitle">Saved Workouts</h5>
+                        <div id="scrollbox" style="height:300px;width:100%;border:1px solid #ccc;overflow:auto">
+                            <div>
+                                <div id="savedWorkout"></div>
                             </div>
                         </div>
+
+                    </div>
                 </div>
-            </div>
             </div>
 
 
@@ -78,65 +92,55 @@
                 <div class="card">
                     <h2>A song to go with that:</h2>
                     <div class="card-header">
-            <button class="app-bar-menu button seconday" id="dropBtn">
-                    <a href="#" class="dropdown-toggle" id="titleDrop">Genre:</a>
-                    <ul class="d-menu" data-role="dropdown">
-                        <li id="popDrop">Pop</li>
-                        <li id="hiphopDrop"><a href="#">Hip Hop</a></li>
-                        <li id="rockDrop"><a href="#">Rock</a></li>
-                        <li id="filmDrop"><a href="#">Film</a></li>
-                        <li id="electronicDrop"><a href="#">Electronic</a></li>
-                        <li id="alternativeDrop"><a href="#">Alternative</a></li>
-                    </ul>
-            </button>
+                        <button class="app-bar-menu button seconday" id="dropBtn">
+                            <a href="#" class="dropdown-toggle" id="titleDrop">Genre:</a>
+                            <ul class="d-menu" data-role="dropdown">
+                                <li id="popDrop">Pop</li>
+                                <li id="hiphopDrop"><a href="#">Hip Hop</a></li>
+                                <li id="rockDrop"><a href="#">Rock</a></li>
+                                <li id="filmDrop"><a href="#">Film</a></li>
+                                <li id="electronicDrop"><a href="#">Electronic</a></li>
+                                <li id="alternativeDrop"><a href="#">Alternative</a></li>
+                            </ul>
+                        </button>
+
 
                     </div>
-                <div class="card-content p-2">
-                    <div>
+                    <div class="card-content p-2">
                             <div id="musicHTML">
                                 <img src="" alt="">
                             </div>
-            
+                    </div>
+
+                    <div class="card-footer p-2">
+                        <button id="playlistMusic" class="randomMusic button alert">Build playlist</button>
+                        <button id="backwardBtn" class="button">
+                            <span id="backwardBtnIcon" class="icon mif-backward mif-3x fg-red"></span>
+                            <span id="backwardBtnText" class="label"></span>
+                        </button>
+                        <button id="nextBtn" class="button">
+                            <span id="nextBtnIcon" class="icon mif-next mif-3x fg-cyan"></span>
+                            <span id="nextBtnText" class="label"></span>
+                        </button>
                     </div>
                 </div>
-                <div class="card-footer">
 
-                            <button id="playlistMusic" class="randomMusic button alert">Build playlist</button>
-                            <button id="favoriteBtn" class="button">
-                                <span id="favoriteBtnIcon" class="icon mif-favorite"></span>
-                                <span id="favoriteBtnText" class="label">Favorites</span>
-                            </button>
-                            <button id="backwardBtn" class="button">
-                                <span id="backwardBtnIcon" class="icon mif-backward mif-3x fg-red" ></span>
-                                <span id="backwardBtnText" class="label"></span>
-                            </button>
-                            <button id="nextBtn" class="button">
-                                <span id="nextBtnIcon" class="icon mif-next mif-3x fg-cyan" ></span>
-                                <span id="nextBtnText" class="label"></span>
-                            </button>
+
 
                 </div>
 
             </div>
-
-
-
-
-
-
-            </div>
         </div>
 
     </div>
-    <div class="card-content">
-        <h5 id="savedTitle">Saved Workouts</h5>
-        <div id="scrollbox" style="height:300px;width:100%;border:1px solid #ccc;overflow:auto">
-            <div>
-                <div id="savedWorkout"></div>
-            </div>
-        </div>
 
-    </div>
+
+
+
+
+
+
+
 
 
 

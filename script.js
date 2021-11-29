@@ -148,38 +148,41 @@ function showCards() {
   document.getElementById('startScreen').style.display = "none";
 
 }
+
+
+
 //-------------------------------------------------------- BELOW IS MUSIC GENRE EVENT LISTENERS
 // hide favorite button elements 
-document.getElementById("favoriteBtnIcon").style.display = "none"
-document.getElementById("favoriteBtnText").style.display = "none"
-document.getElementById("favoriteBtn").style.display = "none"
+// document.getElementById("favoriteBtnIcon").style.display = "none"
+// document.getElementById("favoriteBtnText").style.display = "none"
+// document.getElementById("favoriteBtn").style.display = "none"
 document.getElementById("backwardBtn").style.display = "none"
 document.getElementById("nextBtn").style.display = "none"
 
 // hide favorite button elements
 
 //changes drop down text to the currently selected genre
-popDrop.addEventListener("click", Event =>{
+popDrop.addEventListener("click", Event => {
   document.getElementById("titleDrop").innerText = `Pop`
 
 })
-hiphopDrop.addEventListener("click", Event =>{
+hiphopDrop.addEventListener("click", Event => {
   document.getElementById("titleDrop").innerText = `Hip Hop`
 
 })
-rockDrop.addEventListener("click", Event =>{
+rockDrop.addEventListener("click", Event => {
   document.getElementById("titleDrop").innerText = `Rock`
 
 })
-filmDrop.addEventListener("click", Event =>{
+filmDrop.addEventListener("click", Event => {
   document.getElementById("titleDrop").innerText = `Film`
 
 })
-electronicDrop.addEventListener("click", Event =>{
+electronicDrop.addEventListener("click", Event => {
   document.getElementById("titleDrop").innerText = `Electronic`
 
 })
-alternativeDrop.addEventListener("click", Event =>{
+alternativeDrop.addEventListener("click", Event => {
   document.getElementById("titleDrop").innerText = `Alternative`
 
 })
@@ -189,122 +192,117 @@ alternativeDrop.addEventListener("click", Event =>{
 // EVENT CLICK FOR BUILD PLAYLIST BUTTON
 let songCounter = 0;
 
-playlistMusic.addEventListener("click", Event =>{
+playlistMusic.addEventListener("click", Event => {
 
-let genre = titleDrop.innerText
+  let genre = titleDrop.innerText
 
-if(genre == "Pop"){
-  genre = "POP"
-  console.log(genre);
-}
-if(genre == "Hip Hop"){
-  genre = "HIP_HOP_RAP"
-  console.log(genre);
-}
-if(genre == "Rock"){
-  genre = "ROCK"
-  console.log(genre);
-}
-if(genre == "Film"){
-  genre = "FILM_TV"
-  console.log(genre);
-}
-if(genre == "Electronic"){
-  genre = "ELECTRONIC"
-  console.log(genre);
-}
-if(genre == "Alternative"){
-  genre = "ALTERNATIVE"
-  console.log(genre);
-}
-
-
-// EVENT CLICK FOR BUILD PLAYLIST BUTTON
-
-
-
-// Remove displays and appear favorite button.
-document.getElementById("playlistMusic").style.display = "none"
-document.getElementById("titleDrop").style.display = "none"
-document.getElementById("dropBtn").style.display = "none"
-document.getElementById("favoriteBtnIcon").style.display = "inline"
-document.getElementById("favoriteBtnText").style.display = "inline"
-document.getElementById("favoriteBtn").style.display = "inline"
-document.getElementById("nextBtn").style.display = " inline"
-
-// Remove displays and appear favorite button.
-
-
-
-// API REQUEST
-const options = {
-  method: 'GET',
-  url: 'https://shazam-core.p.rapidapi.com/v1/charts/genre-country',
-  params: { country_code: 'US', genre_code: `${genre}`, limit: '50' },
-  headers: {
-    'x-rapidapi-host': 'shazam-core.p.rapidapi.com',
-    'x-rapidapi-key': '321bd4bca0msh582df64d6374373p15da64jsn5c07f585d9d7'
+  if (genre == "Pop") {
+    genre = "POP"
+    console.log(genre);
   }
-};
+  if (genre == "Hip Hop") {
+    genre = "HIP_HOP_RAP"
+    console.log(genre);
+  }
+  if (genre == "Rock") {
+    genre = "ROCK"
+    console.log(genre);
+  }
+  if (genre == "Film") {
+    genre = "FILM_TV"
+    console.log(genre);
+  }
+  if (genre == "Electronic") {
+    genre = "ELECTRONIC"
+    console.log(genre);
+  }
+  if (genre == "Alternative") {
+    genre = "ALTERNATIVE"
+    console.log(genre);
+  }
 
-axios.request(options).then(function (music) {
-  console.log(music.data);
+
+  // EVENT CLICK FOR BUILD PLAYLIST BUTTON
 
 
 
+  // Remove displays and appear favorite button.
+  document.getElementById("playlistMusic").style.display = "none"
+  document.getElementById("titleDrop").style.display = "none"
+  document.getElementById("dropBtn").style.display = "none"
+  document.getElementById("nextBtn").style.display = " inline"
 
-  let randomNum = Math.floor(Math.random() * 50)
-  music.data.splice(randomNum, 1)
+  // Remove displays and appear favorite button.
 
 
-  nextBtn.addEventListener("click", Event =>{
-    songCounter++
 
-    if (songCounter >= 1){
-      document.getElementById("backwardBtn").style.display = "inline"
-    } else {
-      document.getElementById("backwardBtn").style.display = "none"
+  // API REQUEST
+  const options = {
+    method: 'GET',
+    url: 'https://shazam-core.p.rapidapi.com/v1/charts/genre-country',
+    params: { country_code: 'US', genre_code: `${genre}`, limit: '50' },
+    headers: {
+      'x-rapidapi-host': 'shazam-core.p.rapidapi.com',
+      'x-rapidapi-key': '321bd4bca0msh582df64d6374373p15da64jsn5c07f585d9d7'
     }
-  
-    document.getElementById("musicHTML").innerHTML = `
+  };
+
+  axios.request(options).then(function (music) {
+    console.log(music.data);
+
+
+
+
+    let randomNum = Math.floor(Math.random() * 50)
+    music.data.splice(randomNum, 1)
+
+
+    nextBtn.addEventListener("click", Event => {
+      songCounter++
+
+      if (songCounter >= 1) {
+        document.getElementById("backwardBtn").style.display = "inline"
+      } else {
+        document.getElementById("backwardBtn").style.display = "none"
+      }
+
+      document.getElementById("musicHTML").innerHTML = `
     <h1>${music.data[songCounter].title}</h1>
     <img src="${music.data[songCounter].images.coverart}" alt="">
     <h1>By ${music.data[songCounter].subtitle}</h1>
     `
 
-  })
+    })
 
-  backwardBtn.addEventListener("click", Event =>{
-    songCounter--
+    backwardBtn.addEventListener("click", Event => {
+      songCounter--
 
-    if (songCounter >= 1){
-      document.getElementById("backwardBtn").style.display = "inline"
-    } else {
-      document.getElementById("backwardBtn").style.display = "none"
-    }
-  
-    document.getElementById("musicHTML").innerHTML = `
+      if (songCounter >= 1) {
+        document.getElementById("backwardBtn").style.display = "inline"
+      } else {
+        document.getElementById("backwardBtn").style.display = "none"
+      }
+
+      document.getElementById("musicHTML").innerHTML = `
     <h1>${music.data[songCounter].title}</h1>
     <img src="${music.data[songCounter].images.coverart}" alt="">
     <h1>By ${music.data[songCounter].subtitle}</h1>
     `
 
-  })
+    })
 
-  document.getElementById("musicHTML").innerHTML = `
+    document.getElementById("musicHTML").innerHTML = `
 <h1>${music.data[songCounter].title}</h1>
 <img src="${music.data[songCounter].images.coverart}" alt="">
 <h1>By ${music.data[songCounter].subtitle}</h1>
 `
 
-}).catch(function (error) {
-  console.error(error);
-});
-// API REQUEST
+  }).catch(function (error) {
+    console.error(error);
+  });
+  // API REQUEST
 
 
 
 
 })
-
-//-------------------------------------------------------- ABOVE IS MUSIC GENRE EVENT LISTENERS
