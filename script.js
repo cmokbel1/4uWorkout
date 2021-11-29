@@ -171,6 +171,8 @@ if(genre == "Alternative"){
 
 // Remove displays and appear favorite button.
 document.getElementById("playlistMusic").style.display = "none"
+document.getElementById("titleDrop").style.display = "none"
+document.getElementById("dropBtn").style.display = "none"
 document.getElementById("favoriteBtnIcon").style.display = "inline"
 document.getElementById("favoriteBtnText").style.display = "inline"
 document.getElementById("favoriteBtn").style.display = "inline"
@@ -202,7 +204,7 @@ axios.request(options).then(function (music) {
   document.getElementById("musicHTML").innerHTML = `
 <h1>${music.data[0].title}</h1>
 <img src="${music.data[0].images.coverart}" alt="">
-<h1>${music.data[0].artist}</h1>
+<h1>By ${music.data[0].subtitle}</h1>
 `
 
 }).catch(function (error) {
