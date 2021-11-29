@@ -88,16 +88,19 @@ function showCards() {
   document.getElementById('startScreen').style.display = "none";
 
 }
-
-function saveSongs() {
-
-  let save = document.getElementById('workoutHTML').innerHTML;
-  console.log(save)
+function saveWorkout() {
+  document.getElementById('scrollbox').style.display="block";
+  document.getElementById('savedTitle').style.display = "block";
+  // document.getElementById('saved').style.display = "block";
+  let save = document.getElementById('workoutHTML').innerHTML
   localStorage.setItem("workoutBodypart", save);
-  let saveType = localStorage.getItem("workoutBodypart")
+  let saveTypes = localStorage.getItem("workoutBodypart")
+  // console.log(saveType)
+  saveType.push(saveTypes)
+  document.getElementById('savedWorkout').innerHTML = `${saveType}`
 
-  console.log(saveType)
 
+  // append()
 }
 
 
