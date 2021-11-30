@@ -104,3 +104,26 @@ h5 {
     font-family: 'Dongle', sans-serif;
     font-family: 'Zen Kaku Gothic Antique', sans-serif;
 }
+
+#card1,
+#card2,
+#card3,
+#card4 {
+    text-align: center;
+}
+
+#card1 img,
+#card2 img,
+#card3 img,
+#card4 img {
+    border: 1px solid white;
+    background-size: cover;
+    height: 225px;
+    width: 150px;
+}
+
+#us {
+    background-color: gray;
+    border: 1px solid white;
+    padding: 10px;
+}
