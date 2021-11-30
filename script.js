@@ -1,3 +1,5 @@
+
+
 // SEARCH BUTTON FUNCTIONS //
 // added 11/22/2021//
 //random workout button //
@@ -40,7 +42,7 @@ document.getElementById('randomWorkout').addEventListener('click', event => {
   // added 11/19/2021
   axios.get(`https://exercisedb.p.rapidapi.com/exercises?rapidapi-key=321bd4bca0msh582df64d6374373p15da64jsn5c07f585d9d7`)
     .then(res => {
-      
+
       const exercise = res.data;
       // local storage to set data for exercise
       localStorage.setItem('data', JSON.stringify(exercise))
@@ -89,7 +91,7 @@ genres = ['POP', 'HIP_HOP_RAP', 'DANCE', 'ELECTRONIC', 'SOUL_RNB', 'ALTERNATIVE'
 document.getElementById('skipWorkout').addEventListener('click', skip)
 
 function skip() {
-  if(searchType === "search") {
+  if (searchType === "search") {
     searchIndex++
     search()
     return
@@ -118,12 +120,12 @@ function skip() {
 let saveType = []
 
 
-document.getElementById('scrollbox').style.display="none";
-document.getElementById('savedTitle').style.display="none";
+document.getElementById('scrollbox').style.display = "none";
+document.getElementById('savedTitle').style.display = "none";
 
 //function save and display workout(s)
 function saveWorkout() {
-  document.getElementById('scrollbox').style.display="block";
+  document.getElementById('scrollbox').style.display = "block";
   document.getElementById('savedTitle').style.display = "block";
   // document.getElementById('saved').style.display = "block";
   let save = document.getElementById('workoutHTML').innerHTML
@@ -230,9 +232,9 @@ playlistMusic.addEventListener("click", Event => {
   document.getElementById("playlistMusic").style.display = "none"
   document.getElementById("titleDrop").style.display = "none"
   document.getElementById("dropBtn").style.display = "none"
-  // document.getElementById("favoriteBtnIcon").style.display = "inline"
-  // document.getElementById("favoriteBtnText").style.display = "inline"
-  // document.getElementById("favoriteBtn").style.display = "inline"
+  document.getElementById("favoriteBtnIcon").style.display = "inline"
+  document.getElementById("favoriteBtnText").style.display = "inline"
+  document.getElementById("favoriteBtn").style.display = "inline"
   document.getElementById("nextBtn").style.display = " inline"
 
   // Remove displays and appear favorite button.
