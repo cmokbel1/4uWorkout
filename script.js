@@ -1,5 +1,3 @@
-
-
 // SEARCH BUTTON FUNCTIONS //
 // added 11/22/2021//
 //random workout button //
