@@ -153,9 +153,6 @@ function showCards() {
 
 //-------------------------------------------------------- BELOW IS MUSIC GENRE EVENT LISTENERS
 // hide favorite button elements 
-// document.getElementById("favoriteBtnIcon").style.display = "none"
-// document.getElementById("favoriteBtnText").style.display = "none"
-// document.getElementById("favoriteBtn").style.display = "none"
 document.getElementById("backwardBtn").style.display = "none"
 document.getElementById("nextBtn").style.display = "none"
 
@@ -230,9 +227,6 @@ playlistMusic.addEventListener("click", Event => {
   document.getElementById("playlistMusic").style.display = "none"
   document.getElementById("titleDrop").style.display = "none"
   document.getElementById("dropBtn").style.display = "none"
-  document.getElementById("favoriteBtnIcon").style.display = "inline"
-  document.getElementById("favoriteBtnText").style.display = "inline"
-  document.getElementById("favoriteBtn").style.display = "inline"
   document.getElementById("nextBtn").style.display = " inline"
 
   // Remove displays and appear favorite button.
