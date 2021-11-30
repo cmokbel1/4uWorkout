@@ -230,9 +230,9 @@ playlistMusic.addEventListener("click", Event => {
   document.getElementById("playlistMusic").style.display = "none"
   document.getElementById("titleDrop").style.display = "none"
   document.getElementById("dropBtn").style.display = "none"
-  document.getElementById("favoriteBtnIcon").style.display = "inline"
-  document.getElementById("favoriteBtnText").style.display = "inline"
-  document.getElementById("favoriteBtn").style.display = "inline"
+  // document.getElementById("favoriteBtnIcon").style.display = "inline"
+  // document.getElementById("favoriteBtnText").style.display = "inline"
+  // document.getElementById("favoriteBtn").style.display = "inline"
   document.getElementById("nextBtn").style.display = " inline"
 
   // Remove displays and appear favorite button.
