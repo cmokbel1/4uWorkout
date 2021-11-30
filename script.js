@@ -12,7 +12,7 @@ let searchIndex = 0
 function search() {
   searchType = "search"
   let search = searchBar.value
-  axios.get('https://exercisedb.p.rapidapi.com/exercises/bodyPart/' + search + '?rapidapi-key=321bd4bca0msh582df64d6374373p15da64jsn5c07f585d9d7')
+  axios.get('https://exercisedb.p.rapidapi.com/exercises/bodyPart/' + search + '?rapidapi-key=cb85421a6dmsh9881880a437666cp13f8bajsn9f3c3185d8d3')
     .then(exercise => {
       console.log(exercise)
       document.getElementById('workoutHTML').innerHTML = `
@@ -38,7 +38,7 @@ document.getElementById('randomWorkout').addEventListener('click', event => {
   searchType = "random"
   // API search for excercise //
   // added 11/19/2021
-  axios.get(`https://exercisedb.p.rapidapi.com/exercises?rapidapi-key=321bd4bca0msh582df64d6374373p15da64jsn5c07f585d9d7`)
+  axios.get(`https://exercisedb.p.rapidapi.com/exercises?rapidapi-key=cb85421a6dmsh9881880a437666cp13f8bajsn9f3c3185d8d3`)
     .then(res => {
 
       const exercise = res.data;
@@ -57,7 +57,7 @@ document.getElementById('randomWorkout').addEventListener('click', event => {
         url: `https://exercisedb.p.rapidapi.com/exercises/bodyPart/${randomWorkout}`,
         headers: {
           'x-rapidapi-host': 'exercisedb.p.rapidapi.com',
-          'x-rapidapi-key': '321bd4bca0msh582df64d6374373p15da64jsn5c07f585d9d7'
+          'x-rapidapi-key': 'cb85421a6dmsh9881880a437666cp13f8bajsn9f3c3185d8d3'
         }
       };
       // edit HTML to match //
