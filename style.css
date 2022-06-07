@@ -36,18 +36,9 @@ button {
 }
 
 #startScreen {
-    width: 40%;
     margin: auto;
     display: auto;
     margin-top: 200px;
-}
-
-h1 {
-    padding: 20px;
-}
-
-h2 {
-    padding: 20px;
 }
 
 h3 {
