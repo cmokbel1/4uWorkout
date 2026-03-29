@@ -1,0 +1,21 @@
+export const FALLBACK_TARGET_AREAS: string[] = [
+"abductors",
+"abs",
+"adductors",
+"biceps",
+"calves",
+"cardiovascular system",
+"delts",
+"forearms",
+"glutes",
+"hamstrings",
+"lats",
+"levator scapulae",
+"pectorals",
+"quads",
+"serratus anterior",
+"spine",
+"traps",
+"triceps",
+"upper back"
+];

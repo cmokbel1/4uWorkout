@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "4UWorkout Trainer",
+    "slug": "4uworkout-trainer",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.claudemokbel.4uworkout-trainer"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0D1B2A"
+      },
+      "package": "com.claudemokbel.4uworkout-trainer"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
