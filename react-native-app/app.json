@@ -17,6 +17,12 @@
     },
     "web": {
       "bundler": "metro"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "ddbb0178-db31-4192-8bf7-a32b80388764"
+      }
+    },
+    "owner": "buff4eyes"
   }
 }
