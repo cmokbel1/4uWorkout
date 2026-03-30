@@ -11,8 +11,8 @@ function getApiBase(): string {
 
 async function requestBuilder<T>(path: string): Promise<T> {
   const response = await fetch(`${getApiBase()}${path}`, {
-    method: 'GET',
-  });
+    method: "GET",
+  })
 
   if (!response.ok) {
     throw new Error(`Request failed with status ${response.status}`);
