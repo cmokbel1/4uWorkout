@@ -1,5 +1,5 @@
 {
-  "name": "workout4u-native",
+  "name": "4UWorkout Trainer",
   "version": "1.0.0",
   "private": true,
   "main": "node_modules/expo/AppEntry.js",
