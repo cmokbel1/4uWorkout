@@ -33,6 +33,7 @@ export function TrainingScreen() {
   const scrollViewRef = useRef<ScrollView>(null)
   const workoutPanelRef = useRef<View>(null)
 
+  const [isBootstrapping, setIsBootstrapping] = useState<boolean>(true)
   const [isSearching, setIsSearching] = useState<boolean>(false)
   const [bodyPartOptions, setBodyPartOptions] = useState<string[]>([])
   const [selectedBodyPart, setSelectedBodyPart] = useState<string>("")
@@ -65,6 +66,8 @@ export function TrainingScreen() {
         }
       } catch {
         // Keep fallback options when endpoint is unavailable.
+      } finally {
+        setIsBootstrapping(false)
       }
     }
 
@@ -170,6 +173,18 @@ export function TrainingScreen() {
     } catch {
       Alert.alert("Save failed", "Could not write to local storage.")
     }
+  }
+
+  if (isBootstrapping) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="dark" />
+        <View style={styles.bootstrapLoader}>
+          <ActivityIndicator size="large" color="#3B6FD4" />
+          <Text style={styles.bootstrapLoaderText}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    )
   }
 
   return (
@@ -288,29 +303,33 @@ export function TrainingScreen() {
             </Text>
           )}
 
-          <Text style={styles.savedTitle}>Similar Workouts</Text>
-          <Text style={styles.fieldLabel}>
-            Select a workout for more information
-          </Text>
-          {searchResults.length ? (
-            searchResults.map((item, idx) => (
-              <Pressable
-                key={item.id}
-                onPress={() => onSelectSimilarWorkout(item)}
-                style={styles.resultItem}
-                accessibilityLabel={`Select ${item.name}`}
-                accessibilityRole="button"
-              >
-                <Text style={styles.resultItemText}>
-                  {idx + 1}. {item.name}
-                </Text>
-                <Text style={styles.resultItemSubtext}>
-                  Target: {item.target}
-                </Text>
-              </Pressable>
-            ))
-          ) : (
-            <Text style={styles.helperText}>No workouts loaded yet.</Text>
+          {currentWorkout && !isSearching && (
+            <>
+              <Text style={styles.savedTitle}>Similar Workouts</Text>
+              <Text style={styles.fieldLabel}>
+                Select a workout for more information
+              </Text>
+              {searchResults.length ? (
+                searchResults.map((item, idx) => (
+                  <Pressable
+                    key={item.id}
+                    onPress={() => onSelectSimilarWorkout(item)}
+                    style={styles.resultItem}
+                    accessibilityLabel={`Select ${item.name}`}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.resultItemText}>
+                      {idx + 1}. {item.name}
+                    </Text>
+                    <Text style={styles.resultItemSubtext}>
+                      Target: {item.target}
+                    </Text>
+                  </Pressable>
+                ))
+              ) : (
+                <Text style={styles.helperText}>No similar workouts found.</Text>
+              )}
+            </>
           )}
 
           <Text style={styles.savedTitle}>Saved Training Log</Text>
@@ -350,6 +369,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F4F6FA",
   },
+  bootstrapLoader: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+  },
+  bootstrapLoaderText: {
+    color: "#4A5568",
+    fontSize: 16,
+  },
   container: {
     padding: 18,
     gap: 16,
@@ -358,6 +387,7 @@ const styles = StyleSheet.create({
     color: "#1A2333",
     fontSize: 28,
     fontWeight: "700",
+    textAlign: "center",
   },
   card: {
     backgroundColor: "#FFFFFF",
