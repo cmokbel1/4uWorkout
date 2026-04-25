@@ -180,7 +180,7 @@ export function TrainingScreen() {
       <SafeAreaView style={styles.safeArea}>
         <StatusBar style="dark" />
         <View style={styles.bootstrapLoader}>
-          <ActivityIndicator size="large" color="#3B6FD4" />
+          <ActivityIndicator size="large" color="#3B6FD4" style={styles.bootstrapSpinner} />
           <Text style={styles.bootstrapLoaderText}>Loading...</Text>
         </View>
       </SafeAreaView>
@@ -218,7 +218,7 @@ export function TrainingScreen() {
             <ActionButton
               label="Find"
               onPress={onSearchWorkout}
-              disabled={isSearching}
+              disabled={isSearching || currentWorkout?.bodyPart === selectedBodyPart}
             />
             <ActionButton
               label="Save Workout"
@@ -288,14 +288,15 @@ export function TrainingScreen() {
               </Modal>
               {isSearching && (
                 <View style={styles.workoutPanelOverlay}>
-                  <ActivityIndicator color="#4A5568" />
+                  <ActivityIndicator size="large" color="#4A5568" style={styles.searchSpinner} />
                 </View>
               )}
             </View>
           ) : isSearching ? (
             <ActivityIndicator
+              size="large"
               color="#4A5568"
-              style={styles.loadingIndicator}
+              style={[styles.loadingIndicator, styles.searchSpinner]}
             />
           ) : (
             <Text style={styles.helperText}>
@@ -378,6 +379,12 @@ const styles = StyleSheet.create({
   bootstrapLoaderText: {
     color: "#4A5568",
     fontSize: 16,
+  },
+  bootstrapSpinner: {
+    transform: [{ scale: 2.5 }],
+  },
+  searchSpinner: {
+    transform: [{ scale: 2.5 }],
   },
   container: {
     padding: 18,
