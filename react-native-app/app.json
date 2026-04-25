@@ -5,15 +5,19 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.claudemokbel.4uworkout-trainer"
+      "bundleIdentifier": "com.claudemokbel.workout_trainer4u",
+      "icon": "./assets/icon.png"
     },
     "android": {
       "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0D1B2A"
       },
-      "package": "com.claudemokbel.4uworkout-trainer"
+      "package": "com.claudemokbel.workout_trainer4u",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro"
