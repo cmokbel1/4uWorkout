@@ -6,9 +6,9 @@ import {
   Image,
   Modal,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
+  SafeAreaView,
   Text,
   View,
 } from "react-native"

@@ -5,15 +5,19 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/4uWorkout-icon.png",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0D1B2A"
+    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.claudemokbel.workout_trainer4u",
-      "icon": "./assets/icon.png"
+      "bundleIdentifier": "com.claudemokbel.workout-trainer4u",
+      "icon": "./assets/4uWorkout-icon.png"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/4uicon.png",
         "backgroundColor": "#0D1B2A"
       },
       "package": "com.claudemokbel.workout_trainer4u",
@@ -21,6 +25,24 @@
     },
     "web": {
       "bundler": "metro"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "ddbb0178-db31-4192-8bf7-a32b80388764"
+      }
+    },
+    "plugins": [
+      "expo-asset",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "targetSdkVersion": 35,
+            "compileSdkVersion": 35,
+            "buildToolsVersion": "35.0.0"
+          }
+        }
+      ]
+    ]
   }
 }
