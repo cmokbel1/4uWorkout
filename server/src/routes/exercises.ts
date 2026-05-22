@@ -8,12 +8,14 @@ router.get('/bodyPartList', async (_req: Request, res: Response) => {
   try {
     const response = await exerciseApiFetch('/exercises/bodyPartList')
     if (!response.ok) {
+      console.error(`[bodyPartList] upstream failed with status ${response.status}`)
       res.status(response.status).json({ error: 'Upstream request failed' })
       return
     }
     const data = await response.json()
     res.json(data)
   } catch (err) {
+    console.error('[bodyPartList] error:', err instanceof Error ? err.message : err)
     res.status(500).json({ error: 'Internal server error' })
   }
 })
@@ -23,12 +25,14 @@ router.get('/targetList', async (_req: Request, res: Response) => {
   try {
     const response = await exerciseApiFetch('/exercises/targetList')
     if (!response.ok) {
+      console.error(`[targetList] upstream failed with status ${response.status}`)
       res.status(response.status).json({ error: 'Upstream request failed' })
       return
     }
     const data = await response.json()
     res.json(data)
   } catch (err) {
+    console.error('[targetList] error:', err instanceof Error ? err.message : err)
     res.status(500).json({ error: 'Internal server error' })
   }
 })
@@ -39,12 +43,14 @@ router.get('/bodyPart/:bodyPart', async (req: Request, res: Response) => {
     const { bodyPart } = req.params
     const response = await exerciseApiFetch(`/exercises/bodyPart/${encodeURIComponent(bodyPart)}`)
     if (!response.ok) {
+      console.error(`[bodyPart] upstream failed with status ${response.status} for bodyPart="${bodyPart}"`)
       res.status(response.status).json({ error: 'Upstream request failed' })
       return
     }
     const data = await response.json()
     res.json(data)
   } catch (err) {
+    console.error('[bodyPart] error:', err instanceof Error ? err.message : err)
     res.status(500).json({ error: 'Internal server error' })
   }
 })
@@ -61,6 +67,7 @@ router.get('/image', async (req: Request, res: Response) => {
       `/image?resolution=${resolution}&exerciseId=${encodeURIComponent(exerciseId)}`
     )
     if (!response.ok) {
+      console.error(`[image] upstream failed with status ${response.status} for exerciseId="${exerciseId}"`)
       res.status(response.status).json({ error: 'Upstream request failed' })
       return
     }
@@ -69,6 +76,7 @@ router.get('/image', async (req: Request, res: Response) => {
     const buffer = await response.arrayBuffer()
     res.send(Buffer.from(buffer))
   } catch (err) {
+    console.error('[image] error:', err instanceof Error ? err.message : err)
     res.status(500).json({ error: 'Internal server error' })
   }
 })
