@@ -35,6 +35,8 @@ export function TrainingScreen() {
 
   const [isBootstrapping, setIsBootstrapping] = useState<boolean>(true)
   const [isSearching, setIsSearching] = useState<boolean>(false)
+  const [isFindCoolingDown, setIsFindCoolingDown] = useState<boolean>(false)
+  const findCooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [bodyPartOptions, setBodyPartOptions] = useState<string[]>([])
   const [selectedBodyPart, setSelectedBodyPart] = useState<string>("")
   const [targetAreaOptions, setTargetAreaOptions] = useState<string[]>(
@@ -74,6 +76,12 @@ export function TrainingScreen() {
     bootstrap()
   }, [])
 
+  useEffect(() => {
+    return () => {
+      if (findCooldownRef.current) clearTimeout(findCooldownRef.current)
+    }
+  }, [])
+
   async function onSearchWorkout(): Promise<void> {
     if (!selectedBodyPart) {
       Alert.alert("Body part required", "Select a body part before searching.")
@@ -100,6 +108,8 @@ export function TrainingScreen() {
       Alert.alert("Search failed", getErrorMessage(error))
     } finally {
       setIsSearching(false)
+      setIsFindCoolingDown(true)
+      findCooldownRef.current = setTimeout(() => setIsFindCoolingDown(false), 3000)
     }
   }
 
@@ -218,7 +228,7 @@ export function TrainingScreen() {
             <ActionButton
               label="Find"
               onPress={onSearchWorkout}
-              disabled={isSearching || currentWorkout?.bodyPart === selectedBodyPart}
+              disabled={isSearching || isFindCoolingDown}
             />
             <ActionButton
               label="Save Workout"
