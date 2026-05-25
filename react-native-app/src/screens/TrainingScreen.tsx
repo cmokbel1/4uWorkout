@@ -18,6 +18,7 @@ import { ActionButton } from "../components/ActionButton"
 import { FALLBACK_TARGET_AREAS } from "../constants/targetAreas"
 import {
   getAllowedBodyParts,
+  getExerciseById,
   getExerciseImageById,
   searchExercisesByBodyPart,
 } from "../services/workoutApi"
@@ -115,20 +116,34 @@ export function TrainingScreen() {
 
   function scrollToWorkoutPanel(): void {
     workoutPanelRef.current?.measureLayout(
-      scrollViewRef.current?.getInnerViewNode(),
+      scrollViewRef.current as any,
       (_, y) => scrollViewRef.current?.scrollTo({ y, animated: true }),
       () => {},
     )
   }
 
-  function onSelectSimilarWorkout(item: Workout): void {
+  async function onSelectSimilarWorkout(item: Workout): Promise<void> {
     const pool = [...allResults]
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
       ;[pool[i], pool[j]] = [pool[j], pool[i]]
     }
     setSearchResults(pool.filter((w) => w.id !== item.id))
-    getImageAndUpdateWorkoutState(item)
+    setIsSearching(true)
+    scrollToWorkoutPanel()
+    try {
+      const workout = await getExerciseById(item.id)
+      setCurrentWorkout(workout)
+    } catch {
+      try {
+        const imageUrl = await getExerciseImageById(item.id)
+        setCurrentWorkout({ ...item, gifUrl: imageUrl })
+      } catch (imgError) {
+        console.error("Failed to fetch exercise:", item.id, imgError)
+      }
+    } finally {
+      setIsSearching(false)
+    }
   }
 
   async function getImageAndUpdateWorkoutState(

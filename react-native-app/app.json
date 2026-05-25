@@ -10,6 +10,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#0D1B2A"
     },
+    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.claudemokbel.workout-trainer4u",

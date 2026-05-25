@@ -38,6 +38,10 @@ export async function getAllowedTargets(): Promise<string[]> {
   return targets.map((item) => item.trim().toLowerCase());
 }
 
+export async function getExerciseById(id: string): Promise<Workout> {
+  return requestBuilder<Workout>(`/exercises/exercise/${encodeURIComponent(id)}`);
+}
+
 export async function getExerciseImageById(id: string): Promise<string> {
   const url = `${getApiBase()}/exercises/image?exerciseId=${encodeURIComponent(id)}&resolution=720`;
 
