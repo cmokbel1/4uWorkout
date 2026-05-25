@@ -49,8 +49,18 @@ All routes are prefixed `/exercises`. Error handling is uniform: upstream non-2x
 | `GET /exercises/bodyPartList` | |
 | `GET /exercises/bodyPart/:bodyPart` | Body part is URI-encoded before forwarding |
 | `GET /exercises/image?exerciseId=&resolution=` | Binary proxy — `exerciseId` required, `resolution` defaults to `720` |
+| `GET /exercises/exercise/:id` | Returns full exercise metadata with `gifUrl` as a base64 data URL |
 | `GET /exercises/targetList` | **Not yet wired into the client UI** |
 | `GET /health` | |
+
+### In-Memory Cache
+
+`exerciseCache` and `imageCache` are module-level `Map` instances in `routes/exercises.ts`. They live for the server process lifetime — a restart clears all entries. There is no persistence layer and no eviction policy.
+
+- `imageCache` — keyed by exercise ID, stores `{ buffer: Buffer; contentType: string }` for the `/image` endpoint
+- `exerciseCache` — keyed by exercise ID, stores the full exercise JSON with `gifUrl` already encoded as a base64 data URL
+
+The body part list (`/bodyPart/:bodyPart`) is intentionally not cached — results must remain random per request.
 
 ### Non-Obvious Details
 
