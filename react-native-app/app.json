@@ -14,7 +14,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.claudemokbel.workout-trainer4u",
-      "icon": "./assets/4uWorkout-icon.png"
+      "icon": "./assets/4uWorkout-icon.png",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {

@@ -1,4 +1,6 @@
-import { Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
+import { Pressable, Text, ViewStyle } from 'react-native';
+
+import { styles } from './ActionButton.styles';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'accent';
 
@@ -11,14 +13,19 @@ export interface ActionButtonProps {
 
 const VARIANT_STYLES: Record<ButtonVariant, ViewStyle> = {
   primary: { backgroundColor: '#3B6FD4' },
-  secondary: { backgroundColor: '#718096' },
-  accent: { backgroundColor: '#2A9D8F' },
+  secondary: { backgroundColor: '#64748B' },
+  accent: { backgroundColor: '#0D9488' },
 };
 
 export function ActionButton({ label, onPress, variant = 'primary', disabled = false }: ActionButtonProps) {
   return (
     <Pressable
-      style={[styles.button, VARIANT_STYLES[variant], disabled && styles.buttonDisabled]}
+      style={({ pressed }) => [
+        styles.button,
+        VARIANT_STYLES[variant],
+        disabled && styles.buttonDisabled,
+        pressed && !disabled && styles.buttonPressed,
+      ]}
       onPress={onPress}
       disabled={disabled}
       accessibilityLabel={label}
@@ -28,21 +35,3 @@ export function ActionButton({ label, onPress, variant = 'primary', disabled = f
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 10,
-    minWidth: 72,
-    alignItems: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#F7FBFF',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-});

@@ -35,13 +35,13 @@ Navigation is a single `started: boolean` in `App.tsx`. No routing library. `Sta
 All state lives in `TrainingScreen` via `useState` — no global state, no context, no external store. `isBootstrapping` gates the initial loading screen. `isSearching` gates both the body-part search and the subsequent image fetch, so both operations share one loading indicator.
 
 ### Search & Display Flow
-On mount, `TrainingScreen` fetches available body parts from the API and reads saved workouts from AsyncStorage. On search, the full result set is Fisher-Yates shuffled into `allResults`; one item becomes `currentWorkout`, the rest populate `searchResults` (the "Similar Workouts" list). Selecting a similar workout replaces `currentWorkout` and rebuilds `searchResults` from the same `allResults` pool — no new API call.
+On mount, `TrainingScreen` fetches available body parts from the API and reads saved workouts from AsyncStorage. On search, the full result set is Fisher-Yates shuffled into `allResults`; one item becomes `currentWorkout`, the rest populate `searchResults` (the "Similar Workouts" list). Selecting a similar workout calls `getExerciseById` (server-cached endpoint) and falls back to `getExerciseImageById` + local metadata if that fails. Selecting a saved workout sets it as `currentWorkout` directly — no fetch, the `gifUrl` is already stored.
 
 ### Core Data Model 
 `Workout` (`src/types/workout.ts`) is the single type shared across API responses, AsyncStorage, and all UI. Any new field from the API must be added here first.
 
 ### API Layer
-`src/services/workoutApi.ts` — all requests go through `requestBuilder<T>()` which throws on non-2xx. Exercise images are fetched as blobs and converted to base64 data URLs via `FileReader` — this is intentional for offline display. When the body part list call fails on bootstrap, the app falls back to `FALLBACK_TARGET_AREAS` (`src/constants/targetAreas.ts`) and continues normally (DRAFT NOT YET IMPLEMENTED, CURRENTLY TARGET AREAS DOES NOTHING).
+`src/services/workoutApi.ts` — all requests go through `requestBuilder<T>()` which throws on non-2xx. Exercise images are fetched as blobs and converted to base64 data URLs via `FileReader` — this is intentional for offline display. `getExerciseById` calls the server-side caching endpoint (`GET /exercises/exercise/:id`) which returns full workout metadata with `gifUrl` already base64-encoded. When the body part list call fails on bootstrap, the app falls back to `FALLBACK_TARGET_AREAS` (`src/constants/targetAreas.ts`) and continues normally (DRAFT NOT YET IMPLEMENTED, CURRENTLY TARGET AREAS DOES NOTHING).
 
 ### Persistence
 `src/storage/savedWorkouts.ts` — plain JSON in AsyncStorage under the key `saved_workouts_v1`. The 50-item cap and deduplication are enforced in `TrainingScreen`, not in the storage module. Do not change the storage key without a migration path — existing users will lose their saved workouts.

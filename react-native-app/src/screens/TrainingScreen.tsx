@@ -1,5 +1,6 @@
+import { Ionicons } from "@expo/vector-icons"
 import { StatusBar } from "expo-status-bar"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   ActivityIndicator,
   Alert,
@@ -7,8 +8,8 @@ import {
   Modal,
   Pressable,
   ScrollView,
-  StyleSheet,
   SafeAreaView,
+  Switch,
   Text,
   View,
 } from "react-native"
@@ -29,11 +30,14 @@ import {
 } from "../storage/savedWorkouts"
 import type { Workout } from "../types/workout"
 import { getErrorMessage, toTitleCase } from "../utils/formatting"
+import { makeStyles, VARIANT_STYLES, type DifficultyVariant } from "./TrainingScreen.styles"
 
 export function TrainingScreen() {
   const scrollViewRef = useRef<ScrollView>(null)
   const workoutPanelRef = useRef<View>(null)
 
+  const [isDark, setIsDark] = useState<boolean>(false)
+  const [settingsVisible, setSettingsVisible] = useState<boolean>(false)
   const [isBootstrapping, setIsBootstrapping] = useState<boolean>(true)
   const [isSearching, setIsSearching] = useState<boolean>(false)
   const [isFindCoolingDown, setIsFindCoolingDown] = useState<boolean>(false)
@@ -51,6 +55,8 @@ export function TrainingScreen() {
   const [searchResults, setSearchResults] = useState<Workout[]>([])
   const [currentWorkout, setCurrentWorkout] = useState<Workout | null>(null)
   const [savedWorkouts, setSavedWorkouts] = useState<Workout[]>([])
+
+  const styles = useMemo(() => makeStyles(isDark), [isDark])
 
   useEffect(() => {
     async function bootstrap(): Promise<void> {
@@ -163,6 +169,12 @@ export function TrainingScreen() {
       })
   }
 
+  function onSelectSavedWorkout(item: Workout): void {
+    if (currentWorkout?.id === item.id) return
+    setCurrentWorkout(item)
+    scrollToWorkoutPanel()
+  }
+
   async function onClearWorkouts(): Promise<void> {
     try {
       await clearSavedWorkouts()
@@ -175,6 +187,7 @@ export function TrainingScreen() {
       )
     }
   }
+
   async function onSaveWorkout(): Promise<void> {
     if (!currentWorkout) {
       Alert.alert("No workout selected", "Find a workout before saving.")
@@ -203,7 +216,7 @@ export function TrainingScreen() {
   if (isBootstrapping) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <StatusBar style="dark" />
+        <StatusBar style={isDark ? "light" : "dark"} />
         <View style={styles.bootstrapLoader}>
           <ActivityIndicator size="large" color="#3B6FD4" style={styles.bootstrapSpinner} />
           <Text style={styles.bootstrapLoaderText}>Loading...</Text>
@@ -214,9 +227,53 @@ export function TrainingScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? "light" : "dark"} />
       <ScrollView ref={scrollViewRef} contentContainerStyle={styles.container}>
-        <Text style={styles.heading}>4UWorkout Trainer</Text>
+        <View style={styles.headingRow}>
+          <Text style={styles.heading}>4UWorkout Trainer</Text>
+          <Pressable
+            onPress={() => setSettingsVisible(true)}
+            style={styles.cogButton}
+            accessibilityLabel="Open settings"
+            accessibilityRole="button"
+          >
+            <Ionicons
+              name="settings-outline"
+              size={22}
+              color={isDark ? "#8B949E" : "#718096"}
+            />
+          </Pressable>
+        </View>
+
+        <Modal
+          visible={settingsVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setSettingsVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Settings</Text>
+              <View style={styles.settingsRow}>
+                <Text style={styles.settingsRowLabel}>Dark Mode</Text>
+                <Switch
+                  value={isDark}
+                  onValueChange={setIsDark}
+                  trackColor={{ false: "#C9D3E0", true: "#3B6FD4" }}
+                  thumbColor="#FFFFFF"
+                />
+              </View>
+              <Pressable
+                style={styles.modalClose}
+                onPress={() => setSettingsVisible(false)}
+                accessibilityLabel="Close settings"
+                accessibilityRole="button"
+              >
+                <Text style={styles.modalCloseText}>Close</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Select a Body Part</Text>
@@ -225,7 +282,7 @@ export function TrainingScreen() {
             <Picker
               selectedValue={selectedBodyPart}
               onValueChange={(value) => setSelectedBodyPart(String(value))}
-              dropdownIconColor="#DDE6F6"
+              dropdownIconColor={isDark ? "#8B949E" : "#DDE6F6"}
               style={styles.picker}
               itemStyle={styles.pickerItem}
             >
@@ -249,7 +306,11 @@ export function TrainingScreen() {
               label="Save Workout"
               variant="accent"
               onPress={onSaveWorkout}
-              disabled={isSearching}
+              disabled={
+                isSearching ||
+                !currentWorkout ||
+                savedWorkouts.some((w) => w.id === currentWorkout.id)
+              }
             />
           </View>
 
@@ -268,8 +329,13 @@ export function TrainingScreen() {
                 <Text style={styles.detailLabel}>
                   Equipment: {currentWorkout.equipment}
                 </Text>
-                <Text style={styles.difficulty && VARIANT_STYLES[currentWorkout.difficulty as DifficultyVariant]}>
-                  Difficulty: {currentWorkout.difficulty}
+                <Text
+                  style={[
+                    styles.difficulty,
+                    VARIANT_STYLES[currentWorkout.difficulty as DifficultyVariant],
+                  ]}
+                >
+                  {currentWorkout.difficulty}
                 </Text>
                 <Image
                   source={{ uri: currentWorkout.gifUrl }}
@@ -298,7 +364,9 @@ export function TrainingScreen() {
                   <View style={styles.modalContent}>
                     <Text style={styles.modalTitle}>Instructions</Text>
                     <ScrollView style={styles.modalBody}>
-                      <Text style={styles.modalText}>{currentWorkout.instructions}</Text>
+                      <Text style={styles.modalText}>
+                        {currentWorkout.instructions}
+                      </Text>
                     </ScrollView>
                     <Pressable
                       style={styles.modalClose}
@@ -313,14 +381,18 @@ export function TrainingScreen() {
               </Modal>
               {isSearching && (
                 <View style={styles.workoutPanelOverlay}>
-                  <ActivityIndicator size="large" color="#4A5568" style={styles.searchSpinner} />
+                  <ActivityIndicator
+                    size="large"
+                    color={isDark ? "#8B949E" : "#4A5568"}
+                    style={styles.searchSpinner}
+                  />
                 </View>
               )}
             </View>
           ) : isSearching ? (
             <ActivityIndicator
               size="large"
-              color="#4A5568"
+              color={isDark ? "#8B949E" : "#4A5568"}
               style={[styles.loadingIndicator, styles.searchSpinner]}
             />
           ) : (
@@ -340,7 +412,7 @@ export function TrainingScreen() {
                   <Pressable
                     key={item.id}
                     onPress={() => onSelectSimilarWorkout(item)}
-                    style={styles.resultItem}
+                    style={({ pressed }) => [styles.resultItem, pressed && styles.pressedItem]}
                     accessibilityLabel={`Select ${item.name}`}
                     accessibilityRole="button"
                   >
@@ -353,17 +425,32 @@ export function TrainingScreen() {
                   </Pressable>
                 ))
               ) : (
-                <Text style={styles.helperText}>No similar workouts found.</Text>
+                <Text style={styles.helperText}>
+                  Similar workouts will appear when a search is executed and
+                  similar exercises are found.
+                </Text>
               )}
             </>
           )}
 
-          <Text style={styles.savedTitle}>Saved Training Log</Text>
+          <Text style={styles.savedTitle}>Saved Workouts</Text>
           {savedWorkouts.length ? (
-            savedWorkouts.map((item, idx) => (
-              <Text style={styles.savedItem} key={item.id}>
-                {idx + 1}. {item.name} ({item.target})
-              </Text>
+            <Text style={styles.helperText}>
+              Click a saved workout to view it again.
+            </Text>
+          ) : null}
+          {savedWorkouts.length ? (
+            savedWorkouts.map((item) => (
+              <Pressable
+                key={item.id}
+                onPress={() => onSelectSavedWorkout(item)}
+                style={({ pressed }) => [styles.savedWorkoutItem, pressed && styles.pressedItem]}
+                accessibilityLabel={`Load ${item.name}`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.savedItemName}>{item.name}</Text>
+                <Text style={styles.savedItemTarget}>{item.target}</Text>
+              </Pressable>
             ))
           ) : (
             <Text style={styles.helperText}>No saved workouts yet.</Text>
@@ -380,191 +467,5 @@ export function TrainingScreen() {
       </ScrollView>
     </SafeAreaView>
   )
-
 }
 
-type DifficultyVariant = 'beginner' | 'intermediate' | 'advanced';
-const VARIANT_STYLES: Record<DifficultyVariant, { color: string }> = {
-  beginner: { color: 'green' },
-  intermediate: { color: 'orange' },
-  advanced: { color: 'red' },
-};
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#F4F6FA",
-  },
-  bootstrapLoader: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 12,
-  },
-  bootstrapLoaderText: {
-    color: "#4A5568",
-    fontSize: 16,
-  },
-  bootstrapSpinner: {
-    transform: [{ scale: 2.5 }],
-  },
-  searchSpinner: {
-    transform: [{ scale: 2.5 }],
-  },
-  container: {
-    padding: 18,
-    gap: 16,
-  },
-  heading: {
-    color: "#1A2333",
-    fontSize: 28,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderColor: "#D8DFE9",
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 14,
-    gap: 12,
-  },
-  cardTitle: {
-    color: "#1A2333",
-    fontSize: 20,
-    fontWeight: "700",
-  },
-  fieldLabel: {
-    color: "#4A5568",
-    fontWeight: "600",
-    marginBottom: -6,
-  },
-  difficulty: {
-    fontWeight: "700",
-    textTransform: "capitalize",
-    fontSize: 16,
-  },
-  pickerWrap: {
-    borderWidth: 1,
-    borderColor: "#C9D3E0",
-    borderRadius: 10,
-    backgroundColor: "#EEF1F6",
-  },
-  picker: {
-    color: "#1A2333",
-  },
-  pickerItem: {
-    color: "#1A2333",
-  },
-  row: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  loadingIndicator: {
-    alignSelf: "center",
-  },
-  workoutPanelWrap: {
-    position: "relative",
-  },
-  workoutPanel: {
-    gap: 8,
-  },
-  workoutPanelOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(244, 246, 250, 0.80)",
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  detailLabel: {
-    color: "#2D3748",
-    textTransform: "capitalize",
-  },
-  mediaImage: {
-    width: "100%",
-    height: 220,
-    borderRadius: 10,
-    backgroundColor: "#EEF1F6",
-  },
-  helperText: {
-    color: "#718096",
-  },
-  savedTitle: {
-    marginTop: 6,
-    color: "#1A2333",
-    fontWeight: "700",
-  },
-  savedItem: {
-    color: "#4A5568",
-  },
-  resultItem: {
-    borderWidth: 1,
-    borderColor: "#C9D3E0",
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    backgroundColor: "#FFFFFF",
-    gap: 2,
-  },
-  resultItemText: {
-    color: "#1A2333",
-    fontWeight: "700",
-    textTransform: "capitalize",
-  },
-  resultItemSubtext: {
-    color: "#718096",
-    textTransform: "capitalize",
-  },
-  instructionsButton: {
-    alignSelf: "flex-start",
-    backgroundColor: "#EEF1F6",
-    borderWidth: 1,
-    borderColor: "#C9D3E0",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  instructionsButtonText: {
-    color: "#3B6FD4",
-    fontWeight: "600",
-    fontSize: 13,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  modalContent: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    padding: 20,
-    width: "100%",
-    maxHeight: "70%",
-    gap: 12,
-  },
-  modalTitle: {
-    color: "#1A2333",
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  modalBody: {
-    flexShrink: 1,
-  },
-  modalText: {
-    color: "#2D3748",
-    lineHeight: 22,
-  },
-  modalClose: {
-    backgroundColor: "#3B6FD4",
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: "center",
-  },
-  modalCloseText: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-  },
-})
