@@ -94,6 +94,10 @@ export function makeStyles(isDark: boolean) {
       right: 0,
       padding: 4,
     },
+    cogIcon: {
+      fontSize: 22,
+      color: isDark ? '#8B949E' : '#718096',
+    },
     card: {
       backgroundColor: c.cardBg,
       borderColor: c.cardBorder,

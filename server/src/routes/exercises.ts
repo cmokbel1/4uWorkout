@@ -82,7 +82,7 @@ router.get('/exercise/:id', async (req: Request, res: Response) => {
 router.get('/bodyPart/:bodyPart', async (req: Request, res: Response) => {
   try {
     const { bodyPart } = req.params
-    const response = await exerciseApiFetch(`/exercises/bodyPart/${encodeURIComponent(bodyPart)}`)
+    const response = await exerciseApiFetch(`/exercises/bodyPart/${encodeURIComponent(bodyPart)}?limit=1500`)
     if (!response.ok) {
       console.error(`[bodyPart] upstream failed with status ${response.status} for bodyPart="${bodyPart}"`)
       res.status(response.status).json({ error: 'Upstream request failed' })

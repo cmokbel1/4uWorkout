@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons"
 import { StatusBar } from "expo-status-bar"
 import { useEffect, useMemo, useRef, useState } from "react"
 import {
@@ -30,7 +29,7 @@ import {
 } from "../storage/savedWorkouts"
 import type { Workout } from "../types/workout"
 import { getErrorMessage, toTitleCase } from "../utils/formatting"
-import { makeStyles, VARIANT_STYLES, type DifficultyVariant } from "./TrainingScreen.styles"
+import { makeStyles, VARIANT_STYLES, type DifficultyVariant } from "./stylesheets/TrainingScreen.styles"
 
 export function TrainingScreen() {
   const scrollViewRef = useRef<ScrollView>(null)
@@ -109,7 +108,7 @@ export function TrainingScreen() {
       }
       const selected = shuffled[Math.floor(Math.random() * shuffled.length)]
       setAllResults(shuffled)
-      setSearchResults(shuffled.filter((w) => w.id !== selected.id))
+      setSearchResults(shuffled.filter((w) => w.id !== selected.id).slice(0, 10))
       await getImageAndUpdateWorkoutState(selected)
     } catch (error: unknown) {
       Alert.alert("Search failed", getErrorMessage(error))
@@ -134,7 +133,7 @@ export function TrainingScreen() {
       const j = Math.floor(Math.random() * (i + 1))
       ;[pool[i], pool[j]] = [pool[j], pool[i]]
     }
-    setSearchResults(pool.filter((w) => w.id !== item.id))
+    setSearchResults(pool.filter((w) => w.id !== item.id).slice(0, 10))
     setIsSearching(true)
     scrollToWorkoutPanel()
     try {
@@ -237,11 +236,7 @@ export function TrainingScreen() {
             accessibilityLabel="Open settings"
             accessibilityRole="button"
           >
-            <Ionicons
-              name="settings-outline"
-              size={22}
-              color={isDark ? "#8B949E" : "#718096"}
-            />
+            <Text style={styles.cogIcon}>⚙</Text>
           </Pressable>
         </View>
 

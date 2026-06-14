@@ -2,7 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Text, Image, SafeAreaView } from "react-native"
 
 import { ActionButton } from '../components/ActionButton';
-import { styles } from './StartScreen.styles';
+import { styles } from './stylesheets/StartScreen.styles';
 
 interface StartScreenProps {
   onStart: () => void;
