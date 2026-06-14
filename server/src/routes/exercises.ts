@@ -6,6 +6,14 @@ const router = Router()
 const imageCache = new Map<string, { buffer: Buffer; contentType: string }>()
 const exerciseCache = new Map<string, Record<string, unknown>>()
 
+// The ExerciseDB BASIC plan caps `limit` at 10 per request, so the full list
+// for a body part is gathered by paging with `offset`. Aggregated results are
+// cached per body part for the process lifetime to avoid re-paging on every
+// search. Randomization happens client-side, so caching does not reduce variety.
+const bodyPartCache = new Map<string, Record<string, unknown>[]>()
+const BODY_PART_PAGE_SIZE = 10 // free-tier max results per request
+const BODY_PART_MAX_PAGES = 100 // safety backstop (~1000 exercises)
+
 // GET /exercises/bodyPartList
 router.get('/bodyPartList', async (_req: Request, res: Response) => {
   try {
@@ -82,14 +90,46 @@ router.get('/exercise/:id', async (req: Request, res: Response) => {
 router.get('/bodyPart/:bodyPart', async (req: Request, res: Response) => {
   try {
     const { bodyPart } = req.params
-    const response = await exerciseApiFetch(`/exercises/bodyPart/${encodeURIComponent(bodyPart)}?limit=1500`)
-    if (!response.ok) {
-      console.error(`[bodyPart] upstream failed with status ${response.status} for bodyPart="${bodyPart}"`)
-      res.status(response.status).json({ error: 'Upstream request failed' })
+    const cacheKey = bodyPart.toLowerCase()
+
+    const cached = bodyPartCache.get(cacheKey)
+    if (cached) {
+      res.json(cached)
       return
     }
-    const data = await response.json()
-    res.json(data)
+
+    const seen = new Set<string>()
+    const all: Record<string, unknown>[] = []
+    for (let page = 0; page < BODY_PART_MAX_PAGES; page++) {
+      const offset = page * BODY_PART_PAGE_SIZE
+      const response = await exerciseApiFetch(
+        `/exercises/bodyPart/${encodeURIComponent(bodyPart)}?limit=${BODY_PART_PAGE_SIZE}&offset=${offset}`,
+      )
+      if (!response.ok) {
+        console.error(`[bodyPart] upstream failed with status ${response.status} for bodyPart="${bodyPart}" offset=${offset}`)
+        // Surface the error only if we have nothing; otherwise serve what we gathered.
+        if (all.length === 0) {
+          res.status(response.status).json({ error: 'Upstream request failed' })
+          return
+        }
+        break
+      }
+      const pageData = (await response.json()) as Record<string, unknown>[]
+      let added = 0
+      for (const exercise of pageData) {
+        const id = String(exercise.id)
+        if (!seen.has(id)) {
+          seen.add(id)
+          all.push(exercise)
+          added++
+        }
+      }
+      // Last page (short read) or offset not honored (no new items) — stop.
+      if (pageData.length < BODY_PART_PAGE_SIZE || added === 0) break
+    }
+
+    bodyPartCache.set(cacheKey, all)
+    res.json(all)
   } catch (err) {
     console.error('[bodyPart] error:', err instanceof Error ? err.message : err)
     res.status(500).json({ error: 'Internal server error' })
