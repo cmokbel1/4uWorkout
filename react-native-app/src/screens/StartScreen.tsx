@@ -1,14 +1,14 @@
 import { StatusBar } from 'expo-status-bar';
 import { Text, Image, SafeAreaView } from "react-native"
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { ActionButton } from '../components/ActionButton';
+import type { RootStackParamList } from '../../App';
 import { styles } from './stylesheets/StartScreen.styles';
 
-interface StartScreenProps {
-  onStart: () => void;
-}
+type Props = NativeStackScreenProps<RootStackParamList, 'Start'>;
 
-export function StartScreen({ onStart }: StartScreenProps) {
+export function StartScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.startScreen}>
       <StatusBar style="light" />
@@ -21,7 +21,7 @@ export function StartScreen({ onStart }: StartScreenProps) {
       <Text style={styles.appSubtitle}>
         Find a workout to add to your training routine
       </Text>
-      <ActionButton label="Start Training" onPress={onStart} />
+      <ActionButton label="Start Training" onPress={() => navigation.navigate('Training')} />
     </SafeAreaView>
   )
 }

@@ -8,4 +8,6 @@ export interface Workout {
   description: string;
   difficulty: string;
   instructions: string;
+  sets?: number;
+  reps?: number;
 }

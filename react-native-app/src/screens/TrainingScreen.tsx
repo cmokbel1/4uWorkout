@@ -1,5 +1,5 @@
 import { StatusBar } from "expo-status-bar"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   ActivityIndicator,
   Alert,
@@ -10,9 +10,12 @@ import {
   SafeAreaView,
   Switch,
   Text,
+  TextInput,
   View,
 } from "react-native"
 import { Picker } from "@react-native-picker/picker"
+import { useFocusEffect } from "@react-navigation/native"
+import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
 import { ActionButton } from "../components/ActionButton"
 import { FALLBACK_TARGET_AREAS } from "../constants/targetAreas"
@@ -23,15 +26,19 @@ import {
   searchExercisesByBodyPart,
 } from "../services/workoutApi"
 import {
-  clearSavedWorkouts,
+  isSavedWorkoutsDirty,
+  markSavedWorkoutsClean,
   readSavedWorkouts,
   writeSavedWorkouts,
 } from "../storage/savedWorkouts"
 import type { Workout } from "../types/workout"
+import type { RootStackParamList } from "../../App"
 import { getErrorMessage, toTitleCase } from "../utils/formatting"
 import { makeStyles, VARIANT_STYLES, type DifficultyVariant } from "./stylesheets/TrainingScreen.styles"
 
-export function TrainingScreen() {
+type Props = NativeStackScreenProps<RootStackParamList, "Training">
+
+export function TrainingScreen({ navigation }: Props) {
   const scrollViewRef = useRef<ScrollView>(null)
   const workoutPanelRef = useRef<View>(null)
 
@@ -54,18 +61,14 @@ export function TrainingScreen() {
   const [searchResults, setSearchResults] = useState<Workout[]>([])
   const [currentWorkout, setCurrentWorkout] = useState<Workout | null>(null)
   const [savedWorkouts, setSavedWorkouts] = useState<Workout[]>([])
+  const [saveModalVisible, setSaveModalVisible] = useState<boolean>(false)
+  const [setsInput, setSetsInput] = useState<string>("")
+  const [repsInput, setRepsInput] = useState<string>("")
 
   const styles = useMemo(() => makeStyles(isDark), [isDark])
 
   useEffect(() => {
     async function bootstrap(): Promise<void> {
-      try {
-        const existing = await readSavedWorkouts()
-        setSavedWorkouts(existing)
-      } catch {
-        // Keep empty list if storage is unavailable.
-      }
-
       try {
         const allowedBodyParts = await getAllowedBodyParts()
         if (allowedBodyParts.length) {
@@ -88,6 +91,29 @@ export function TrainingScreen() {
     }
   }, [])
 
+  // Re-sync saved workouts on focus only when a mutation happened elsewhere
+  // (e.g. sets/reps edited on the Saved Workouts screen). Skips the storage
+  // read entirely when nothing changed.
+  useFocusEffect(
+    useCallback(() => {
+      if (!isSavedWorkoutsDirty()) return
+      let active = true
+      readSavedWorkouts()
+        .then((items) => {
+          if (active) {
+            setSavedWorkouts(items)
+            markSavedWorkoutsClean()
+          }
+        })
+        .catch(() => {
+          // Keep current list if storage is unavailable.
+        })
+      return () => {
+        active = false
+      }
+    }, []),
+  )
+
   async function onSearchWorkout(): Promise<void> {
     if (!selectedBodyPart) {
       Alert.alert("Body part required", "Select a body part before searching.")
@@ -102,7 +128,7 @@ export function TrainingScreen() {
         return
       }
       const shuffled = [...results]
-      for (let i = shuffled.length - 1; i > 0; i--) {
+      for (let i = 10; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1))
         ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
       }
@@ -168,26 +194,7 @@ export function TrainingScreen() {
       })
   }
 
-  function onSelectSavedWorkout(item: Workout): void {
-    if (currentWorkout?.id === item.id) return
-    setCurrentWorkout(item)
-    scrollToWorkoutPanel()
-  }
-
-  async function onClearWorkouts(): Promise<void> {
-    try {
-      await clearSavedWorkouts()
-      setSavedWorkouts([])
-      Alert.alert("Cleared", "All saved workouts have been removed.")
-    } catch {
-      Alert.alert(
-        "Clear failed",
-        "Could not clear saved workouts from local storage.",
-      )
-    }
-  }
-
-  async function onSaveWorkout(): Promise<void> {
+  function openSaveModal(): void {
     if (!currentWorkout) {
       Alert.alert("No workout selected", "Find a workout before saving.")
       return
@@ -201,11 +208,27 @@ export function TrainingScreen() {
       return
     }
 
-    const nextSaved = [currentWorkout, ...savedWorkouts].slice(0, 50)
+    setSetsInput("")
+    setRepsInput("")
+    setSaveModalVisible(true)
+  }
+
+  async function onConfirmSave(): Promise<void> {
+    if (!currentWorkout) return
+
+    const sets = setsInput === "" ? undefined : Number(setsInput)
+    const reps = repsInput === "" ? undefined : Number(repsInput)
+    const toSave: Workout = { ...currentWorkout, sets, reps }
+
+    const nextSaved = [toSave, ...savedWorkouts].slice(0, 50)
     setSavedWorkouts(nextSaved)
+    setSaveModalVisible(false)
 
     try {
       await writeSavedWorkouts(nextSaved)
+      // This screen's state already reflects the write — stay clean so we
+      // don't re-read storage on the next focus.
+      markSavedWorkoutsClean()
       Alert.alert("Saved", "Workout added to your saved list.")
     } catch {
       Alert.alert("Save failed", "Could not write to local storage.")
@@ -300,7 +323,7 @@ export function TrainingScreen() {
             <ActionButton
               label="Save Workout"
               variant="accent"
-              onPress={onSaveWorkout}
+              onPress={openSaveModal}
               disabled={
                 isSearching ||
                 !currentWorkout ||
@@ -428,38 +451,75 @@ export function TrainingScreen() {
             </>
           )}
 
-          <Text style={styles.savedTitle}>Saved Workouts</Text>
-          {savedWorkouts.length ? (
-            <Text style={styles.helperText}>
-              Click a saved workout to view it again.
-            </Text>
-          ) : null}
-          {savedWorkouts.length ? (
-            savedWorkouts.map((item) => (
-              <Pressable
-                key={item.id}
-                onPress={() => onSelectSavedWorkout(item)}
-                style={({ pressed }) => [styles.savedWorkoutItem, pressed && styles.pressedItem]}
-                accessibilityLabel={`Load ${item.name}`}
-                accessibilityRole="button"
-              >
-                <Text style={styles.savedItemName}>{item.name}</Text>
-                <Text style={styles.savedItemTarget}>{item.target}</Text>
-              </Pressable>
-            ))
-          ) : (
-            <Text style={styles.helperText}>No saved workouts yet.</Text>
-          )}
-          {savedWorkouts.length ? (
-            <ActionButton
-              label="Clear Workouts"
-              variant="accent"
-              onPress={onClearWorkouts}
-              disabled={isSearching}
-            />
-          ) : null}
+          <ActionButton
+            label={
+              savedWorkouts.length
+                ? `View Saved Workouts (${savedWorkouts.length})`
+                : "View Saved Workouts"
+            }
+            onPress={() => navigation.navigate("SavedWorkouts", { isDark })}
+          />
         </View>
       </ScrollView>
+
+      <Modal
+        visible={saveModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSaveModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Save Workout</Text>
+            {currentWorkout ? (
+              <Text style={styles.detailLabel}>{currentWorkout.name}</Text>
+            ) : null}
+            <Text style={styles.fieldLabel}>
+              Add sets and reps (optional — you can edit these later).
+            </Text>
+            <View style={styles.inputRow}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Sets</Text>
+                <TextInput
+                  style={styles.numberInput}
+                  value={setsInput}
+                  onChangeText={(text) =>
+                    setSetsInput(text.replace(/[^0-9]/g, ""))
+                  }
+                  keyboardType="number-pad"
+                  placeholder="0"
+                  placeholderTextColor={isDark ? "#6E7681" : "#A0AEC0"}
+                  maxLength={3}
+                  accessibilityLabel="Sets"
+                />
+              </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Reps</Text>
+                <TextInput
+                  style={styles.numberInput}
+                  value={repsInput}
+                  onChangeText={(text) =>
+                    setRepsInput(text.replace(/[^0-9]/g, ""))
+                  }
+                  keyboardType="number-pad"
+                  placeholder="0"
+                  placeholderTextColor={isDark ? "#6E7681" : "#A0AEC0"}
+                  maxLength={3}
+                  accessibilityLabel="Reps"
+                />
+              </View>
+            </View>
+            <View style={styles.row}>
+              <ActionButton label="Save" variant="accent" onPress={onConfirmSave} />
+              <ActionButton
+                label="Cancel"
+                variant="secondary"
+                onPress={() => setSaveModalVisible(false)}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   )
 }

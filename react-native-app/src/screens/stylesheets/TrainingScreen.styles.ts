@@ -26,8 +26,6 @@ export function makeStyles(isDark: boolean) {
         instructionsBg: '#21262D',
         instructionsBorder: '#30363D',
         instructionsText: '#58A6FF',
-        savedItemBg: '#1A2030',
-        savedItemAccent: '#58A6FF',
         modalBg: '#161B22',
         panelOverlay: 'rgba(13, 17, 23, 0.80)',
       }
@@ -47,8 +45,6 @@ export function makeStyles(isDark: boolean) {
         instructionsBg: '#EEF1F6',
         instructionsBorder: '#C9D3E0',
         instructionsText: '#3B6FD4',
-        savedItemBg: '#EEF3FF',
-        savedItemAccent: '#3B6FD4',
         modalBg: '#FFFFFF',
         panelOverlay: 'rgba(244, 246, 250, 0.80)',
       }
@@ -172,25 +168,28 @@ export function makeStyles(isDark: boolean) {
       color: c.textPrimary,
       fontWeight: '700',
     },
-    savedWorkoutItem: {
-      backgroundColor: c.savedItemBg,
-      borderLeftWidth: 3,
-      borderLeftColor: c.savedItemAccent,
-      borderRadius: 8,
+    inputRow: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    inputGroup: {
+      flex: 1,
+      gap: 4,
+    },
+    inputLabel: {
+      color: c.textSecondary,
+      fontWeight: '600',
+      fontSize: 13,
+    },
+    numberInput: {
+      borderWidth: 1,
+      borderColor: c.pickerBorder,
+      backgroundColor: c.pickerBg,
+      borderRadius: 10,
       paddingHorizontal: 12,
       paddingVertical: 10,
-    },
-    savedItemName: {
       color: c.textPrimary,
-      fontWeight: '600',
-      textTransform: 'capitalize',
-      fontSize: 14,
-    },
-    savedItemTarget: {
-      color: c.textMuted,
-      fontSize: 12,
-      textTransform: 'capitalize',
-      marginTop: 2,
+      fontSize: 16,
     },
     pressedItem: {
       opacity: 0.75,
