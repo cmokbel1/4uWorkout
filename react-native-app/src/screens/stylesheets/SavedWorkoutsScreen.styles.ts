@@ -119,6 +119,14 @@ export function makeStyles(isDark: boolean) {
       fontWeight: '700',
       fontSize: 13,
     },
+    setRow: {
+      gap: 6,
+    },
+    setRowLabel: {
+      color: c.textPrimary,
+      fontWeight: '700',
+      fontSize: 14,
+    },
     inputRow: {
       flexDirection: 'row',
       gap: 12,

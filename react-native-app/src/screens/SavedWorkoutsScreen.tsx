@@ -75,13 +75,25 @@ export function SavedWorkoutsScreen({ route }: Props) {
     return marks
   }, [map, selectedDate, accent])
 
-  function onChangeField(id: string, field: "sets" | "reps", text: string): void {
+  function onChangeSetField(
+    workoutId: string,
+    setIndex: number,
+    field: "weight" | "reps",
+    text: string,
+  ): void {
     const digits = text.replace(/[^0-9]/g, "")
     const value = digits === "" ? undefined : Number(digits)
     setMap((prev) => ({
       ...prev,
       [selectedDate]: (prev[selectedDate] ?? []).map((w) =>
-        w.id === id ? { ...w, [field]: value } : w,
+        w.id === workoutId
+          ? {
+              ...w,
+              setDetails: (w.setDetails ?? []).map((set, i) =>
+                i === setIndex ? { ...set, [field]: value } : set,
+              ),
+            }
+          : w,
       ),
     }))
   }
@@ -132,7 +144,7 @@ export function SavedWorkoutsScreen({ route }: Props) {
             <Calendar
               current={todayKey()}
               markedDates={markedDates}
-              onDayPress={(day) => {
+              onDayPress={(day:any) => {
                 setSelectedDate(day.dateString)
                 setViewMode("day")
               }}
@@ -186,36 +198,45 @@ export function SavedWorkoutsScreen({ route }: Props) {
                 <Text style={styles.deleteButtonText}>Delete</Text>
               </Pressable>
             </View>
-            <View style={styles.inputRow}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Sets</Text>
-                <TextInput
-                  style={styles.numberInput}
-                  value={item.sets != null ? String(item.sets) : ""}
-                  onChangeText={(text) => onChangeField(item.id, "sets", text)}
-                  onEndEditing={persist}
-                  keyboardType="number-pad"
-                  placeholder="0"
-                  placeholderTextColor={isDark ? "#6E7681" : "#A0AEC0"}
-                  maxLength={3}
-                  accessibilityLabel={`Sets for ${item.name}`}
-                />
+            {(item.setDetails ?? []).map((set, index) => (
+              <View key={index} style={styles.setRow}>
+                <Text style={styles.setRowLabel}>Set {index + 1}</Text>
+                <View style={styles.inputRow}>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Weight (lbs)</Text>
+                    <TextInput
+                      style={styles.numberInput}
+                      value={set.weight != null ? String(set.weight) : ""}
+                      onChangeText={(text) =>
+                        onChangeSetField(item.id, index, "weight", text)
+                      }
+                      onEndEditing={persist}
+                      keyboardType="number-pad"
+                      placeholder="0"
+                      placeholderTextColor={isDark ? "#6E7681" : "#A0AEC0"}
+                      maxLength={4}
+                      accessibilityLabel={`Weight for set ${index + 1} of ${item.name}`}
+                    />
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Reps</Text>
+                    <TextInput
+                      style={styles.numberInput}
+                      value={set.reps != null ? String(set.reps) : ""}
+                      onChangeText={(text) =>
+                        onChangeSetField(item.id, index, "reps", text)
+                      }
+                      onEndEditing={persist}
+                      keyboardType="number-pad"
+                      placeholder="0"
+                      placeholderTextColor={isDark ? "#6E7681" : "#A0AEC0"}
+                      maxLength={3}
+                      accessibilityLabel={`Reps for set ${index + 1} of ${item.name}`}
+                    />
+                  </View>
+                </View>
               </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Reps</Text>
-                <TextInput
-                  style={styles.numberInput}
-                  value={item.reps != null ? String(item.reps) : ""}
-                  onChangeText={(text) => onChangeField(item.id, "reps", text)}
-                  onEndEditing={persist}
-                  keyboardType="number-pad"
-                  placeholder="0"
-                  placeholderTextColor={isDark ? "#6E7681" : "#A0AEC0"}
-                  maxLength={3}
-                  accessibilityLabel={`Reps for ${item.name}`}
-                />
-              </View>
-            </View>
+            ))}
           </View>
         ))}
       </ScrollView>

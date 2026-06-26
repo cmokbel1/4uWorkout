@@ -17,7 +17,4 @@ export interface Workout {
   instructions: string;
   // Per-set weight/reps. The set count is this array's length.
   setDetails?: WorkoutSet[];
-  // Legacy single-value fields — superseded by setDetails, removed in step 3.
-  sets?: number;
-  reps?: number;
 }
