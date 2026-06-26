@@ -76,10 +76,6 @@ export function TrainingScreen({ navigation }: Props) {
   // Today's bucket drives the dedup/disable logic; the total across all days
   // drives the "View Saved Workouts" count.
   const todaysWorkouts = savedMap[todayKey()] ?? []
-  const savedCount = useMemo(
-    () => Object.values(savedMap).reduce((total, list) => total + list.length, 0),
-    [savedMap],
-  )
 
   useEffect(() => {
     async function bootstrap(): Promise<void> {
@@ -503,11 +499,7 @@ export function TrainingScreen({ navigation }: Props) {
           )}
 
           <ActionButton
-            label={
-              savedCount
-                ? `View Saved Workouts (${savedCount})`
-                : "View Saved Workouts"
-            }
+            label={"View Saved Workouts"}
             onPress={() => navigation.navigate("SavedWorkouts", { isDark })}
           />
         </View>
