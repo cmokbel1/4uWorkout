@@ -1,5 +1,5 @@
 import { StatusBar } from "expo-status-bar"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { ScrollView, Text, View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Calendar } from "react-native-calendars"
@@ -28,6 +28,13 @@ export function CalendarView({
   const styles = useMemo(() => makeStyles(isDark), [isDark])
   const calendarTheme = useMemo(() => makeCalendarTheme(isDark), [isDark])
 
+  const today = todayKey()
+  // The first day of the current month, e.g. "2026-06". Used to decide whether
+  // the calendar is showing the current month so the forward arrow can be
+  // disabled — there's nothing to save in the future.
+  const currentMonth = today.slice(0, 7)
+  const [visibleMonth, setVisibleMonth] = useState(currentMonth)
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style={isDark ? "light" : "dark"} />
@@ -38,7 +45,12 @@ export function CalendarView({
         <Text style={styles.heading}>Select a date</Text>
         <View style={styles.calendarCard}>
           <Calendar
-            current={todayKey()}
+            current={today}
+            maxDate={today}
+            disableArrowRight={visibleMonth >= currentMonth}
+            onMonthChange={(month: any) =>
+              setVisibleMonth(month.dateString.slice(0, 7))
+            }
             markedDates={markedDates}
             onDayPress={(day: any) => onSelectDate(day.dateString)}
             theme={calendarTheme}
