@@ -11,9 +11,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useFocusEffect } from "@react-navigation/native"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
-import { Calendar } from "react-native-calendars"
 
 import { BackToTrainingButton } from "../components/BackToTrainingButton"
+import { CalendarView } from "../components/CalendarView"
 import {
   readSavedWorkouts,
   removeSavedWorkout,
@@ -23,11 +23,7 @@ import {
 import type { Workout } from "../types/workout"
 import type { RootStackParamList } from "../../App"
 import { formatDateLabel, todayKey } from "../utils/date"
-import {
-  makeCalendarTheme,
-  makeStyles,
-  palette,
-} from "./stylesheets/SavedWorkoutsScreen.styles"
+import { makeStyles, palette } from "./stylesheets/SavedWorkoutsScreen.styles"
 
 type Props = NativeStackScreenProps<RootStackParamList, "SavedWorkouts">
 
@@ -36,7 +32,6 @@ type ViewMode = "day" | "calendar"
 export function SavedWorkoutsScreen({ route }: Props) {
   const isDark = route.params?.isDark ?? false
   const styles = useMemo(() => makeStyles(isDark), [isDark])
-  const calendarTheme = useMemo(() => makeCalendarTheme(isDark), [isDark])
   const accent = palette(isDark).accent
 
   const [map, setMap] = useState<SavedWorkoutsByDate>({})
@@ -135,24 +130,14 @@ export function SavedWorkoutsScreen({ route }: Props) {
 
   if (viewMode === "calendar") {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar style={isDark ? "light" : "dark"} />
-        <ScrollView contentContainerStyle={styles.container}>
-          <BackToTrainingButton isDark={isDark} />
-          <Text style={styles.heading}>Select a date</Text>
-          <View style={styles.calendarCard}>
-            <Calendar
-              current={todayKey()}
-              markedDates={markedDates}
-              onDayPress={(day:any) => {
-                setSelectedDate(day.dateString)
-                setViewMode("day")
-              }}
-              theme={calendarTheme}
-            />
-          </View>
-        </ScrollView>
-      </SafeAreaView>
+      <CalendarView
+        isDark={isDark}
+        markedDates={markedDates}
+        onSelectDate={(date) => {
+          setSelectedDate(date)
+          setViewMode("day")
+        }}
+      />
     )
   }
 
