@@ -32,7 +32,9 @@ export function CalendarView({
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style={isDark ? "light" : "dark"} />
       <ScrollView contentContainerStyle={styles.container}>
-        <BackToTrainingButton isDark={isDark} />
+        <View style={styles.headerButtonsRow}>
+          <BackToTrainingButton />
+        </View>
         <Text style={styles.heading}>Select a date</Text>
         <View style={styles.calendarCard}>
           <Calendar

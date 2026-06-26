@@ -60,15 +60,9 @@ export function makeStyles(isDark: boolean) {
       padding: 18,
       gap: 16,
     },
-    toggleButton: {
-      alignSelf: 'flex-start',
-      paddingVertical: 4,
-      paddingRight: 12,
-    },
-    toggleButtonText: {
-      color: c.accent,
-      fontSize: 16,
-      fontWeight: '700',
+    headerButtonsRow: {
+      flexDirection: 'row',
+      gap: 10,
     },
     heading: {
       color: c.textPrimary,

@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context"
 import { useFocusEffect } from "@react-navigation/native"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
+import { ActionButton } from "../components/ActionButton"
 import { BackToTrainingButton } from "../components/BackToTrainingButton"
 import { CalendarView } from "../components/CalendarView"
 import {
@@ -145,15 +146,14 @@ export function SavedWorkoutsScreen({ route }: Props) {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style={isDark ? "light" : "dark"} />
       <ScrollView contentContainerStyle={styles.container}>
-        <BackToTrainingButton isDark={isDark} />
-        <Pressable
-          onPress={() => setViewMode("calendar")}
-          style={styles.toggleButton}
-          accessibilityLabel="View calendar"
-          accessibilityRole="button"
-        >
-          <Text style={styles.toggleButtonText}>‹ View calendar</Text>
-        </Pressable>
+        <View style={styles.headerButtonsRow}>
+          <BackToTrainingButton />
+          <ActionButton
+            label="View Calendar"
+            size="small"
+            onPress={() => setViewMode("calendar")}
+          />
+        </View>
         <Text style={styles.heading}>{formatDateLabel(selectedDate)}</Text>
 
         {dayWorkouts.length ? (

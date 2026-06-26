@@ -32,6 +32,7 @@ import {
   readSavedWorkouts,
   type SavedWorkoutsByDate,
 } from "../storage/savedWorkouts"
+import { readDarkMode, writeDarkMode } from "../storage/theme"
 import type { Workout } from "../types/workout"
 import type { RootStackParamList } from "../../App"
 import { todayKey } from "../utils/date"
@@ -82,6 +83,12 @@ export function TrainingScreen({ navigation }: Props) {
 
   useEffect(() => {
     async function bootstrap(): Promise<void> {
+      try {
+        setIsDark(await readDarkMode())
+      } catch {
+        // Keep default (light) when the preference can't be read.
+      }
+
       try {
         const allowedBodyParts = await getAllowedBodyParts()
         if (allowedBodyParts.length) {
@@ -249,6 +256,13 @@ export function TrainingScreen({ navigation }: Props) {
     )
   }
 
+  function onToggleDark(value: boolean): void {
+    setIsDark(value)
+    writeDarkMode(value).catch(() => {
+      // Non-fatal: the toggle still applies for this session.
+    })
+  }
+
   async function onConfirmSave(): Promise<void> {
     if (!currentWorkout) return
 
@@ -313,7 +327,7 @@ export function TrainingScreen({ navigation }: Props) {
                 <Text style={styles.settingsRowLabel}>Dark Mode</Text>
                 <Switch
                   value={isDark}
-                  onValueChange={setIsDark}
+                  onValueChange={onToggleDark}
                   trackColor={{ false: "#C9D3E0", true: "#3B6FD4" }}
                   thumbColor="#FFFFFF"
                 />
