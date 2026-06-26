@@ -3,9 +3,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Workout } from '../types/workout';
 import { todayKey } from '../utils/date';
 
-// v2 stores workouts keyed by local date (YYYY-MM-DD). The v1 flat-array key
-// is intentionally no longer read — pre-date saved workouts are discarded.
-const SAVED_WORKOUTS_KEY = 'saved_workouts_v2';
+// v3 stores workouts keyed by local date (YYYY-MM-DD), each workout carrying
+// per-set weight/reps (setDetails). Earlier keys (v1 flat array, v2 with
+// single sets/reps numbers) are intentionally no longer read.
+const SAVED_WORKOUTS_KEY = 'saved_workouts_v3';
 
 export type SavedWorkoutsByDate = Record<string, Workout[]>;
 

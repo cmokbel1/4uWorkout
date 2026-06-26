@@ -168,6 +168,15 @@ export function makeStyles(isDark: boolean) {
       color: c.textPrimary,
       fontWeight: '700',
     },
+    setRow: {
+      gap: 6,
+      marginBottom: 12,
+    },
+    setRowLabel: {
+      color: c.textPrimary,
+      fontWeight: '700',
+      fontSize: 14,
+    },
     inputRow: {
       flexDirection: 'row',
       gap: 12,

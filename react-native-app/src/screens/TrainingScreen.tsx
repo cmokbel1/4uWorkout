@@ -64,8 +64,11 @@ export function TrainingScreen({ navigation }: Props) {
   const [currentWorkout, setCurrentWorkout] = useState<Workout | null>(null)
   const [savedMap, setSavedMap] = useState<SavedWorkoutsByDate>({})
   const [saveModalVisible, setSaveModalVisible] = useState<boolean>(false)
-  const [setsInput, setSetsInput] = useState<string>("")
-  const [repsInput, setRepsInput] = useState<string>("")
+  const [setCount, setSetCount] = useState<number>(1)
+  // One {weight, reps} form per set, held as strings for controlled inputs.
+  const [setForms, setSetForms] = useState<{ weight: string; reps: string }[]>([
+    { weight: "", reps: "" },
+  ])
 
   const styles = useMemo(() => makeStyles(isDark), [isDark])
 
@@ -218,17 +221,42 @@ export function TrainingScreen({ navigation }: Props) {
       return
     }
 
-    setSetsInput("")
-    setRepsInput("")
+    setSetCount(1)
+    setSetForms([{ weight: "", reps: "" }])
     setSaveModalVisible(true)
+  }
+
+  // Resize the per-set forms to match the chosen count, preserving any values
+  // already entered for sets that survive the resize.
+  function onChangeSetCount(count: number): void {
+    setSetCount(count)
+    setSetForms((prev) => {
+      if (count <= prev.length) return prev.slice(0, count)
+      const grown = [...prev]
+      while (grown.length < count) grown.push({ weight: "", reps: "" })
+      return grown
+    })
+  }
+
+  function onChangeSetField(
+    index: number,
+    field: "weight" | "reps",
+    text: string,
+  ): void {
+    const digits = text.replace(/[^0-9]/g, "")
+    setSetForms((prev) =>
+      prev.map((form, i) => (i === index ? { ...form, [field]: digits } : form)),
+    )
   }
 
   async function onConfirmSave(): Promise<void> {
     if (!currentWorkout) return
 
-    const sets = setsInput === "" ? undefined : Number(setsInput)
-    const reps = repsInput === "" ? undefined : Number(repsInput)
-    const toSave: Workout = { ...currentWorkout, sets, reps }
+    const setDetails = setForms.map((form) => ({
+      weight: form.weight === "" ? undefined : Number(form.weight),
+      reps: form.reps === "" ? undefined : Number(form.reps),
+    }))
+    const toSave: Workout = { ...currentWorkout, setDetails }
 
     setSaveModalVisible(false)
 
@@ -484,40 +512,61 @@ export function TrainingScreen({ navigation }: Props) {
               <Text style={styles.detailLabel}>{currentWorkout.name}</Text>
             ) : null}
             <Text style={styles.fieldLabel}>
-              Add sets and reps (optional — you can edit these later).
+              How many sets? (weight and reps are optional — you can edit them
+              later)
             </Text>
-            <View style={styles.inputRow}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Sets</Text>
-                <TextInput
-                  style={styles.numberInput}
-                  value={setsInput}
-                  onChangeText={(text) =>
-                    setSetsInput(text.replace(/[^0-9]/g, ""))
-                  }
-                  keyboardType="number-pad"
-                  placeholder="0"
-                  placeholderTextColor={isDark ? "#6E7681" : "#A0AEC0"}
-                  maxLength={3}
-                  accessibilityLabel="Sets"
-                />
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Reps</Text>
-                <TextInput
-                  style={styles.numberInput}
-                  value={repsInput}
-                  onChangeText={(text) =>
-                    setRepsInput(text.replace(/[^0-9]/g, ""))
-                  }
-                  keyboardType="number-pad"
-                  placeholder="0"
-                  placeholderTextColor={isDark ? "#6E7681" : "#A0AEC0"}
-                  maxLength={3}
-                  accessibilityLabel="Reps"
-                />
-              </View>
+            <View style={styles.pickerWrap}>
+              <Picker
+                selectedValue={setCount}
+                onValueChange={(value) => onChangeSetCount(Number(value))}
+                dropdownIconColor={isDark ? "#8B949E" : "#DDE6F6"}
+                style={styles.picker}
+                itemStyle={styles.pickerItem}
+              >
+                {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                  <Picker.Item key={n} label={String(n)} value={n} />
+                ))}
+              </Picker>
             </View>
+            <ScrollView style={styles.modalBody}>
+              {setForms.map((form, index) => (
+                <View key={index} style={styles.setRow}>
+                  <Text style={styles.setRowLabel}>Set {index + 1}</Text>
+                  <View style={styles.inputRow}>
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.inputLabel}>Weight (lbs)</Text>
+                      <TextInput
+                        style={styles.numberInput}
+                        value={form.weight}
+                        onChangeText={(text) =>
+                          onChangeSetField(index, "weight", text)
+                        }
+                        keyboardType="number-pad"
+                        placeholder="0"
+                        placeholderTextColor={isDark ? "#6E7681" : "#A0AEC0"}
+                        maxLength={4}
+                        accessibilityLabel={`Weight for set ${index + 1}`}
+                      />
+                    </View>
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.inputLabel}>Reps</Text>
+                      <TextInput
+                        style={styles.numberInput}
+                        value={form.reps}
+                        onChangeText={(text) =>
+                          onChangeSetField(index, "reps", text)
+                        }
+                        keyboardType="number-pad"
+                        placeholder="0"
+                        placeholderTextColor={isDark ? "#6E7681" : "#A0AEC0"}
+                        maxLength={3}
+                        accessibilityLabel={`Reps for set ${index + 1}`}
+                      />
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
             <View style={styles.row}>
               <ActionButton label="Save" variant="accent" onPress={onConfirmSave} />
               <ActionButton
