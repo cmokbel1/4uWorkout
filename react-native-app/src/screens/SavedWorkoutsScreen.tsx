@@ -42,6 +42,12 @@ export function SavedWorkoutsScreen({ route }: Props) {
   const [map, setMap] = useState<SavedWorkoutsByDate>({})
   const [viewMode, setViewMode] = useState<ViewMode>("day")
   const [selectedDate, setSelectedDate] = useState<string>(todayKey())
+  // Which workout cards are expanded to show their sets. Collapsed by default.
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+
+  function toggleExpanded(id: string): void {
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }))
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -161,13 +167,13 @@ export function SavedWorkoutsScreen({ route }: Props) {
           accessibilityLabel="View calendar"
           accessibilityRole="button"
         >
-          <Text style={styles.toggleButtonText}>‹ view calendar</Text>
+          <Text style={styles.toggleButtonText}>‹ View calendar</Text>
         </Pressable>
         <Text style={styles.heading}>{formatDateLabel(selectedDate)}</Text>
 
         {dayWorkouts.length ? (
           <Text style={styles.helperText}>
-            Set the number of sets and reps for each workout.
+            Tap a workout to view and edit its sets.
           </Text>
         ) : (
           <Text style={styles.helperText}>
@@ -176,10 +182,26 @@ export function SavedWorkoutsScreen({ route }: Props) {
           </Text>
         )}
 
-        {dayWorkouts.map((item) => (
+        {dayWorkouts.map((item) => {
+          const setCount = (item.setDetails ?? []).length
+          const isExpanded = !!expanded[item.id]
+          return (
           <View key={item.id} style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>{item.name}</Text>
+              <Pressable
+                onPress={() => toggleExpanded(item.id)}
+                style={styles.cardTitlePress}
+                accessibilityLabel={`${isExpanded ? "Collapse" : "Expand"} ${item.name}`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.chevron}>{isExpanded ? "▾" : "▸"}</Text>
+                <View style={styles.cardTitleTextWrap}>
+                  <Text style={styles.cardTitle}>{item.name}</Text>
+                  <Text style={styles.cardSubtitle}>
+                    {setCount} {setCount === 1 ? "set" : "sets"}
+                  </Text>
+                </View>
+              </Pressable>
               <Pressable
                 onPress={() => onDelete(item)}
                 style={({ pressed }) => [
@@ -193,7 +215,8 @@ export function SavedWorkoutsScreen({ route }: Props) {
                 <Text style={styles.deleteButtonText}>Delete</Text>
               </Pressable>
             </View>
-            {(item.setDetails ?? []).map((set, index) => (
+            {isExpanded &&
+              (item.setDetails ?? []).map((set, index) => (
               <View key={index} style={styles.setRow}>
                 <Text style={styles.setRowLabel}>Set {index + 1}</Text>
                 <View style={styles.inputRow}>
@@ -231,9 +254,10 @@ export function SavedWorkoutsScreen({ route }: Props) {
                   </View>
                 </View>
               </View>
-            ))}
+              ))}
           </View>
-        ))}
+          )
+        })}
       </ScrollView>
     </SafeAreaView>
   )

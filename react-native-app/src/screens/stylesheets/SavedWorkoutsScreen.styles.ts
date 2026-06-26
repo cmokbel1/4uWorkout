@@ -97,12 +97,30 @@ export function makeStyles(isDark: boolean) {
       alignItems: 'center',
       gap: 12,
     },
-    cardTitle: {
+    cardTitlePress: {
       flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    cardTitleTextWrap: {
+      flex: 1,
+    },
+    chevron: {
+      color: c.textSecondary,
+      fontSize: 14,
+      width: 14,
+    },
+    cardTitle: {
       color: c.textPrimary,
       fontSize: 18,
       fontWeight: '700',
       textTransform: 'capitalize',
+    },
+    cardSubtitle: {
+      color: c.textMuted,
+      fontSize: 13,
+      marginTop: 2,
     },
     deleteButton: {
       borderWidth: 1,
