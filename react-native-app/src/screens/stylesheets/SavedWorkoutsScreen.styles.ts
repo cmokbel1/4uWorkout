@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native'
 
-export function makeStyles(isDark: boolean) {
-  const c = isDark
+export function palette(isDark: boolean) {
+  return isDark
     ? {
         bg: '#0D1117',
         cardBg: '#161B22',
@@ -28,6 +28,28 @@ export function makeStyles(isDark: boolean) {
         danger: '#D72638',
         dangerPressed: 'rgba(215, 38, 56, 0.08)',
       }
+}
+
+// Theme object for react-native-calendars, derived from the same palette.
+export function makeCalendarTheme(isDark: boolean) {
+  const c = palette(isDark)
+  return {
+    calendarBackground: c.cardBg,
+    monthTextColor: c.textPrimary,
+    dayTextColor: c.textPrimary,
+    textSectionTitleColor: c.textSecondary,
+    textDisabledColor: c.textMuted,
+    todayTextColor: c.accent,
+    arrowColor: c.accent,
+    selectedDayBackgroundColor: c.accent,
+    selectedDayTextColor: '#FFFFFF',
+    dotColor: c.accent,
+    selectedDotColor: '#FFFFFF',
+  }
+}
+
+export function makeStyles(isDark: boolean) {
+  const c = palette(isDark)
 
   return StyleSheet.create({
     safeArea: {
@@ -38,27 +60,29 @@ export function makeStyles(isDark: boolean) {
       padding: 18,
       gap: 16,
     },
-    headingRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    backButton: {
-      padding: 4,
+    toggleButton: {
+      alignSelf: 'flex-start',
+      paddingVertical: 4,
       paddingRight: 12,
     },
-    backIcon: {
-      fontSize: 24,
+    toggleButtonText: {
       color: c.accent,
+      fontSize: 16,
       fontWeight: '700',
     },
     heading: {
-      flex: 1,
       color: c.textPrimary,
       fontSize: 24,
       fontWeight: '700',
     },
     helperText: {
       color: c.textMuted,
+    },
+    calendarCard: {
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: c.cardBorder,
+      overflow: 'hidden',
     },
     card: {
       backgroundColor: c.cardBg,

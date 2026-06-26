@@ -26,13 +26,15 @@ import {
   searchExercisesByBodyPart,
 } from "../services/workoutApi"
 import {
+  addWorkoutForToday,
   isSavedWorkoutsDirty,
   markSavedWorkoutsClean,
   readSavedWorkouts,
-  writeSavedWorkouts,
+  type SavedWorkoutsByDate,
 } from "../storage/savedWorkouts"
 import type { Workout } from "../types/workout"
 import type { RootStackParamList } from "../../App"
+import { todayKey } from "../utils/date"
 import { getErrorMessage, toTitleCase } from "../utils/formatting"
 import { makeStyles, VARIANT_STYLES, type DifficultyVariant } from "./stylesheets/TrainingScreen.styles"
 
@@ -60,12 +62,20 @@ export function TrainingScreen({ navigation }: Props) {
   const [allResults, setAllResults] = useState<Workout[]>([])
   const [searchResults, setSearchResults] = useState<Workout[]>([])
   const [currentWorkout, setCurrentWorkout] = useState<Workout | null>(null)
-  const [savedWorkouts, setSavedWorkouts] = useState<Workout[]>([])
+  const [savedMap, setSavedMap] = useState<SavedWorkoutsByDate>({})
   const [saveModalVisible, setSaveModalVisible] = useState<boolean>(false)
   const [setsInput, setSetsInput] = useState<string>("")
   const [repsInput, setRepsInput] = useState<string>("")
 
   const styles = useMemo(() => makeStyles(isDark), [isDark])
+
+  // Today's bucket drives the dedup/disable logic; the total across all days
+  // drives the "View Saved Workouts" count.
+  const todaysWorkouts = savedMap[todayKey()] ?? []
+  const savedCount = useMemo(
+    () => Object.values(savedMap).reduce((total, list) => total + list.length, 0),
+    [savedMap],
+  )
 
   useEffect(() => {
     async function bootstrap(): Promise<void> {
@@ -99,9 +109,9 @@ export function TrainingScreen({ navigation }: Props) {
       if (!isSavedWorkoutsDirty()) return
       let active = true
       readSavedWorkouts()
-        .then((items) => {
+        .then((map) => {
           if (active) {
-            setSavedWorkouts(items)
+            setSavedMap(map)
             markSavedWorkoutsClean()
           }
         })
@@ -200,10 +210,10 @@ export function TrainingScreen({ navigation }: Props) {
       return
     }
 
-    if (savedWorkouts.some((w) => w.id === currentWorkout.id)) {
+    if (todaysWorkouts.some((w) => w.id === currentWorkout.id)) {
       Alert.alert(
         "Already saved",
-        "This workout is already in your saved list.",
+        "This workout is already saved for today.",
       )
       return
     }
@@ -220,16 +230,15 @@ export function TrainingScreen({ navigation }: Props) {
     const reps = repsInput === "" ? undefined : Number(repsInput)
     const toSave: Workout = { ...currentWorkout, sets, reps }
 
-    const nextSaved = [toSave, ...savedWorkouts].slice(0, 50)
-    setSavedWorkouts(nextSaved)
     setSaveModalVisible(false)
 
     try {
-      await writeSavedWorkouts(nextSaved)
+      const next = await addWorkoutForToday(toSave)
+      setSavedMap(next)
       // This screen's state already reflects the write — stay clean so we
       // don't re-read storage on the next focus.
       markSavedWorkoutsClean()
-      Alert.alert("Saved", "Workout added to your saved list.")
+      Alert.alert("Saved", "Workout added to today's saved list.")
     } catch {
       Alert.alert("Save failed", "Could not write to local storage.")
     }
@@ -327,7 +336,7 @@ export function TrainingScreen({ navigation }: Props) {
               disabled={
                 isSearching ||
                 !currentWorkout ||
-                savedWorkouts.some((w) => w.id === currentWorkout.id)
+                todaysWorkouts.some((w) => w.id === currentWorkout.id)
               }
             />
           </View>
@@ -453,8 +462,8 @@ export function TrainingScreen({ navigation }: Props) {
 
           <ActionButton
             label={
-              savedWorkouts.length
-                ? `View Saved Workouts (${savedWorkouts.length})`
+              savedCount
+                ? `View Saved Workouts (${savedCount})`
                 : "View Saved Workouts"
             }
             onPress={() => navigation.navigate("SavedWorkouts", { isDark })}
