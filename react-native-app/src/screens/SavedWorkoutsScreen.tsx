@@ -13,6 +13,7 @@ import { useFocusEffect } from "@react-navigation/native"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 import { Calendar } from "react-native-calendars"
 
+import { BackToTrainingButton } from "../components/BackToTrainingButton"
 import {
   readSavedWorkouts,
   removeSavedWorkout,
@@ -131,14 +132,7 @@ export function SavedWorkoutsScreen({ route }: Props) {
       <SafeAreaView style={styles.safeArea}>
         <StatusBar style={isDark ? "light" : "dark"} />
         <ScrollView contentContainerStyle={styles.container}>
-          <Pressable
-            onPress={() => setViewMode("day")}
-            style={styles.toggleButton}
-            accessibilityLabel="Back to workouts"
-            accessibilityRole="button"
-          >
-            <Text style={styles.toggleButtonText}>‹ back</Text>
-          </Pressable>
+          <BackToTrainingButton isDark={isDark} />
           <Text style={styles.heading}>Select a date</Text>
           <View style={styles.calendarCard}>
             <Calendar
@@ -160,6 +154,7 @@ export function SavedWorkoutsScreen({ route }: Props) {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style={isDark ? "light" : "dark"} />
       <ScrollView contentContainerStyle={styles.container}>
+        <BackToTrainingButton isDark={isDark} />
         <Pressable
           onPress={() => setViewMode("calendar")}
           style={styles.toggleButton}
