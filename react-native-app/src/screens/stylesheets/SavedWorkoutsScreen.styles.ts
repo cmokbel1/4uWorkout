@@ -92,6 +92,14 @@ export function makeStyles(isDark: boolean) {
       padding: 14,
       gap: 12,
     },
+    // Lifted shadow on collapsed cards to signal they're tappable.
+    cardCollapsed: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDark ? 0.5 : 0.15,
+      shadowRadius: 5,
+      elevation: 4,
+    },
     cardHeader: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -108,8 +116,9 @@ export function makeStyles(isDark: boolean) {
     },
     chevron: {
       color: c.textSecondary,
-      fontSize: 14,
-      width: 14,
+      fontSize: 22,
+      fontWeight: '700',
+      width: 22,
     },
     cardTitle: {
       color: c.textPrimary,

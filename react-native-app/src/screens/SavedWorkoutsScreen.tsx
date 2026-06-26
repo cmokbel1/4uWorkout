@@ -186,7 +186,10 @@ export function SavedWorkoutsScreen({ route }: Props) {
           const setCount = (item.setDetails ?? []).length
           const isExpanded = !!expanded[item.id]
           return (
-          <View key={item.id} style={styles.card}>
+          <View
+            key={item.id}
+            style={[styles.card, !isExpanded && styles.cardCollapsed]}
+          >
             <View style={styles.cardHeader}>
               <Pressable
                 onPress={() => toggleExpanded(item.id)}
