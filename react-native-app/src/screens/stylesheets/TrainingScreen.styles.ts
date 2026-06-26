@@ -26,7 +26,8 @@ export function makeStyles(isDark: boolean) {
         instructionsBg: '#21262D',
         instructionsBorder: '#30363D',
         instructionsText: '#58A6FF',
-        modalBg: '#161B22',
+        modalBg: '#2D333B',
+        modalScrim: 'rgba(1, 4, 9, 0.7)',
         panelOverlay: 'rgba(13, 17, 23, 0.80)',
       }
     : {
@@ -46,6 +47,7 @@ export function makeStyles(isDark: boolean) {
         instructionsBorder: '#C9D3E0',
         instructionsText: '#3B6FD4',
         modalBg: '#FFFFFF',
+        modalScrim: 'rgba(0, 0, 0, 0.4)',
         panelOverlay: 'rgba(244, 246, 250, 0.80)',
       }
 
@@ -246,18 +248,25 @@ export function makeStyles(isDark: boolean) {
     },
     modalOverlay: {
       flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.4)',
+      backgroundColor: c.modalScrim,
       justifyContent: 'center',
       alignItems: 'center',
       padding: 24,
     },
     modalContent: {
       backgroundColor: c.modalBg,
+      borderWidth: 1,
+      borderColor: c.cardBorder,
       borderRadius: 14,
       padding: 20,
       width: '100%',
       maxHeight: '70%',
       gap: 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: isDark ? 0.6 : 0.25,
+      shadowRadius: 16,
+      elevation: 12,
     },
     modalTitle: {
       color: c.textPrimary,
