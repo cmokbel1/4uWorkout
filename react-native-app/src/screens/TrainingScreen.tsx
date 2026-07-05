@@ -6,12 +6,12 @@ import {
   Modal,
   Pressable,
   ScrollView,
-  SafeAreaView,
   Switch,
   Text,
   TextInput,
   View,
 } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { Picker } from "@react-native-picker/picker"
 import { useFocusEffect } from "@react-navigation/native"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"

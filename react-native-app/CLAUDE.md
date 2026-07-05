@@ -47,7 +47,7 @@ On mount, `TrainingScreen` fetches body parts and reads saved workouts. On searc
 `src/storage/savedWorkouts.ts` — JSON in AsyncStorage under `saved_workouts_v3`, a `SavedWorkoutsByDate` map keyed by local date (`YYYY-MM-DD`); each `Workout` carries per-set `setDetails` (weight/reps). Earlier keys (`v1`, `v2`) are no longer read. Helpers: `readSavedWorkouts`, `writeSavedWorkouts`, `addWorkoutForToday`, `removeSavedWorkout`, `clearSavedWorkouts`. Per-day dedup (blocking a workout already saved today) lives in `TrainingScreen`, not the storage module. Dark-mode preference persists separately in `src/storage/theme.ts` (`readDarkMode` / `writeDarkMode`).
 
 ### Non-Obvious Constraints
-**Safe area** — use `SafeAreaView` from `react-native-safe-area-context`, not the `react-native` built-in (which ignores the Android system nav bar); `SafeAreaProvider` is in `App.tsx`. `SavedWorkouts`/`WorkoutDetail` follow this; `Start`/`Training` still use the built-in (legacy).
+**Safe area** — always use `SafeAreaView` from `react-native-safe-area-context`, never the `react-native` built-in (a no-op on Android, so content runs under the system nav bar — especially with `targetSdkVersion: 35` edge-to-edge). `SafeAreaProvider` is in `App.tsx`.
 
 **Android SDK** — `expo-build-properties` in `app.json` pins `targetSdkVersion: 35`. Removing it builds against SDK 34, which Google Play rejects.
 
