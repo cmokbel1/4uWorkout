@@ -30,7 +30,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "SavedWorkouts">
 
 type ViewMode = "day" | "calendar"
 
-export function SavedWorkoutsScreen({ route }: Props) {
+export function SavedWorkoutsScreen({ route, navigation }: Props) {
   const isDark = route.params?.isDark ?? false
   const styles = useMemo(() => makeStyles(isDark), [isDark])
   const accent = palette(isDark).accent
@@ -190,6 +190,13 @@ export function SavedWorkoutsScreen({ route }: Props) {
                   </Text>
                 </View>
               </Pressable>
+              <ActionButton
+                label="View"
+                size="small"
+                onPress={() =>
+                  navigation.navigate("WorkoutDetail", { workout: item, isDark })
+                }
+              />
               <Pressable
                 onPress={() => onDelete(item)}
                 style={({ pressed }) => [

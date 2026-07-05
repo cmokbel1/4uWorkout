@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -18,6 +17,7 @@ import { useFocusEffect } from "@react-navigation/native"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
 import { ActionButton } from "../components/ActionButton"
+import { WorkoutPanel } from "../components/WorkoutPanel"
 import { FALLBACK_TARGET_AREAS } from "../constants/targetAreas"
 import {
   getAllowedBodyParts,
@@ -37,7 +37,7 @@ import type { Workout } from "../types/workout"
 import type { RootStackParamList } from "../../App"
 import { todayKey } from "../utils/date"
 import { getErrorMessage, toTitleCase } from "../utils/formatting"
-import { makeStyles, VARIANT_STYLES, type DifficultyVariant } from "./stylesheets/TrainingScreen.styles"
+import { makeStyles } from "./stylesheets/TrainingScreen.styles"
 
 type Props = NativeStackScreenProps<RootStackParamList, "Training">
 
@@ -59,7 +59,6 @@ export function TrainingScreen({ navigation }: Props) {
   const [selectedTargetArea, setSelectedTargetArea] = useState<string>(
     targetAreaOptions[0],
   )
-  const [instructionsVisible, setInstructionsVisible] = useState<boolean>(false)
   const [allResults, setAllResults] = useState<Workout[]>([])
   const [searchResults, setSearchResults] = useState<Workout[]>([])
   const [currentWorkout, setCurrentWorkout] = useState<Workout | null>(null)
@@ -381,69 +380,7 @@ export function TrainingScreen({ navigation }: Props) {
 
           {currentWorkout ? (
             <View ref={workoutPanelRef} style={styles.workoutPanelWrap}>
-              <View style={styles.workoutPanel}>
-                <Text style={styles.detailLabel}>
-                  Workout: {currentWorkout.name}
-                </Text>
-                <Text style={styles.detailLabel}>
-                  Target: {currentWorkout.target}
-                </Text>
-                <Text style={styles.detailLabel}>
-                  Muscle Group: {currentWorkout.bodyPart}
-                </Text>
-                <Text style={styles.detailLabel}>
-                  Equipment: {currentWorkout.equipment}
-                </Text>
-                <Text
-                  style={[
-                    styles.difficulty,
-                    VARIANT_STYLES[currentWorkout.difficulty as DifficultyVariant],
-                  ]}
-                >
-                  {currentWorkout.difficulty}
-                </Text>
-                <Image
-                  source={{ uri: currentWorkout.gifUrl }}
-                  style={styles.mediaImage}
-                  resizeMode="contain"
-                />
-                <Text style={styles.detailLabel}>
-                  Description: {currentWorkout.description}
-                </Text>
-                <Pressable
-                  style={styles.instructionsButton}
-                  onPress={() => setInstructionsVisible(true)}
-                  accessibilityLabel="View instructions"
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.instructionsButtonText}>Instructions</Text>
-                </Pressable>
-              </View>
-              <Modal
-                visible={instructionsVisible}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setInstructionsVisible(false)}
-              >
-                <View style={styles.modalOverlay}>
-                  <View style={styles.modalContent}>
-                    <Text style={styles.modalTitle}>Instructions</Text>
-                    <ScrollView style={styles.modalBody}>
-                      <Text style={styles.modalText}>
-                        {currentWorkout.instructions}
-                      </Text>
-                    </ScrollView>
-                    <Pressable
-                      style={styles.modalClose}
-                      onPress={() => setInstructionsVisible(false)}
-                      accessibilityLabel="Close instructions"
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.modalCloseText}>Close</Text>
-                    </Pressable>
-                  </View>
-                </View>
-              </Modal>
+              <WorkoutPanel workout={currentWorkout} isDark={isDark} />
               {isSearching && (
                 <View style={styles.workoutPanelOverlay}>
                   <ActivityIndicator
