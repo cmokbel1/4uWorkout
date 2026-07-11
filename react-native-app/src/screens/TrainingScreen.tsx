@@ -363,7 +363,7 @@ export function TrainingScreen({ navigation }: Props) {
             />
             <ActionButton
               label="Calendar"
-              variant="secondary"
+              variant="tertiary"
               onPress={() =>
                 navigation.navigate("SavedWorkouts", {
                   isDark,

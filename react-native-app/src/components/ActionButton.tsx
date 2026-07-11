@@ -2,7 +2,7 @@ import { Pressable, Text, TextStyle, ViewStyle } from 'react-native';
 
 import { styles } from './ActionButton.styles';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'accent';
+export type ButtonVariant = 'primary' | 'secondary' | 'accent' | 'tertiary';
 export type ButtonSize = 'normal' | 'small';
 
 export interface ActionButtonProps {
@@ -17,6 +17,8 @@ const VARIANT_STYLES: Record<ButtonVariant, ViewStyle> = {
   primary: { backgroundColor: '#3B6FD4' },
   secondary: { backgroundColor: '#64748B' },
   accent: { backgroundColor: '#0D9488' },
+  // Indigo — accents the primary blue without gray's "disabled" read.
+  tertiary: { backgroundColor: '#6366F1' },
 };
 
 const SIZE_BUTTON_STYLES: Record<ButtonSize, ViewStyle> = {
