@@ -19,6 +19,8 @@ eas build --platform android --profile production
 eas build --platform ios --profile production
 ```
 
+**iOS simulator gotcha** — `expo start` then `i` targets the *most recently opened* simulator, not the device it prints. A stray booted sim from a past session hijacks the target and the app never loads. Fix: `xcrun simctl shutdown all && killall Simulator`, then `i` — or press `Shift+I` in the CLI to pick the device explicitly.
+
 ## Environment
 
 `EXPO_PUBLIC_API_BASE_URL` is required at runtime (set per build profile in `eas.json`); without it every API call throws. Don't rename the `EXPO_PUBLIC_` prefix — it's what exposes the var to JS.

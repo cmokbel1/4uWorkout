@@ -33,6 +33,7 @@ import {
   type SavedWorkoutsByDate,
 } from "../storage/savedWorkouts"
 import { readDarkMode, writeDarkMode } from "../storage/theme"
+import { trainingSession } from "../state/trainingSession"
 import type { Workout } from "../types/workout"
 import type { RootStackParamList } from "../../App"
 import { todayKey } from "../utils/date"
@@ -59,9 +60,17 @@ export function TrainingScreen({ navigation }: Props) {
   const [selectedTargetArea, setSelectedTargetArea] = useState<string>(
     targetAreaOptions[0],
   )
-  const [allResults, setAllResults] = useState<Workout[]>([])
-  const [searchResults, setSearchResults] = useState<Workout[]>([])
-  const [currentWorkout, setCurrentWorkout] = useState<Workout | null>(null)
+  // Hydrate the randomized search state from the in-memory session snapshot so
+  // it survives a remount when navigating back to this screen.
+  const [allResults, setAllResults] = useState<Workout[]>(
+    () => trainingSession.allResults,
+  )
+  const [searchResults, setSearchResults] = useState<Workout[]>(
+    () => trainingSession.searchResults,
+  )
+  const [currentWorkout, setCurrentWorkout] = useState<Workout | null>(
+    () => trainingSession.currentWorkout,
+  )
   const [savedMap, setSavedMap] = useState<SavedWorkoutsByDate>({})
   const [saveModalVisible, setSaveModalVisible] = useState<boolean>(false)
   const [setCount, setSetCount] = useState<number>(1)
@@ -105,6 +114,13 @@ export function TrainingScreen({ navigation }: Props) {
       if (findCooldownRef.current) clearTimeout(findCooldownRef.current)
     }
   }, [])
+
+  // Keep the session snapshot in sync so a later remount can restore it.
+  useEffect(() => {
+    trainingSession.allResults = allResults
+    trainingSession.searchResults = searchResults
+    trainingSession.currentWorkout = currentWorkout
+  }, [allResults, searchResults, currentWorkout])
 
   // Re-sync saved workouts on focus only when a mutation happened elsewhere
   // (e.g. sets/reps edited on the Saved Workouts screen). Skips the storage
