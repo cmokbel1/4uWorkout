@@ -11,7 +11,7 @@ import type { Workout } from './src/types/workout';
 export type RootStackParamList = {
   Start: undefined;
   Training: undefined;
-  SavedWorkouts: { isDark: boolean };
+  SavedWorkouts: { isDark: boolean; initialView?: 'day' | 'calendar' };
   WorkoutDetail: { workout: Workout; isDark: boolean };
 };
 

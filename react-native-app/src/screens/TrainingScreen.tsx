@@ -356,6 +356,25 @@ export function TrainingScreen({ navigation }: Props) {
         </Modal>
 
         <View style={styles.card}>
+          <View style={styles.row}>
+            <ActionButton
+              label="Today's Workouts"
+              onPress={() => navigation.navigate("SavedWorkouts", { isDark })}
+            />
+            <ActionButton
+              label="Calendar"
+              variant="secondary"
+              onPress={() =>
+                navigation.navigate("SavedWorkouts", {
+                  isDark,
+                  initialView: "calendar",
+                })
+              }
+            />
+          </View>
+        </View>
+
+        <View style={styles.card}>
           <Text style={styles.cardTitle}>Select a Body Part</Text>
           <Text style={styles.fieldLabel}>Find a workout for:</Text>
           <View style={styles.pickerWrap}>
@@ -451,10 +470,6 @@ export function TrainingScreen({ navigation }: Props) {
             </>
           )}
 
-          <ActionButton
-            label={"View Saved Workouts"}
-            onPress={() => navigation.navigate("SavedWorkouts", { isDark })}
-          />
         </View>
       </ScrollView>
 

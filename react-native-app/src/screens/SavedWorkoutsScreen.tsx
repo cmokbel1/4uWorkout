@@ -36,7 +36,9 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
   const accent = palette(isDark).accent
 
   const [map, setMap] = useState<SavedWorkoutsByDate>({})
-  const [viewMode, setViewMode] = useState<ViewMode>("day")
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    route.params?.initialView ?? "day",
+  )
   const [selectedDate, setSelectedDate] = useState<string>(todayKey())
   // Which workout cards are expanded to show their sets. Collapsed by default.
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
