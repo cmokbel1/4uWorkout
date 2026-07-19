@@ -4,6 +4,7 @@ import { ScrollView, Text, View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Calendar } from "react-native-calendars"
 
+import { AppHeader } from "./AppHeader"
 import { BackToTrainingButton } from "./BackToTrainingButton"
 import { todayKey } from "../utils/date"
 import {
@@ -39,11 +40,14 @@ export function CalendarView({
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style={isDark ? "light" : "dark"} />
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.headerButtonsRow}>
-          <BackToTrainingButton />
+        <AppHeader isDark={isDark} />
+        <View style={styles.card}>
+          <View style={styles.headerButtonsRow}>
+            <BackToTrainingButton />
+          </View>
         </View>
-        <Text style={styles.heading}>Select a date</Text>
-        <View style={styles.calendarCard}>
+        <View style={styles.card}>
+          <Text style={styles.heading}>Select a date</Text>
           <Calendar
             current={today}
             maxDate={today}

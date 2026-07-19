@@ -17,6 +17,7 @@ import { useFocusEffect } from "@react-navigation/native"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
 import { ActionButton } from "../components/ActionButton"
+import { AppHeader } from "../components/AppHeader"
 import { WorkoutPanel } from "../components/WorkoutPanel"
 import { FALLBACK_TARGET_AREAS } from "../constants/targetAreas"
 import {
@@ -313,17 +314,19 @@ export function TrainingScreen({ navigation }: Props) {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style={isDark ? "light" : "dark"} />
       <ScrollView ref={scrollViewRef} contentContainerStyle={styles.container}>
-        <View style={styles.headingRow}>
-          <Text style={styles.heading}>4UWorkout Trainer</Text>
-          <Pressable
-            onPress={() => setSettingsVisible(true)}
-            style={styles.cogButton}
-            accessibilityLabel="Open settings"
-            accessibilityRole="button"
-          >
-            <Text style={styles.cogIcon}>⚙</Text>
-          </Pressable>
-        </View>
+        <AppHeader
+          isDark={isDark}
+          right={
+            <Pressable
+              onPress={() => setSettingsVisible(true)}
+              style={styles.cogButton}
+              accessibilityLabel="Open settings"
+              accessibilityRole="button"
+            >
+              <Text style={styles.cogIcon}>⚙</Text>
+            </Pressable>
+          }
+        />
 
         <Modal
           visible={settingsVisible}

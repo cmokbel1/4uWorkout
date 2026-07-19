@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
 import { ActionButton } from "../components/ActionButton"
+import { AppHeader } from "../components/AppHeader"
 import { WorkoutPanel } from "../components/WorkoutPanel"
 import type { RootStackParamList } from "../../App"
 import { makeStyles } from "./stylesheets/TrainingScreen.styles"
@@ -24,13 +25,16 @@ export function WorkoutDetailScreen({ route, navigation }: Props) {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style={isDark ? "light" : "dark"} />
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.row}>
-          <ActionButton
-            label="Saved Workouts"
-            variant="secondary"
-            size="small"
-            onPress={() => navigation.goBack()}
-          />
+        <AppHeader isDark={isDark} />
+        <View style={styles.card}>
+          <View style={styles.row}>
+            <ActionButton
+              label="Saved Workouts"
+              variant="secondary"
+              size="small"
+              onPress={() => navigation.goBack()}
+            />
+          </View>
         </View>
 
         <View style={styles.card}>

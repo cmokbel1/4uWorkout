@@ -76,20 +76,7 @@ export function makeStyles(isDark: boolean) {
       padding: 18,
       gap: 16,
     },
-    headingRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    heading: {
-      flex: 1,
-      color: c.textPrimary,
-      fontSize: 28,
-      fontWeight: '700',
-      textAlign: 'center',
-    },
     cogButton: {
-      position: 'absolute',
-      right: 0,
       padding: 4,
     },
     cogIcon: {

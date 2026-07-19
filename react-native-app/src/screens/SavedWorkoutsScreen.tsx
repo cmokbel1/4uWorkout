@@ -13,6 +13,7 @@ import { useFocusEffect } from "@react-navigation/native"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
 import { ActionButton } from "../components/ActionButton"
+import { AppHeader } from "../components/AppHeader"
 import { BackToTrainingButton } from "../components/BackToTrainingButton"
 import { CalendarView } from "../components/CalendarView"
 import {
@@ -147,29 +148,37 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style={isDark ? "light" : "dark"} />
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.headerButtonsRow}>
-          <BackToTrainingButton />
-          <ActionButton
-            label="View Calendar"
-            size="small"
-            onPress={() => setViewMode("calendar")}
-          />
+      <View style={[styles.container, styles.dayContainer]}>
+        <AppHeader isDark={isDark} />
+        <View style={styles.card}>
+          <View style={styles.headerButtonsRow}>
+            <BackToTrainingButton />
+            <ActionButton
+              label="View Calendar"
+              size="small"
+              onPress={() => setViewMode("calendar")}
+            />
+          </View>
         </View>
-        <Text style={styles.heading}>{formatDateLabel(selectedDate)}</Text>
-
-        {dayWorkouts.length ? (
-          <Text style={styles.helperText}>
-            Tap a workout to view and edit its sets.
-          </Text>
-        ) : (
-          <Text style={styles.helperText}>
-            No workouts saved on this day. Tap "view calendar" to pick another
-            day, or find a workout on the training screen to save for today.
-          </Text>
-        )}
-
-        {dayWorkouts.map((item) => {
+        <View style={[styles.card, styles.dayCard]}>
+          <Text style={styles.heading}>{formatDateLabel(selectedDate)}</Text>
+          {dayWorkouts.length ? (
+            <Text style={styles.helperText}>
+              Tap a workout to view and edit its sets.
+            </Text>
+          ) : (
+            <Text style={styles.helperText}>
+              No workouts saved on this day. Tap "view calendar" to pick another
+              day, or find a workout on the training screen to save for today.
+            </Text>
+          )}
+          {dayWorkouts.length ? (
+            <ScrollView
+              style={styles.workoutList}
+              contentContainerStyle={styles.workoutListContent}
+              nestedScrollEnabled
+            >
+              {dayWorkouts.map((item) => {
           const setCount = (item.setDetails ?? []).length
           const isExpanded = !!expanded[item.id]
           return (
@@ -255,7 +264,10 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
           </View>
           )
         })}
-      </ScrollView>
+            </ScrollView>
+          ) : null}
+        </View>
+      </View>
     </SafeAreaView>
   )
 }

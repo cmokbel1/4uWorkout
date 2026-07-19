@@ -72,11 +72,26 @@ export function makeStyles(isDark: boolean) {
     helperText: {
       color: c.textMuted,
     },
-    calendarCard: {
-      borderRadius: 14,
+    // Day view fills the screen (a flex View, not a ScrollView) so the list
+    // below sizes from real layout instead of a guessed height.
+    dayContainer: {
+      flex: 1,
+    },
+    // Parent day card grows to fill the space left under the header + nav row.
+    dayCard: {
+      flex: 1,
+    },
+    // Bordered container for the saved-workouts list. flex lets it take exactly
+    // the remaining space in the day card and scroll internally past that.
+    workoutList: {
+      flex: 1,
       borderWidth: 1,
       borderColor: c.cardBorder,
-      overflow: 'hidden',
+      borderRadius: 12,
+    },
+    workoutListContent: {
+      gap: 12,
+      padding: 12,
     },
     card: {
       backgroundColor: c.cardBg,

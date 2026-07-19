@@ -37,6 +37,7 @@
     },
     "plugins": [
       "expo-asset",
+      "expo-fmt-consteval-fix",
       [
         "expo-build-properties",
         {
