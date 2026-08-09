@@ -2,7 +2,7 @@
   "expo": {
     "name": "4UWorkout Trainer",
     "slug": "4uworkout-trainer",
-    "version": "1.1.2",
+    "version": "1.1.3",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "icon": "./assets/4uWorkout-icon.png",
