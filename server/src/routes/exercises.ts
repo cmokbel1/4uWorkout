@@ -62,13 +62,29 @@ async function loadBodyPart(bodyPart: string): Promise<BodyPartEntry> {
   return { exercises }
 }
 
-async function getOrLoadBodyPart(cacheKey: string): Promise<BodyPartEntry> {
-  const cached = bodyPartCache.get(cacheKey)
-  if (cached && isEntryUsable(cached)) return cached
+// Callers that arrive while a body part is mid-load await the same promise
+// rather than starting a second page burst. Button state on the client cannot
+// cover this — the racing requests come from different devices, and from the
+// startup warm-up racing whichever user searches during it.
+const inFlightBodyParts = new Map<string, Promise<BodyPartEntry>>()
 
-  const entry = await loadBodyPart(cacheKey)
-  bodyPartCache.set(cacheKey, entry)
-  return entry
+function getOrLoadBodyPart(cacheKey: string): Promise<BodyPartEntry> {
+  const cached = bodyPartCache.get(cacheKey)
+  if (cached && isEntryUsable(cached)) return Promise.resolve(cached)
+
+  const pending = inFlightBodyParts.get(cacheKey)
+  if (pending) return pending
+
+  const load = loadBodyPart(cacheKey)
+    .then((entry) => {
+      bodyPartCache.set(cacheKey, entry)
+      return entry
+    })
+    .finally(() => {
+      inFlightBodyParts.delete(cacheKey)
+    })
+  inFlightBodyParts.set(cacheKey, load)
+  return load
 }
 
 // Page every body part once at boot so the first real search hits a warm cache
