@@ -34,6 +34,69 @@ function isEntryUsable(entry: BodyPartEntry): boolean {
   return !entry.failure || Date.now() < entry.failure.expiresAt
 }
 
+async function loadBodyPart(bodyPart: string): Promise<BodyPartEntry> {
+  const seen = new Set<string>()
+  const exercises: Record<string, unknown>[] = []
+  for (let page = 0; page < BODY_PART_MAX_PAGES; page++) {
+    const offset = page * BODY_PART_PAGE_SIZE
+    const response = await exerciseApiFetch(
+      `/exercises/bodyPart/${encodeURIComponent(bodyPart)}?limit=${BODY_PART_PAGE_SIZE}&offset=${offset}`,
+    )
+    if (!response.ok) {
+      console.error(`[bodyPart] upstream failed with status ${response.status} for bodyPart="${bodyPart}" offset=${offset}${rateLimitInfo(response)}`)
+      return { exercises, failure: { status: response.status, expiresAt: Date.now() + BODY_PART_RETRY_MS } }
+    }
+    const pageData = (await response.json()) as Record<string, unknown>[]
+    let added = 0
+    for (const exercise of pageData) {
+      const id = String(exercise.id)
+      if (!seen.has(id)) {
+        seen.add(id)
+        exercises.push(exercise)
+        added++
+      }
+    }
+    // Last page (short read) or offset not honored (no new items) — stop.
+    if (pageData.length < BODY_PART_PAGE_SIZE || added === 0) break
+  }
+  return { exercises }
+}
+
+async function getOrLoadBodyPart(cacheKey: string): Promise<BodyPartEntry> {
+  const cached = bodyPartCache.get(cacheKey)
+  if (cached && isEntryUsable(cached)) return cached
+
+  const entry = await loadBodyPart(cacheKey)
+  bodyPartCache.set(cacheKey, entry)
+  return entry
+}
+
+// Page every body part once at boot so the first real search hits a warm cache
+// instead of paying a multi-page burst. Without this, every deploy and instance
+// recycle hands that cost back to whichever user searches first.
+export async function warmBodyPartCache(): Promise<void> {
+  try {
+    const response = await exerciseApiFetch('/exercises/bodyPartList')
+    if (!response.ok) {
+      console.error(`[warm] bodyPartList failed with status ${response.status}${rateLimitInfo(response)}`)
+      return
+    }
+    const bodyParts = (await response.json()) as string[]
+    for (const bodyPart of bodyParts) {
+      const entry = await getOrLoadBodyPart(bodyPart.trim().toLowerCase())
+      // Stop at the first failure rather than pushing an already-throttled
+      // upstream through the remaining body parts.
+      if (entry.failure) {
+        console.error(`[warm] aborting after "${bodyPart}" failed with status ${entry.failure.status}`)
+        return
+      }
+    }
+    console.log(`[warm] cached ${bodyParts.length} body parts`)
+  } catch (err) {
+    console.error('[warm] error:', err instanceof Error ? err.message : err)
+  }
+}
+
 // GET /exercises/bodyPartList
 router.get('/bodyPartList', async (_req: Request, res: Response) => {
   try {
@@ -110,55 +173,17 @@ router.get('/exercise/:id', async (req: Request, res: Response) => {
 router.get('/bodyPart/:bodyPart', async (req: Request, res: Response) => {
   try {
     const { bodyPart } = req.params
-    const cacheKey = bodyPart.toLowerCase()
+    const entry = await getOrLoadBodyPart(bodyPart.toLowerCase())
 
-    const cached = bodyPartCache.get(cacheKey)
-    if (cached && isEntryUsable(cached)) {
-      // A failed entry that gathered nothing is a negative cache — refuse from
-      // memory instead of re-firing the page burst at an upstream that just
-      // rate-limited us.
-      if (cached.failure && cached.exercises.length === 0) {
-        res.status(cached.failure.status).json({ error: 'Upstream request failed' })
-        return
-      }
-      res.json(cached.exercises)
+    // Surface the error only if we have nothing; otherwise serve what we
+    // gathered. A cached failure with no exercises acts as a negative cache —
+    // it is refused from memory rather than re-firing the page burst at an
+    // upstream that just rate-limited us.
+    if (entry.failure && entry.exercises.length === 0) {
+      res.status(entry.failure.status).json({ error: 'Upstream request failed' })
       return
     }
-
-    const seen = new Set<string>()
-    const all: Record<string, unknown>[] = []
-    let failure: BodyPartEntry['failure']
-    for (let page = 0; page < BODY_PART_MAX_PAGES; page++) {
-      const offset = page * BODY_PART_PAGE_SIZE
-      const response = await exerciseApiFetch(
-        `/exercises/bodyPart/${encodeURIComponent(bodyPart)}?limit=${BODY_PART_PAGE_SIZE}&offset=${offset}`,
-      )
-      if (!response.ok) {
-        console.error(`[bodyPart] upstream failed with status ${response.status} for bodyPart="${bodyPart}" offset=${offset}${rateLimitInfo(response)}`)
-        failure = { status: response.status, expiresAt: Date.now() + BODY_PART_RETRY_MS }
-        break
-      }
-      const pageData = (await response.json()) as Record<string, unknown>[]
-      let added = 0
-      for (const exercise of pageData) {
-        const id = String(exercise.id)
-        if (!seen.has(id)) {
-          seen.add(id)
-          all.push(exercise)
-          added++
-        }
-      }
-      // Last page (short read) or offset not honored (no new items) — stop.
-      if (pageData.length < BODY_PART_PAGE_SIZE || added === 0) break
-    }
-
-    bodyPartCache.set(cacheKey, { exercises: all, failure })
-    // Surface the error only if we have nothing; otherwise serve what we gathered.
-    if (failure && all.length === 0) {
-      res.status(failure.status).json({ error: 'Upstream request failed' })
-      return
-    }
-    res.json(all)
+    res.json(entry.exercises)
   } catch (err) {
     console.error('[bodyPart] error:', err instanceof Error ? err.message : err)
     res.status(500).json({ error: 'Internal server error' })
