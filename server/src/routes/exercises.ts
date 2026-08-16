@@ -150,15 +150,23 @@ router.get('/exercise/:id', async (req: Request, res: Response) => {
     }
     const exercise = await metaResponse.json() as Record<string, unknown>
 
-    const imageResponse = await exerciseApiFetch(`/image?resolution=720&exerciseId=${encodeURIComponent(id)}`)
-    if (!imageResponse.ok) {
-      console.error(`[exercise] upstream image failed with status ${imageResponse.status} for id="${id}"${rateLimitInfo(imageResponse)}`)
-      res.status(imageResponse.status).json({ error: 'Upstream image request failed' })
-      return
+    // Shared with the /image route — the client reaches the same exercise
+    // through both, and each fetch counts against the same upstream quota.
+    let image = imageCache.get(id)
+    if (!image) {
+      const imageResponse = await exerciseApiFetch(`/image?resolution=720&exerciseId=${encodeURIComponent(id)}`)
+      if (!imageResponse.ok) {
+        console.error(`[exercise] upstream image failed with status ${imageResponse.status} for id="${id}"${rateLimitInfo(imageResponse)}`)
+        res.status(imageResponse.status).json({ error: 'Upstream image request failed' })
+        return
+      }
+      image = {
+        contentType: imageResponse.headers.get('content-type') ?? 'image/jpeg',
+        buffer: Buffer.from(await imageResponse.arrayBuffer()),
+      }
+      imageCache.set(id, image)
     }
-    const contentType = imageResponse.headers.get('content-type') ?? 'image/jpeg'
-    const buffer = Buffer.from(await imageResponse.arrayBuffer())
-    const gifUrl = `data:${contentType};base64,${buffer.toString('base64')}`
+    const gifUrl = `data:${image.contentType};base64,${image.buffer.toString('base64')}`
 
     const entry = { ...exercise, gifUrl }
     exerciseCache.set(id, entry)
