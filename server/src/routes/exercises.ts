@@ -22,7 +22,9 @@ type BodyPartEntry = {
 
 const bodyPartCache = new Map<string, BodyPartEntry>()
 const BODY_PART_PAGE_SIZE = 10 // free-tier max results per request
-const BODY_PART_MAX_PAGES = 100 // safety backstop (~1000 exercises)
+// Safety backstop (~400 exercises). Well clear of the largest real body part,
+// but low enough that a runaway loop cannot spend a four-figure request budget.
+const BODY_PART_MAX_PAGES = 40
 // How long an incomplete entry serves before we try upstream again. Doubles as
 // a negative cache: when a body part failed with nothing gathered, repeat
 // searches are refused from memory rather than re-firing the whole page burst.

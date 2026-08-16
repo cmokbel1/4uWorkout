@@ -28,8 +28,24 @@ function getApiKey(): string {
   return key
 }
 
+// Every upstream call goes through one process-wide pacer. The body-part page
+// loop used to fire its pages back to back and trip RapidAPI's throttle, which
+// then also took down unrelated in-flight image requests as collateral. Pacing
+// here rather than inside the loop is what protects those other callers.
+const MIN_REQUEST_INTERVAL_MS = 250
+let nextSlotAt = 0
+
+function reserveSlot(): Promise<void> {
+  const now = Date.now()
+  const slot = Math.max(now, nextSlotAt)
+  nextSlotAt = slot + MIN_REQUEST_INTERVAL_MS
+  const wait = slot - now
+  return wait > 0 ? new Promise((resolve) => setTimeout(resolve, wait)) : Promise.resolve()
+}
+
 export async function exerciseApiFetch(path: string): Promise<Response> {
   const apiKey = getApiKey()
+  await reserveSlot()
   return fetch(`${EXERCISE_API_BASE}${path}`, {
     method: 'GET',
     headers: {
