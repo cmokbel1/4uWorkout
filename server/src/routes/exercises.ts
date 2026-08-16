@@ -8,11 +8,29 @@ const exerciseCache = new Map<string, Record<string, unknown>>()
 
 // The ExerciseDB BASIC plan caps `limit` at 10 per request, so the full list
 // for a body part is gathered by paging with `offset`. Aggregated results are
-// cached per body part for the process lifetime to avoid re-paging on every
-// search. Randomization happens client-side, so caching does not reduce variety.
-const bodyPartCache = new Map<string, Record<string, unknown>[]>()
+// cached per body part to avoid re-paging on every search. Randomization
+// happens client-side, so caching does not reduce variety.
+type BodyPartEntry = {
+  exercises: Record<string, unknown>[]
+  // Set only when an upstream error cut the page loop short. A complete entry
+  // has no `failure` and lives for the process lifetime; an incomplete one
+  // serves whatever was gathered until `expiresAt`, then gets re-paged. Without
+  // this, one rate-limited search would pin a truncated list in the cache
+  // forever, silently shrinking the pool of exercises the client can pick from.
+  failure?: { status: number; expiresAt: number }
+}
+
+const bodyPartCache = new Map<string, BodyPartEntry>()
 const BODY_PART_PAGE_SIZE = 10 // free-tier max results per request
 const BODY_PART_MAX_PAGES = 100 // safety backstop (~1000 exercises)
+// How long an incomplete entry serves before we try upstream again. Doubles as
+// a negative cache: when a body part failed with nothing gathered, repeat
+// searches are refused from memory rather than re-firing the whole page burst.
+const BODY_PART_RETRY_MS = 5 * 60_000
+
+function isEntryUsable(entry: BodyPartEntry): boolean {
+  return !entry.failure || Date.now() < entry.failure.expiresAt
+}
 
 // GET /exercises/bodyPartList
 router.get('/bodyPartList', async (_req: Request, res: Response) => {
@@ -93,13 +111,21 @@ router.get('/bodyPart/:bodyPart', async (req: Request, res: Response) => {
     const cacheKey = bodyPart.toLowerCase()
 
     const cached = bodyPartCache.get(cacheKey)
-    if (cached) {
-      res.json(cached)
+    if (cached && isEntryUsable(cached)) {
+      // A failed entry that gathered nothing is a negative cache — refuse from
+      // memory instead of re-firing the page burst at an upstream that just
+      // rate-limited us.
+      if (cached.failure && cached.exercises.length === 0) {
+        res.status(cached.failure.status).json({ error: 'Upstream request failed' })
+        return
+      }
+      res.json(cached.exercises)
       return
     }
 
     const seen = new Set<string>()
     const all: Record<string, unknown>[] = []
+    let failure: BodyPartEntry['failure']
     for (let page = 0; page < BODY_PART_MAX_PAGES; page++) {
       const offset = page * BODY_PART_PAGE_SIZE
       const response = await exerciseApiFetch(
@@ -107,11 +133,7 @@ router.get('/bodyPart/:bodyPart', async (req: Request, res: Response) => {
       )
       if (!response.ok) {
         console.error(`[bodyPart] upstream failed with status ${response.status} for bodyPart="${bodyPart}" offset=${offset}${rateLimitInfo(response)}`)
-        // Surface the error only if we have nothing; otherwise serve what we gathered.
-        if (all.length === 0) {
-          res.status(response.status).json({ error: 'Upstream request failed' })
-          return
-        }
+        failure = { status: response.status, expiresAt: Date.now() + BODY_PART_RETRY_MS }
         break
       }
       const pageData = (await response.json()) as Record<string, unknown>[]
@@ -128,7 +150,12 @@ router.get('/bodyPart/:bodyPart', async (req: Request, res: Response) => {
       if (pageData.length < BODY_PART_PAGE_SIZE || added === 0) break
     }
 
-    bodyPartCache.set(cacheKey, all)
+    bodyPartCache.set(cacheKey, { exercises: all, failure })
+    // Surface the error only if we have nothing; otherwise serve what we gathered.
+    if (failure && all.length === 0) {
+      res.status(failure.status).json({ error: 'Upstream request failed' })
+      return
+    }
     res.json(all)
   } catch (err) {
     console.error('[bodyPart] error:', err instanceof Error ? err.message : err)
