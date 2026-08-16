@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express'
-import { exerciseApiFetch } from '../lib/exerciseApi'
+import { exerciseApiFetch, rateLimitInfo } from '../lib/exerciseApi'
 
 const router = Router()
 
@@ -19,7 +19,7 @@ router.get('/bodyPartList', async (_req: Request, res: Response) => {
   try {
     const response = await exerciseApiFetch('/exercises/bodyPartList')
     if (!response.ok) {
-      console.error(`[bodyPartList] upstream failed with status ${response.status}`)
+      console.error(`[bodyPartList] upstream failed with status ${response.status}${rateLimitInfo(response)}`)
       res.status(response.status).json({ error: 'Upstream request failed' })
       return
     }
@@ -36,7 +36,7 @@ router.get('/targetList', async (_req: Request, res: Response) => {
   try {
     const response = await exerciseApiFetch('/exercises/targetList')
     if (!response.ok) {
-      console.error(`[targetList] upstream failed with status ${response.status}`)
+      console.error(`[targetList] upstream failed with status ${response.status}${rateLimitInfo(response)}`)
       res.status(response.status).json({ error: 'Upstream request failed' })
       return
     }
@@ -61,7 +61,7 @@ router.get('/exercise/:id', async (req: Request, res: Response) => {
 
     const metaResponse = await exerciseApiFetch(`/exercises/exercise/${encodeURIComponent(id)}`)
     if (!metaResponse.ok) {
-      console.error(`[exercise] upstream metadata failed with status ${metaResponse.status} for id="${id}"`)
+      console.error(`[exercise] upstream metadata failed with status ${metaResponse.status} for id="${id}"${rateLimitInfo(metaResponse)}`)
       res.status(metaResponse.status).json({ error: 'Upstream request failed' })
       return
     }
@@ -69,7 +69,7 @@ router.get('/exercise/:id', async (req: Request, res: Response) => {
 
     const imageResponse = await exerciseApiFetch(`/image?resolution=720&exerciseId=${encodeURIComponent(id)}`)
     if (!imageResponse.ok) {
-      console.error(`[exercise] upstream image failed with status ${imageResponse.status} for id="${id}"`)
+      console.error(`[exercise] upstream image failed with status ${imageResponse.status} for id="${id}"${rateLimitInfo(imageResponse)}`)
       res.status(imageResponse.status).json({ error: 'Upstream image request failed' })
       return
     }
@@ -106,7 +106,7 @@ router.get('/bodyPart/:bodyPart', async (req: Request, res: Response) => {
         `/exercises/bodyPart/${encodeURIComponent(bodyPart)}?limit=${BODY_PART_PAGE_SIZE}&offset=${offset}`,
       )
       if (!response.ok) {
-        console.error(`[bodyPart] upstream failed with status ${response.status} for bodyPart="${bodyPart}" offset=${offset}`)
+        console.error(`[bodyPart] upstream failed with status ${response.status} for bodyPart="${bodyPart}" offset=${offset}${rateLimitInfo(response)}`)
         // Surface the error only if we have nothing; otherwise serve what we gathered.
         if (all.length === 0) {
           res.status(response.status).json({ error: 'Upstream request failed' })
@@ -156,7 +156,7 @@ router.get('/image', async (req: Request, res: Response) => {
       `/image?resolution=${resolution}&exerciseId=${encodeURIComponent(exerciseId)}`
     )
     if (!response.ok) {
-      console.error(`[image] upstream failed with status ${response.status} for exerciseId="${exerciseId}"`)
+      console.error(`[image] upstream failed with status ${response.status} for exerciseId="${exerciseId}"${rateLimitInfo(response)}`)
       res.status(response.status).json({ error: 'Upstream request failed' })
       return
     }
