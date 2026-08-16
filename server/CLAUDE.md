@@ -75,6 +75,8 @@ All routes are prefixed `/exercises`. Error handling is uniform: upstream non-2x
 
 **Cache warming** — `warmBodyPartCache()` runs fire-and-forget from `app.listen` and pages every body part once at boot, so the first real search hits a warm cache. It aborts at the first upstream failure rather than pushing a throttled API through the rest. Restarts and instance recycles clear the caches, so this converts a recurring per-user cost into a fixed per-deploy one. Note that App Platform instances each hold their own cache and warm independently.
 
+**In-flight dedup** — `getOrLoadBodyPart` keeps an `inFlightBodyParts` map so concurrent callers for the same uncached body part await one shared promise instead of each starting a page burst. This cannot be pushed to the client: the racing requests come from different devices, and the warm-up races any user who searches during startup. Client-side guards already exist and are unrelated — `TrainingScreen` disables Find during the request plus a 3s cooldown, and unmounts the similar-workouts list while `isSearching`.
+
 **Body-part 10-cap workaround** — the ExerciseDB BASIC plan silently caps `limit` at 10 (sending a higher value is ignored, not an error; `limit` > 10 requires a paid plan). The `/bodyPart/:bodyPart` route works around this by paging with `offset` (10 per page) and aggregating. The loop dedupes by exercise `id` and stops when a page adds no new items, so it degrades safely to today's 10 results if `offset` ever turns out to be tier-gated too — it will never loop or duplicate. Do not "simplify" this back to a single request: that reintroduces the cap and the same-workout-every-search bug.
 
 ## What Not To Do
