@@ -1,7 +1,8 @@
 import { StatusBar } from "expo-status-bar"
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import {
   Alert,
+  BackHandler,
   Pressable,
   ScrollView,
   Text,
@@ -40,6 +41,9 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>(
     route.params?.initialView ?? "day",
   )
+  // True when the calendar was opened from the day view (vs. straight from
+  // Training), so back from the calendar returns to the day view.
+  const [calendarFromDay, setCalendarFromDay] = useState(false)
   const [selectedDate, setSelectedDate] = useState<string>(todayKey())
   // Which workout cards are expanded to show their sets. Collapsed by default.
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
@@ -63,6 +67,18 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
       }
     }, []),
   )
+
+  // Android hardware back: the calendar is a view mode, not a stack screen, so
+  // without this it would pop the whole screen instead of returning to the day
+  // view it was opened from.
+  useEffect(() => {
+    if (viewMode !== "calendar" || !calendarFromDay) return
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      setViewMode("day")
+      return true
+    })
+    return () => sub.remove()
+  }, [viewMode, calendarFromDay])
 
   const dayWorkouts = map[selectedDate] ?? []
 
@@ -141,6 +157,9 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
           setSelectedDate(date)
           setViewMode("day")
         }}
+        onBack={() =>
+          calendarFromDay ? setViewMode("day") : navigation.goBack()
+        }
       />
     )
   }
@@ -149,14 +168,17 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style={isDark ? "light" : "dark"} />
       <View style={[styles.container, styles.dayContainer]}>
-        <AppHeader isDark={isDark} />
+        <AppHeader isDark={isDark} onBack={() => navigation.goBack()} />
         <View style={styles.card}>
           <View style={styles.headerButtonsRow}>
             <BackToTrainingButton />
             <ActionButton
               label="View Calendar"
               size="small"
-              onPress={() => setViewMode("calendar")}
+              onPress={() => {
+                setCalendarFromDay(true)
+                setViewMode("calendar")
+              }}
             />
           </View>
         </View>

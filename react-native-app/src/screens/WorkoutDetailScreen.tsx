@@ -25,7 +25,7 @@ export function WorkoutDetailScreen({ route, navigation }: Props) {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style={isDark ? "light" : "dark"} />
       <ScrollView contentContainerStyle={styles.container}>
-        <AppHeader isDark={isDark} />
+        <AppHeader isDark={isDark} onBack={() => navigation.goBack()} />
         <View style={styles.card}>
           <View style={styles.row}>
             <ActionButton
