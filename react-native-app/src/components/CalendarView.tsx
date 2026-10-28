@@ -17,6 +17,7 @@ interface CalendarViewProps {
   // Calendar markings (dotted days + selected day) built by the parent screen.
   markedDates: Record<string, object>
   onSelectDate: (date: string) => void
+  onBack: () => void
 }
 
 // The "zoomed out" month view of the Saved Workouts screen. Opens on the
@@ -25,6 +26,7 @@ export function CalendarView({
   isDark,
   markedDates,
   onSelectDate,
+  onBack,
 }: CalendarViewProps) {
   const styles = useMemo(() => makeStyles(isDark), [isDark])
   const calendarTheme = useMemo(() => makeCalendarTheme(isDark), [isDark])
@@ -40,7 +42,7 @@ export function CalendarView({
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style={isDark ? "light" : "dark"} />
       <ScrollView contentContainerStyle={styles.container}>
-        <AppHeader isDark={isDark} />
+        <AppHeader isDark={isDark} onBack={onBack} />
         <View style={styles.card}>
           <View style={styles.headerButtonsRow}>
             <BackToTrainingButton />
