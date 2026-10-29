@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Server Is
 
-A thin Express/TypeScript proxy that sits between the React Native client and the **ExerciseDB API** (via RapidAPI). It exists to keep the RapidAPI key off the client. There is no database, no auth, no session — every request is stateless and proxied straight through. All product logic lives in the client.
+A thin Express/TypeScript API between the React Native client and a Postgres exercise catalogue on DigitalOcean. The catalogue is the licensed **ExerciseDB Pro** package (1,394 exercises plus GIFs), imported once and served from the database — there are no upstream API calls. There is no auth and no session, and **no user data is ever stored** — the database holds exercise data only. All product logic lives in the client.
 
 ## Commands
 
@@ -19,68 +19,85 @@ npm run build     # tsc → dist/
 npm start         # node dist/index.js
 ```
 
+**Import the Pro package** (one-off per database; safe to re-run, upserts by id):
+```bash
+npx tsc && node --env-file=.env dist/scripts/importPro.js <exerciseData_pro.json> <gif dir, e.g. .../pro/360>
+```
+Takes ~13 minutes from a laptop (one round trip per row). `npm run import:pro -- <json> <dir>` does the same, but see the stray-Node gotcha below.
+
 No linter, no tests. TypeScript strict mode is the only quality gate.
 
 ## Environment
 
 | Variable | Required | Purpose |
 |----------|----------|---------|
-| `EXERCISE_API_KEY` | Yes | RapidAPI key for ExerciseDB — server throws if missing |
+| `DATABASE_URL` | Yes | Postgres connection string. `sslmode` in it is ignored — SSL is configured from `DATABASE_CA_CERT` |
+| `DATABASE_CA_CERT` | Yes | DigitalOcean CA certificate (PEM). On App Platform, bind `${<db-component>.CA_CERT}` |
 | `PORT` | No (default `3000`) | Listening port |
 
-The API key is validated at fetch time, not at startup — a misconfigured deploy will appear healthy until the first real request fails.
+Both database variables are validated on the first query, not at startup — a misconfigured deploy will appear healthy (`/health` does not touch the database) until the first real request fails.
+
+Locally, `server/.env` holds both (git-ignored). `node --env-file` needs Node ≥ 20.12 to read the multi-line certificate.
+
+## Database
+
+DigitalOcean managed Postgres cluster `app-4a3a3b15-…` (ID `96f5d06b-39cb-4566-8e04-6ea842b609c7`) holds two databases:
+
+| Database | User | Used by |
+|----------|------|---------|
+| `trainer_dev_db` | `trainer_dev_db_admin` | Local development |
+| `trainer-prod-db` | `trainer_prod_db_admin` | The deployed server |
+
+Both users are normal (non-admin) roles that were granted `CREATE ON SCHEMA public` by `doadmin` — Postgres 15+ only lets the database owner create tables in `public` otherwise. Trusted sources limit who can connect; add your IP with `doctl databases firewalls append <cluster-id> --rule ip_addr:<ip>` (use `append`, never `replace` — that drops the app's own rule).
+
+Schema: `src/db/schema.sql`, applied by the import script.
+- `exercises` — `id`, `source` (`exercisedb_pro` or `4u` for our own additions), the filterable columns (`body_part`, `target`, `equipment`, `difficulty`, `category`, `required_equipment`), and `data jsonb` holding the full record exactly as delivered.
+- `exercise_images` — one 360px GIF per exercise as `bytea`.
 
 ## Architecture
 
 ### Structure
 - `src/index.ts` — Express app setup, `/health` endpoint, mounts `/exercises` router
 - `src/routes/exercises.ts` — all route handlers
-- `src/lib/exerciseApi.ts` — single `exerciseApiFetch()` function that attaches RapidAPI auth headers
-
-### Request Flow
-Client → `routes/exercises.ts` → `exerciseApiFetch()` → ExerciseDB (`exercisedb.p.rapidapi.com`) → response proxied back. JSON responses pass through untransformed, except `/bodyPart/:bodyPart`, which concatenates paginated upstream responses into one list (see the 10-cap workaround below).
+- `src/lib/db.ts` — shared `pg` pool
+- `src/lib/exerciseStore.ts` — every query the routes use
+- `src/scripts/importPro.ts` — Pro package import
 
 ### Routes
 
-All routes are prefixed `/exercises`. Error handling is uniform: upstream non-2xx returns the same status with `{ error: 'Upstream request failed' }`; thrown exceptions return 500.
+All routes are prefixed `/exercises`. Errors return `{ error }` with 400/404/429/500.
+
+**Rate limit** — `/exercises/*` allows 100 requests per 15 minutes per client (`src/index.ts`), so the predictable ids can't be walked to scrape the catalogue (licence §13). Clients are keyed by App Platform's `do-connecting-ip` header, since `req.ip` is the load balancer; locally it falls back to `req.ip`. Counters are in memory per instance and reset on restart. `/health` is not limited.
 
 | Route | Notes |
 |-------|-------|
-| `GET /exercises/bodyPartList` | |
-| `GET /exercises/bodyPart/:bodyPart` | Body part is URI-encoded before forwarding. Paginates upstream with `offset` (BASIC plan caps `limit` at 10) and aggregates the full list; result is cached per body part |
-| `GET /exercises/image?exerciseId=&resolution=` | Binary proxy — `exerciseId` required, `resolution` defaults to `720` |
-| `GET /exercises/exercise/:id` | Returns full exercise metadata with `gifUrl` as a base64 data URL |
-| `GET /exercises/targetList` | **Not yet wired into the client UI** |
+| `GET /exercises/bodyPartList` | Distinct body parts from the data |
+| `GET /exercises/targetList` | Distinct targets from the data (Pro vocabulary — e.g. `quadriceps`, not `quads`). **Not yet wired into the client UI** |
+| `GET /exercises/bodyPart/:bodyPart` | **A random 11** exercises (one to show + 10 "similar"), list fields only — see Licence |
+| `GET /exercises/exercise/:id` | Full Pro record (taxonomy, equipment lists, relationships) with `gifUrl` as a base64 data URL |
+| `GET /exercises/image?exerciseId=` | Binary GIF. `resolution` is accepted for compatibility and ignored — only 360 is stored |
 | `GET /health` | |
 
-### In-Memory Cache
+List items carry exactly the fields the old RapidAPI list returned (`bodyPart, equipment, id, name, target, secondaryMuscles, instructions, description, difficulty, category`), so app builds released before the Pro switch keep working.
 
-`exerciseCache`, `imageCache`, and `bodyPartCache` are module-level `Map` instances in `routes/exercises.ts`. They live for the server process lifetime — a restart clears all entries. There is no persistence layer and no eviction policy.
+### Licence (ExerciseDB EULA 2026.2)
 
-- `imageCache` — keyed by exercise ID, stores `{ buffer: Buffer; contentType: string }` for the `/image` endpoint
-- `exerciseCache` — keyed by exercise ID, stores the full exercise JSON with `gifUrl` already encoded as a base64 data URL
-- `bodyPartCache` — keyed by lower-cased body part, stores a `BodyPartEntry` (`{ exercises, failure? }`) holding the fully-aggregated exercise list. Caching it is safe because randomization is done client-side — the cache returns the raw full list, not a fixed selection.
-
-`imageCache` is shared: `/exercise/:id` reads it before fetching and writes it after, so an exercise reached through both routes only costs one upstream image download.
-
-**Incomplete body-part entries expire.** An entry carries a `failure` marker only when an upstream error cut the page loop short. Complete entries live for the process lifetime; incomplete ones serve what was gathered for `BODY_PART_RETRY_MS` (5 min) and are then re-paged. This exists because pinning a truncated list forever silently shrank the exercise pool with no error surfaced. A failure that gathered *nothing* doubles as a negative cache — repeat searches are refused from memory instead of re-firing the page burst at an upstream that just throttled us.
+These terms shape the API — check them before changing a route:
+- **§12** — the raw JSON and GIFs must never be published. This repo is **public**: the package stays outside it (`.gitignore` also blocks `exerciseData_pro*.json` and `server/data/`).
+- **§13** — no endpoint may allow bulk download. That is why `/bodyPart` returns a random sample rather than the full list, why Pro fields are only served per exercise, and why `/exercises/*` is rate limited.
+- **§29–30** — safety disclaimers in the app are our responsibility.
 
 ### Non-Obvious Details
 
-**Image handling** — the image route reads the upstream response as an `ArrayBuffer`, converts to a Node.js `Buffer`, and writes it with the upstream `Content-Type`. Do not refactor to stream the `fetch` `ReadableStream` directly — Express requires the `Buffer` conversion.
+**Image handling** — images are read from Postgres as a `Buffer` and sent with their stored `Content-Type`.
 
-**`targetList` is dormant on the client** — implemented and working server-side, but `TrainingScreen` does not yet call it. See the client's `CLAUDE.md` for context.
+**No in-memory caches** — the RapidAPI-era caches were removed. The instance has 0.5 GB of RAM, and caching base64 GIFs for every exercise would exhaust it; database reads take tens of milliseconds.
 
-**Upstream calls are paced** — `exerciseApiFetch` spaces every outbound request at least `MIN_REQUEST_INTERVAL_MS` (250ms) apart, process-wide. RapidAPI returns 429 for both a short-window throttle and an exhausted monthly quota; an unspaced page burst tripped the former and took unrelated in-flight image requests down with it. Pace at the fetch boundary, not inside the page loop — that is what protects the other callers. Every non-2xx log line carries `rateLimitInfo(response)` (the `x-ratelimit-*` and `retry-after` headers), which is the only way to tell throttle from quota exhaustion.
-
-**Cache warming** — `warmBodyPartCache()` runs fire-and-forget from `app.listen` and pages every body part once at boot, so the first real search hits a warm cache. It aborts at the first upstream failure rather than pushing a throttled API through the rest. Restarts and instance recycles clear the caches, so this converts a recurring per-user cost into a fixed per-deploy one. Note that App Platform instances each hold their own cache and warm independently.
-
-**In-flight dedup** — `getOrLoadBodyPart` keeps an `inFlightBodyParts` map so concurrent callers for the same uncached body part await one shared promise instead of each starting a page burst. This cannot be pushed to the client: the racing requests come from different devices, and the warm-up races any user who searches during startup. Client-side guards already exist and are unrelated — `TrainingScreen` disables Find during the request plus a 3s cooldown, and unmounts the similar-workouts list while `isSearching`.
-
-**Body-part 10-cap workaround** — the ExerciseDB BASIC plan silently caps `limit` at 10 (sending a higher value is ignored, not an error; `limit` > 10 requires a paid plan). The `/bodyPart/:bodyPart` route works around this by paging with `offset` (10 per page) and aggregating. The loop dedupes by exercise `id` and stops when a page adds no new items, so it degrades safely to today's 10 results if `offset` ever turns out to be tier-gated too — it will never loop or duplicate. Do not "simplify" this back to a single request: that reintroduces the cap and the same-workout-every-search bug.
+**Stray Node gotcha (local only)** — on the original dev machine a `node` package sits in `~/src/personal/node_modules`, and `npm run` puts it (v21.2) first on the PATH. It cannot read the multi-line certificate from `.env`, so `npm run import:pro` fails with "Missing DATABASE_CA_CERT". Run the script with `node` directly, or remove that package.
 
 ## What Not To Do
 
-- Do not add a database or session layer — the privacy model is explicit: no user data touches the server.
+- Do not store user data in the database or add a session layer — the privacy model is explicit: no user data touches the server.
 - Do not add authentication middleware — the server is intended as a trusted internal proxy for the mobile client only.
-- Do not transform or filter ExerciseDB responses — the client consumes them directly; any reshaping belongs in the client's `workoutApi.ts`. (The `/bodyPart` route's page aggregation is the one allowed exception: it concatenates pages without altering individual exercise objects, purely to defeat the 10-result plan cap.)
+- Do not return whole body parts, the full catalogue, or Pro fields in list responses (licence §13).
+- Do not commit the Pro package, GIFs, `.env` or the CA certificate.

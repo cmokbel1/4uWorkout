@@ -68,7 +68,7 @@ export function WorkoutPanel({
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Instructions</Text>
             <ScrollView style={styles.modalBody}>
-              <Text style={styles.modalText}>{workout.instructions}</Text>
+              <Text style={styles.modalText}>{workout.instructions.join('\n\n')}</Text>
             </ScrollView>
             <Pressable
               style={styles.modalClose}
