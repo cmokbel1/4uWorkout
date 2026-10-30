@@ -1,13 +1,15 @@
 import { Feather } from "@expo/vector-icons"
 import { useMemo, useState } from "react"
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 
 import { fonts, radius, type Palette } from "../theme"
+import { BottomSheet } from "./BottomSheet"
 
 export interface SelectOption {
   value: string
   label: string
+  // Secondary text on the right of the option row, e.g. a count.
+  detail?: string
 }
 
 interface SelectFieldProps {
@@ -35,7 +37,6 @@ export function SelectField({
   disabled = false,
 }: SelectFieldProps) {
   const [open, setOpen] = useState(false)
-  const insets = useSafeAreaInsets()
   const styles = useMemo(() => makeStyles(palette), [palette])
   const selected = options.find((option) => option.value === value)
 
@@ -73,58 +74,49 @@ export function SelectField({
         />
       </Pressable>
 
-      <Modal
+      <BottomSheet
+        palette={palette}
         visible={open}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setOpen(false)}
+        onClose={() => setOpen(false)}
+        title={title}
       >
-        <Pressable
-          style={styles.scrim}
-          onPress={() => setOpen(false)}
-          accessibilityLabel="Close"
-        >
-          {/* Inner Pressable stops taps on the sheet from closing it. */}
-          <Pressable
-            style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }]}
-            onPress={() => {}}
-          >
-            <View style={styles.grabber} />
-            <Text style={styles.sheetTitle}>{title}</Text>
-            <ScrollView style={styles.sheetList}>
-              {options.map((option) => {
-                const isSelected = option.value === value
-                return (
-                  <Pressable
-                    key={option.value}
-                    onPress={() => {
-                      onChange(option.value)
-                      setOpen(false)
-                    }}
-                    style={({ pressed }) => [
-                      styles.option,
-                      isSelected && styles.optionSelected,
-                      pressed && styles.pressed,
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityLabel={option.label}
-                    accessibilityState={{ selected: isSelected }}
-                  >
-                    <Text
-                      style={[styles.optionText, isSelected && styles.optionTextSelected]}
-                    >
-                      {option.label}
-                    </Text>
-                    {isSelected ? (
-                      <Feather name="check" size={18} color={palette.accent} />
-                    ) : null}
-                  </Pressable>
-                )
-              })}
-            </ScrollView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        <ScrollView style={styles.list}>
+          {options.map((option) => {
+            const isSelected = option.value === value
+            return (
+              <Pressable
+                key={option.value}
+                onPress={() => {
+                  onChange(option.value)
+                  setOpen(false)
+                }}
+                style={({ pressed }) => [
+                  styles.option,
+                  isSelected && styles.optionSelected,
+                  pressed && styles.pressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  option.detail ? `${option.label}, ${option.detail}` : option.label
+                }
+                accessibilityState={{ selected: isSelected }}
+              >
+                <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                  {option.label}
+                </Text>
+                <View style={styles.optionEnd}>
+                  {option.detail ? (
+                    <Text style={styles.optionDetail}>{option.detail}</Text>
+                  ) : null}
+                  {isSelected ? (
+                    <Feather name="check" size={18} color={palette.accent} />
+                  ) : null}
+                </View>
+              </Pressable>
+            )
+          })}
+        </ScrollView>
+      </BottomSheet>
     </>
   )
 }
@@ -177,38 +169,7 @@ function makeStyles(c: Palette) {
     disabled: {
       opacity: 0.5,
     },
-    scrim: {
-      flex: 1,
-      backgroundColor: c.scrim,
-      justifyContent: "flex-end",
-    },
-    sheet: {
-      backgroundColor: c.surface,
-      borderTopLeftRadius: radius.lg,
-      borderTopRightRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: c.border,
-      paddingHorizontal: 16,
-      paddingTop: 10,
-      maxHeight: "70%",
-      gap: 8,
-    },
-    grabber: {
-      alignSelf: "center",
-      width: 40,
-      height: 4,
-      borderRadius: radius.pill,
-      backgroundColor: c.borderStrong,
-      marginBottom: 6,
-    },
-    sheetTitle: {
-      color: c.text,
-      fontFamily: fonts.extrabold,
-      fontSize: 18,
-      paddingHorizontal: 4,
-      paddingBottom: 4,
-    },
-    sheetList: {
+    list: {
       flexGrow: 0,
     },
     option: {
@@ -230,6 +191,16 @@ function makeStyles(c: Palette) {
     optionTextSelected: {
       fontFamily: fonts.bold,
       color: c.accent,
+    },
+    optionEnd: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    optionDetail: {
+      color: c.textMuted,
+      fontFamily: fonts.semibold,
+      fontSize: 14,
     },
   })
 }
