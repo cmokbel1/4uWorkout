@@ -59,9 +59,18 @@ type Props = NativeStackScreenProps<RootStackParamList, "Training">
 // list shows however many there are (possibly none).
 const MAX_SIMILAR_WORKOUTS = 10
 
-// Gap left above the result card when it's scrolled to the top of the screen
-// (matches the content's top padding).
+// Gap left above the result card when it's scrolled to just below the top bar.
 const RESULT_SCROLL_MARGIN = 12
+
+// Collapsing top bar. Its real size is measured; this is only the first-frame
+// guess (so the content doesn't start underneath it).
+const TOP_BAR_HEIGHT_ESTIMATE = 170
+// Must match styles.topBar's gap (the space above the nav cards).
+const TOP_BAR_GAP = 16
+// Space between the expanded top bar and the first card.
+const CONTENT_TOP_GAP = 16
+// How small "Trainer" gets when the bar is collapsed.
+const COLLAPSED_TITLE_SCALE = 0.72
 
 const DIFFICULTY_LABELS = DIFFICULTIES.map((level) => toTitleCase(level))
 const FULL_DIFFICULTY_RANGE: LevelRange = { min: 0, max: DIFFICULTIES.length - 1 }
@@ -96,6 +105,33 @@ export function TrainingScreen({ navigation }: Props) {
   const viewportHeightRef = useRef<number>(0)
   // Fades each newly shown workout in, instead of it popping into place.
   const resultOpacity = useRef(new Animated.Value(1)).current
+
+  // Collapsing top bar, driven by the scroll position on the native thread. As
+  // the content scrolls up by `collapseDistance`, the whole bar (background and
+  // divider) slides up by that much while the title row is shifted back down
+  // to stay put (rising only by the brand label's height). The nav cards slide
+  // up behind the title row and fade, the brand fades, and "Trainer" shrinks,
+  // leaving a slim bar. The bar floats over the content, so its size never
+  // changes the scroll view's layout.
+  const scrollY = useRef(new Animated.Value(0)).current
+  const [topBarHeight, setTopBarHeight] = useState<number>(TOP_BAR_HEIGHT_ESTIMATE)
+  const [navRowHeight, setNavRowHeight] = useState<number>(0)
+  const [brandHeight, setBrandHeight] = useState<number>(0)
+  const navCollapse = navRowHeight + TOP_BAR_GAP
+  // Clamped to 1 so the interpolations below stay valid before measuring.
+  const collapseDistance = Math.max(navCollapse + brandHeight, 1)
+  const collapsedTopBarHeight = topBarHeight - collapseDistance
+  const { barShift, headerShift, brandOpacity, navOpacity, titleScale } = useMemo(() => {
+    const range = (output: number[], end = collapseDistance) =>
+      scrollY.interpolate({ inputRange: [0, end], outputRange: output, extrapolate: "clamp" })
+    return {
+      barShift: range([0, -collapseDistance]),
+      headerShift: range([0, navCollapse]),
+      brandOpacity: range([1, 0], collapseDistance * 0.4),
+      navOpacity: range([1, 0], collapseDistance * 0.6),
+      titleScale: range([1, COLLAPSED_TITLE_SCALE]),
+    }
+  }, [scrollY, collapseDistance, navCollapse])
   const insets = useSafeAreaInsets()
 
   const [isDark, setIsDark] = useState<boolean>(false)
@@ -369,9 +405,14 @@ export function TrainingScreen({ navigation }: Props) {
     }))
   }
 
-  // Where the result card's top meets the top of the screen (with a margin).
+  // Scroll position that puts the result card's top just below the top bar.
+  // The card sits far enough down that the bar is fully collapsed by then, so
+  // it's the collapsed bar's height that the card has to clear.
   function resultScrollTarget(): number {
-    return Math.max(resultCardYRef.current - RESULT_SCROLL_MARGIN, 0)
+    return Math.max(
+      resultCardYRef.current - collapsedTopBarHeight - RESULT_SCROLL_MARGIN,
+      0,
+    )
   }
 
   // A ScrollView can't scroll past the end of its content: scrolling before the
@@ -532,192 +573,217 @@ export function TrainingScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <StatusBar style={isDark ? "light" : "dark"} />
-      <ScrollView
-        ref={scrollViewRef}
-        contentContainerStyle={styles.content}
-        onLayout={(event) => {
-          viewportHeightRef.current = event.nativeEvent.layout.height
-        }}
-        onContentSizeChange={(_width, height) => {
-          contentHeightRef.current = height
-          finishPendingScroll()
-        }}
-      >
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.brand}>4UWORKOUT</Text>
-            <Text style={styles.title} accessibilityRole="header">
-              Trainer
-            </Text>
-          </View>
-          <Pressable
-            onPress={() => setSettingsVisible(true)}
-            style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
-            accessibilityLabel="Open settings"
-            accessibilityRole="button"
-          >
-            <Feather name="settings" size={20} color={palette.text} />
-          </Pressable>
-        </View>
+      <View style={styles.body}>
+        <Animated.ScrollView
+          ref={scrollViewRef}
+          contentContainerStyle={[styles.content, { paddingTop: topBarHeight + CONTENT_TOP_GAP }]}
+          scrollIndicatorInsets={{ top: collapsedTopBarHeight }}
+          scrollEventThrottle={16}
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+            useNativeDriver: true,
+          })}
+          onLayout={(event) => {
+            viewportHeightRef.current = event.nativeEvent.layout.height
+          }}
+          onContentSizeChange={(_width, height) => {
+            contentHeightRef.current = height
+            finishPendingScroll()
+          }}
+        >
+          <View style={styles.card}>
+            <Text style={styles.sectionLabel}>SELECT A BODY PART</Text>
+            <SelectField
+              palette={palette}
+              title="Body part"
+              options={bodyPartSelectOptions}
+              value={selectedBodyPart}
+              onChange={onChangeBodyPart}
+            />
 
-        <View style={styles.navRow}>
-          <NavCard
-            palette={palette}
-            highlighted
-            icon="zap"
-            title="Today's workouts"
-            subtitle="Your plan"
-            onPress={() => navigation.navigate("SavedWorkouts", { isDark })}
-          />
-          <NavCard
-            palette={palette}
-            icon="calendar"
-            title="Calendar"
-            subtitle="Schedule"
-            onPress={() =>
-              navigation.navigate("SavedWorkouts", { isDark, initialView: "calendar" })
-            }
-          />
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionLabel}>SELECT A BODY PART</Text>
-          <SelectField
-            palette={palette}
-            title="Body part"
-            options={bodyPartSelectOptions}
-            value={selectedBodyPart}
-            onChange={onChangeBodyPart}
-          />
-
-          <View style={styles.difficultyHeader}>
-            <Text style={styles.difficultyTitle}>
-              Difficulty <Text style={styles.optional}>(optional)</Text>
-            </Text>
-            <Text style={styles.rangeLabel}>{difficultyRangeLabel}</Text>
-          </View>
-          <RangeSlider
-            palette={palette}
-            levels={DIFFICULTY_LABELS}
-            value={difficultyRange}
-            onChange={onChangeDifficultyRange}
-          />
-          <Text style={styles.helperText}>
-            Drag the handles for a range, or tap a level for just that one.
-          </Text>
-
-          <View style={styles.selectRow}>
-            <View style={styles.selectCell}>
-              <SelectField
-                palette={palette}
-                size="compact"
-                title="Target"
-                options={targetSelectOptions}
-                value={filters.target ?? ""}
-                onChange={(value) =>
-                  setFilters((prev) => ({ ...prev, target: value || undefined }))
-                }
-              />
+            <View style={styles.difficultyHeader}>
+              <Text style={styles.difficultyTitle}>
+                Difficulty <Text style={styles.optional}>(optional)</Text>
+              </Text>
+              <Text style={styles.rangeLabel}>{difficultyRangeLabel}</Text>
             </View>
-            <View style={styles.selectCell}>
-              <SelectField
-                palette={palette}
-                size="compact"
-                title="Equipment"
-                options={equipmentSelectOptions}
-                value={filters.equipmentTypes?.[0] ?? ""}
-                onChange={(value) =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    equipmentTypes: value ? [value as EquipmentType] : undefined,
-                  }))
-                }
-              />
-            </View>
-          </View>
-        </View>
+            <RangeSlider
+              palette={palette}
+              levels={DIFFICULTY_LABELS}
+              value={difficultyRange}
+              onChange={onChangeDifficultyRange}
+            />
+            <Text style={styles.helperText}>
+              Drag the handles for a range, or tap a level for just that one.
+            </Text>
 
-        {currentWorkout ? (
-          <View style={styles.resultCard} onLayout={onResultCardLayout}>
-            <Animated.View style={{ opacity: resultOpacity }}>
-              <WorkoutPanel
-                workout={currentWorkout}
-                isDark={isDark}
-                onImageLoad={() => setLoadedImageId(currentWorkout.id)}
-              />
-            </Animated.View>
-            {isLoading && (
-              <View style={styles.resultOverlay}>
-                <ActivityIndicator size="large" color={palette.accent} />
+            <View style={styles.selectRow}>
+              <View style={styles.selectCell}>
+                <SelectField
+                  palette={palette}
+                  size="compact"
+                  title="Target"
+                  options={targetSelectOptions}
+                  value={filters.target ?? ""}
+                  onChange={(value) =>
+                    setFilters((prev) => ({ ...prev, target: value || undefined }))
+                  }
+                />
               </View>
-            )}
-          </View>
-        ) : isSearching ? (
-          <View style={styles.resultCard} onLayout={onResultCardLayout}>
-            <ActivityIndicator size="large" color={palette.accent} />
-          </View>
-        ) : (
-          // Same slot as the result card, so its position is known before the
-          // first search.
-          <View style={styles.emptyCard} onLayout={onResultCardLayout}>
-            <View style={styles.emptyIcon}>
-              <Feather name="shuffle" size={20} color={palette.accent} />
+              <View style={styles.selectCell}>
+                <SelectField
+                  palette={palette}
+                  size="compact"
+                  title="Equipment"
+                  options={equipmentSelectOptions}
+                  value={filters.equipmentTypes?.[0] ?? ""}
+                  onChange={(value) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      equipmentTypes: value ? [value as EquipmentType] : undefined,
+                    }))
+                  }
+                />
+              </View>
             </View>
-            <Text style={styles.emptyTitle}>Your workout appears here</Text>
-            <Text style={styles.emptyText}>
-              Choose a body part and tap Find for a random workout.
-            </Text>
           </View>
-        )}
 
-        {currentWorkout && !isLoading && (
-          <>
-            <View style={styles.similarHeader}>
-              <Text style={styles.similarTitle}>Similar workouts</Text>
-              <Text style={styles.helperText}>
-                {searchResults.length
-                  ? "Tap one for more information."
-                  : "No other workouts match these filters."}
+          {currentWorkout ? (
+            <View style={styles.resultCard} onLayout={onResultCardLayout}>
+              <Animated.View style={{ opacity: resultOpacity }}>
+                <WorkoutPanel
+                  workout={currentWorkout}
+                  isDark={isDark}
+                  onImageLoad={() => setLoadedImageId(currentWorkout.id)}
+                />
+              </Animated.View>
+              {isLoading && (
+                <View style={styles.resultOverlay}>
+                  <ActivityIndicator size="large" color={palette.accent} />
+                </View>
+              )}
+            </View>
+          ) : isSearching ? (
+            <View style={styles.resultCard} onLayout={onResultCardLayout}>
+              <ActivityIndicator size="large" color={palette.accent} />
+            </View>
+          ) : (
+            // Same slot as the result card, so its position is known before the
+            // first search.
+            <View style={styles.emptyCard} onLayout={onResultCardLayout}>
+              <View style={styles.emptyIcon}>
+                <Feather name="shuffle" size={20} color={palette.accent} />
+              </View>
+              <Text style={styles.emptyTitle}>Your workout appears here</Text>
+              <Text style={styles.emptyText}>
+                Choose a body part and tap Find for a random workout.
               </Text>
             </View>
-            {searchResults.length ? (
-              <View style={styles.similarList}>
-                {searchResults.map((item, idx) => (
-                  <Pressable
-                    key={item.id}
-                    onPress={() => onSelectSimilarWorkout(item)}
-                    style={({ pressed }) => [styles.similarItem, pressed && styles.pressed]}
-                    accessibilityLabel={`Select ${item.name}`}
-                    accessibilityRole="button"
-                  >
-                    <View style={styles.similarIndex}>
-                      <Text style={styles.similarIndexText}>{idx + 1}</Text>
-                    </View>
-                    <View style={styles.similarText}>
-                      <Text style={styles.similarName} numberOfLines={2}>
-                        {item.name}
-                      </Text>
-                      <Text style={styles.similarSub}>Target: {item.target}</Text>
-                    </View>
-                    <Feather name="chevron-right" size={18} color={palette.textMuted} />
-                  </Pressable>
-                ))}
-              </View>
-            ) : null}
-            {/* Only filtered searches come back short: unfiltered, every body
-                part fills the list. */}
-            {searchResults.length < MAX_SIMILAR_WORKOUTS ? (
-              <View style={styles.tip}>
-                <Feather name="info" size={16} color={palette.accent} />
-                <Text style={styles.tipText}>
-                  If you're stuck and the similar workouts list is too short,
-                  update your filters and try again, or change body part.
+          )}
+
+          {currentWorkout && !isLoading && (
+            <>
+              <View style={styles.similarHeader}>
+                <Text style={styles.similarTitle}>Similar workouts</Text>
+                <Text style={styles.helperText}>
+                  {searchResults.length
+                    ? "Tap one for more information."
+                    : "No other workouts match these filters."}
                 </Text>
               </View>
-            ) : null}
-          </>
-        )}
-      </ScrollView>
+              {searchResults.length ? (
+                <View style={styles.similarList}>
+                  {searchResults.map((item, idx) => (
+                    <Pressable
+                      key={item.id}
+                      onPress={() => onSelectSimilarWorkout(item)}
+                      style={({ pressed }) => [styles.similarItem, pressed && styles.pressed]}
+                      accessibilityLabel={`Select ${item.name}`}
+                      accessibilityRole="button"
+                    >
+                      <View style={styles.similarIndex}>
+                        <Text style={styles.similarIndexText}>{idx + 1}</Text>
+                      </View>
+                      <View style={styles.similarText}>
+                        <Text style={styles.similarName} numberOfLines={2}>
+                          {item.name}
+                        </Text>
+                        <Text style={styles.similarSub}>Target: {item.target}</Text>
+                      </View>
+                      <Feather name="chevron-right" size={18} color={palette.textMuted} />
+                    </Pressable>
+                  ))}
+                </View>
+              ) : null}
+              {/* Only filtered searches come back short: unfiltered, every body
+                  part fills the list. */}
+              {searchResults.length < MAX_SIMILAR_WORKOUTS ? (
+                <View style={styles.tip}>
+                  <Feather name="info" size={16} color={palette.accent} />
+                  <Text style={styles.tipText}>
+                    If you're stuck and the similar workouts list is too short,
+                    update your filters and try again, or change body part.
+                  </Text>
+                </View>
+              ) : null}
+            </>
+          )}
+        </Animated.ScrollView>
+
+        <Animated.View
+          style={[styles.topBar, styles.topBarOverlay, { transform: [{ translateY: barShift }] }]}
+          onLayout={(event) => setTopBarHeight(event.nativeEvent.layout.height)}
+        >
+          <Animated.View
+            style={[styles.header, styles.headerLayer, { transform: [{ translateY: headerShift }] }]}
+          >
+            <View>
+              <Animated.Text
+                style={[styles.brand, { opacity: brandOpacity }]}
+                onLayout={(event) => setBrandHeight(event.nativeEvent.layout.height)}
+              >
+                4UWORKOUT
+              </Animated.Text>
+              <Animated.Text
+                style={[styles.title, styles.titleOrigin, { transform: [{ scale: titleScale }] }]}
+                accessibilityRole="header"
+              >
+                Trainer
+              </Animated.Text>
+            </View>
+            <Pressable
+              onPress={() => setSettingsVisible(true)}
+              style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+              accessibilityLabel="Open settings"
+              accessibilityRole="button"
+            >
+              <Feather name="settings" size={20} color={palette.text} />
+            </Pressable>
+          </Animated.View>
+
+          <Animated.View
+            style={[styles.navRow, { opacity: navOpacity }]}
+            onLayout={(event) => setNavRowHeight(event.nativeEvent.layout.height)}
+          >
+            <NavCard
+              palette={palette}
+              highlighted
+              icon="zap"
+              title="Today's workouts"
+              subtitle="Your plan"
+              onPress={() => navigation.navigate("SavedWorkouts", { isDark })}
+            />
+            <NavCard
+              palette={palette}
+              icon="calendar"
+              title="Calendar"
+              subtitle="Schedule"
+              onPress={() =>
+                navigation.navigate("SavedWorkouts", { isDark, initialView: "calendar" })
+              }
+            />
+          </Animated.View>
+        </Animated.View>
+      </View>
 
       <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
         <ThemedButton

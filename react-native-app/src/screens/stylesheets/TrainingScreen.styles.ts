@@ -24,17 +24,50 @@ export function makeStyles(c: Palette) {
     },
     content: {
       paddingHorizontal: 20,
-      paddingTop: 12,
+      paddingTop: 16,
       paddingBottom: BOTTOM_BAR_SPACE,
       gap: 16,
     },
 
-    // Header
+    // Fixed top bar: header + nav cards stay put while the content scrolls.
+    // Mirrors the bottom bar (same background, divider facing the content).
+    topBar: {
+      paddingHorizontal: 20,
+      paddingTop: 12,
+      paddingBottom: 16,
+      gap: 16,
+      backgroundColor: c.bg,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    // Holds the scroll view and the floating top bar, so the bar's top: 0 is
+    // the top of the safe area.
+    body: {
+      flex: 1,
+    },
+    // Collapsing version: the bar floats over the content (which is padded to
+    // start below it) so resizing it never moves the scroll view.
+    topBarOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 1,
+    },
     header: {
       flexDirection: 'row',
       alignItems: 'flex-end',
       justifyContent: 'space-between',
-      marginBottom: 4,
+    },
+    // Sits above the nav cards, which slide up behind it as the bar collapses.
+    headerLayer: {
+      zIndex: 1,
+      backgroundColor: c.bg,
+    },
+    // "Trainer" shrinks toward its bottom-left corner, staying in line with
+    // the settings button.
+    titleOrigin: {
+      transformOrigin: 'left bottom',
     },
     brand: {
       color: c.accent,

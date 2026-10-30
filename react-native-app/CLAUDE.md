@@ -36,6 +36,12 @@ No global state/context/store — each screen owns its `useState`. `TrainingScre
 ### Design System (redesign in progress)
 `src/theme.ts` holds the redesign's tokens: `getPalette(isDark)` (light/dark colors sampled from the mockups), `fonts` (Manrope weights) and `radius`. **Manrope** is loaded in `App.tsx` with `useFonts`; custom fonts choose their weight by family name, so set `fontFamily: fonts.bold` etc., never `fontWeight`. Icons are `Feather` from `@expo/vector-icons`.
 
+`TrainingScreen` layout: a **collapsing** top bar (app name, settings cog, Today's workouts / Calendar cards) and a fixed bottom bar (Find / Save workout).
+- The top bar floats over the scroll view (`topBarOverlay`), and the content is padded to start below it (`paddingTop: topBarHeight + CONTENT_TOP_GAP`), so resizing the bar never changes the scroll view's layout.
+- Collapse is driven by `scrollY` on the native thread (`Animated.event`, `useNativeDriver`): over `collapseDistance` (nav row + gap + brand label, all measured with `onLayout`) the bar slides up, the title row is shifted back so it stays put, the nav cards slide behind it and fade, the brand fades, and "Trainer" scales to `COLLAPSED_TITLE_SCALE`. Only transforms and opacity are animated — never height, which the native driver can't do and which would make the content jitter.
+- The cog stays visible when collapsed; the nav cards come back when scrolled to the top.
+- `resultScrollTarget` puts the result card just below the **collapsed** bar.
+
 Only `TrainingScreen` and `WorkoutPanel` use the new design so far. `SavedWorkoutsScreen`, `CalendarView`, `StartScreen` and `WorkoutDetailScreen` keep their old styles (and `AppHeader` / `ActionButton`) until they get designs — `WorkoutDetailScreen.styles.ts` is the old Training stylesheet's subset that screen uses, split out unchanged.
 
 ### Shared Components
