@@ -54,5 +54,5 @@ export async function getExerciseImage(id: string): Promise<{ contentType: strin
     'SELECT content_type, image FROM exercise_images WHERE exercise_id = $1',
     [id],
   )
-  return rows[0] && { contentType: rows[0].content_type, image: rows[0].image }
+  return rows[0] ? { contentType: rows[0].content_type, image: rows[0].image } : undefined
 }

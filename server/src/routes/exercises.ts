@@ -76,6 +76,8 @@ router.get('/image', async (req: Request, res: Response) => {
       return
     }
     res.setHeader('Content-Type', image.contentType)
+    // Images only change on a re-import.
+    res.setHeader('Cache-Control', 'public, max-age=86400')
     res.send(image.image)
   } catch (err) {
     console.error('[image] error:', err instanceof Error ? err.message : err)

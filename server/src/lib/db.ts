@@ -13,6 +13,8 @@ export function getPool(): Pool {
   if (!ca) throw new Error('Missing DATABASE_CA_CERT environment variable')
   const url = new URL(databaseUrl)
   url.searchParams.delete('sslmode')
-  pool = new Pool({ connectionString: url.toString(), ssl: { ca } })
+  // pg waits forever for a connection by default, so an unreachable database
+  // (e.g. trusted sources not updated) would hang each request for minutes.
+  pool = new Pool({ connectionString: url.toString(), ssl: { ca }, connectionTimeoutMillis: 5000 })
   return pool
 }

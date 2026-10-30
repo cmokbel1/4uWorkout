@@ -1,5 +1,6 @@
 import express from 'express'
 import rateLimit from 'express-rate-limit'
+import { getPool } from './lib/db'
 import exerciseRoutes from './routes/exercises'
 
 const app = express()
@@ -26,6 +27,15 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok' })
 })
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
+})
+
+// App Platform sends SIGTERM on every deploy. Stop accepting connections, let
+// in-flight requests finish, then close the database pool so the process
+// exits on its own.
+process.on('SIGTERM', () => {
+  server.close(() => {
+    void getPool().end()
+  })
 })

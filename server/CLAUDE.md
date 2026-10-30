@@ -91,6 +91,10 @@ These terms shape the API — check them before changing a route:
 
 **Image handling** — images are read from Postgres as a `Buffer` and sent with their stored `Content-Type`.
 
+**Connection timeout** — the pool gives up connecting after 5 s (`connectionTimeoutMillis` in `db.ts`). pg's default is no timeout, which made every request hang for minutes when the database was unreachable (e.g. a laptop's IP missing from trusted sources).
+
+**Graceful shutdown** — on SIGTERM (sent by App Platform on every deploy) the server stops accepting connections, lets in-flight requests finish, then ends the pool, and the process exits on its own. A handler that only ended the pool would block Node's default exit and leave the process running until force-killed.
+
 **No in-memory caches** — the RapidAPI-era caches were removed. The instance has 0.5 GB of RAM, and caching base64 GIFs for every exercise would exhaust it; database reads take tens of milliseconds.
 
 **Stray Node gotcha (local only)** — on the original dev machine a `node` package sits in `~/src/personal/node_modules`, and `npm run` puts it (v21.2) first on the PATH. It cannot read the multi-line certificate from `.env`, so `npm run import:pro` fails with "Missing DATABASE_CA_CERT". Run the script with `node` directly, or remove that package.
