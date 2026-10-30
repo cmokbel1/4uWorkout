@@ -33,12 +33,79 @@ export async function listTargets(): Promise<string[]> {
   return rows.map((row) => row.target)
 }
 
-export async function randomExercisesByBodyPart(bodyPart: string, limit: number): Promise<ExerciseData[]> {
+// Easiest first; a difficulty filter means "up to and including" that level.
+export const DIFFICULTIES = ['beginner', 'intermediate', 'advanced'] as const
+export type Difficulty = (typeof DIFFICULTIES)[number]
+
+// Pro's taxonomy.equipmentCategory: the main kind of resistance, not every item
+// an exercise needs (a bodyweight dip still needs parallel bars).
+export const EQUIPMENT_TYPES = ['free_weight', 'bodyweight', 'cable', 'machine', 'accessory', 'band'] as const
+export type EquipmentType = (typeof EQUIPMENT_TYPES)[number]
+
+export type ExerciseFilters = {
+  maxDifficulty?: Difficulty
+  target?: string
+  equipmentTypes?: EquipmentType[]
+}
+
+export async function randomExercisesByBodyPart(
+  bodyPart: string,
+  filters: ExerciseFilters,
+  limit: number,
+): Promise<ExerciseData[]> {
+  const difficulties = filters.maxDifficulty
+    ? DIFFICULTIES.slice(0, DIFFICULTIES.indexOf(filters.maxDifficulty) + 1)
+    : null
   const { rows } = await getPool().query<{ data: ExerciseData }>(
-    'SELECT data FROM exercises WHERE body_part = $1 ORDER BY random() LIMIT $2',
-    [bodyPart, limit],
+    `SELECT data FROM exercises
+     WHERE body_part = $1
+       AND ($2::text[] IS NULL OR difficulty = ANY($2))
+       AND ($3::text IS NULL OR target = $3)
+       AND ($4::text[] IS NULL OR data->'taxonomy'->>'equipmentCategory' = ANY($4))
+     ORDER BY random() LIMIT $5`,
+    [bodyPart, difficulties, filters.target ?? null, filters.equipmentTypes ?? null, limit],
   )
   return rows.map((row) => toListItem(row.data))
+}
+
+type FilterOption = { value: string; count: number }
+
+type FilterOptions = {
+  difficulties: FilterOption[]
+  targets: FilterOption[]
+  equipmentTypes: FilterOption[]
+}
+
+// The choices that exist for every body part, keyed by body part, with how
+// many exercises each matches on its own. Counts are per choice, not for
+// combinations of choices. Small enough (a few KB) for the client to load once.
+export async function filterOptionsByBodyPart(): Promise<Record<string, FilterOptions>> {
+  const { rows } = await getPool().query<{
+    body_part: string
+    facet: keyof FilterOptions
+    value: string
+    count: number
+  }>(
+    `SELECT body_part, 'difficulties' AS facet, difficulty AS value, count(*)::int AS count
+       FROM exercises GROUP BY body_part, difficulty
+     UNION ALL
+     SELECT body_part, 'targets', target, count(*)::int
+       FROM exercises GROUP BY body_part, target
+     UNION ALL
+     SELECT body_part, 'equipmentTypes', data->'taxonomy'->>'equipmentCategory', count(*)::int
+       FROM exercises GROUP BY body_part, data->'taxonomy'->>'equipmentCategory'
+     ORDER BY body_part, count DESC`,
+  )
+  const options: Record<string, FilterOptions> = {}
+  for (const { body_part, facet, value, count } of rows) {
+    options[body_part] ??= { difficulties: [], targets: [], equipmentTypes: [] }
+    options[body_part][facet].push({ value, count })
+  }
+  const rank = (option: FilterOption) => DIFFICULTIES.indexOf(option.value as Difficulty)
+  for (const bodyPartOptions of Object.values(options)) {
+    bodyPartOptions.difficulties.sort((a, b) => rank(a) - rank(b))
+  }
+  return options
 }
 
 export async function getExercise(id: string): Promise<ExerciseData | undefined> {

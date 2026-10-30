@@ -1,5 +1,11 @@
 import { Router, Request, Response } from 'express'
 import {
+  DIFFICULTIES,
+  Difficulty,
+  EQUIPMENT_TYPES,
+  EquipmentType,
+  ExerciseFilters,
+  filterOptionsByBodyPart,
   getExercise,
   getExerciseImage,
   listBodyParts,
@@ -11,7 +17,36 @@ const router = Router()
 
 // One shown workout plus 10 "similar" ones. Never return a whole body part:
 // the ExerciseDB licence (§13) forbids endpoints that allow bulk download.
+// Filters only narrow this sample; never add paging or "show all".
 const BODY_PART_SAMPLE_SIZE = 11
+
+// Reads the optional ?difficulty=&target=&equipmentType= query params.
+// Returns an error message instead when a value is not a known option.
+function parseFilters(query: Request['query']): ExerciseFilters | string {
+  const { difficulty, target, equipmentType } = query
+  const filters: ExerciseFilters = {}
+  if (difficulty !== undefined) {
+    const value = typeof difficulty === 'string' ? difficulty.trim().toLowerCase() : ''
+    if (!DIFFICULTIES.includes(value as Difficulty)) {
+      return `difficulty must be one of: ${DIFFICULTIES.join(', ')}`
+    }
+    filters.maxDifficulty = value as Difficulty
+  }
+  if (target !== undefined) {
+    if (typeof target !== 'string' || !target.trim()) return 'target must be a single value'
+    filters.target = target.trim().toLowerCase()
+  }
+  if (equipmentType !== undefined) {
+    const values = typeof equipmentType === 'string'
+      ? equipmentType.split(',').map((value) => value.trim().toLowerCase())
+      : []
+    if (!values.length || !values.every((value) => EQUIPMENT_TYPES.includes(value as EquipmentType))) {
+      return `equipmentType must be a comma-separated list of: ${EQUIPMENT_TYPES.join(', ')}`
+    }
+    filters.equipmentTypes = values as EquipmentType[]
+  }
+  return filters
+}
 
 // GET /exercises/bodyPartList
 router.get('/bodyPartList', async (_req: Request, res: Response) => {
@@ -50,11 +85,27 @@ router.get('/exercise/:id', async (req: Request, res: Response) => {
   }
 })
 
-// GET /exercises/bodyPart/:bodyPart
+// GET /exercises/filters — every body part's options, keyed by body part.
+// The client loads this once at startup.
+router.get('/filters', async (_req: Request, res: Response) => {
+  try {
+    res.json(await filterOptionsByBodyPart())
+  } catch (err) {
+    console.error('[filters] error:', err instanceof Error ? err.message : err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// GET /exercises/bodyPart/:bodyPart?difficulty=&target=&equipmentType=
 router.get('/bodyPart/:bodyPart', async (req: Request, res: Response) => {
   try {
     const bodyPart = req.params.bodyPart.trim().toLowerCase()
-    res.json(await randomExercisesByBodyPart(bodyPart, BODY_PART_SAMPLE_SIZE))
+    const filters = parseFilters(req.query)
+    if (typeof filters === 'string') {
+      res.status(400).json({ error: filters })
+      return
+    }
+    res.json(await randomExercisesByBodyPart(bodyPart, filters, BODY_PART_SAMPLE_SIZE))
   } catch (err) {
     console.error('[bodyPart] error:', err instanceof Error ? err.message : err)
     res.status(500).json({ error: 'Internal server error' })
