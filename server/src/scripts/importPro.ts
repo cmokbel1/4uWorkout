@@ -28,7 +28,7 @@ async function main(): Promise<void> {
   try {
     await client.query('BEGIN')
     await client.query(readFileSync(join(__dirname, '../../src/db/schema.sql'), 'utf8'))
-    for (const x of exercises) {
+    for (const exercise of exercises) {
       await client.query(
         `INSERT INTO exercises (id, source, name, body_part, target, equipment, difficulty, category, required_equipment, data)
          VALUES ($1, 'exercisedb_pro', $2, $3, $4, $5, $6, $7, $8, $9)
@@ -36,12 +36,12 @@ async function main(): Promise<void> {
            body_part = EXCLUDED.body_part, target = EXCLUDED.target, equipment = EXCLUDED.equipment,
            difficulty = EXCLUDED.difficulty, category = EXCLUDED.category,
            required_equipment = EXCLUDED.required_equipment, data = EXCLUDED.data`,
-        [x.id, x.name, x.bodyPart, x.target, x.equipment, x.difficulty, x.category, x.requiredEquipment, x],
+        [exercise.id, exercise.name, exercise.bodyPart, exercise.target, exercise.equipment, exercise.difficulty, exercise.category, exercise.requiredEquipment, exercise],
       )
       await client.query(
         `INSERT INTO exercise_images (exercise_id, content_type, image) VALUES ($1, 'image/gif', $2)
          ON CONFLICT (exercise_id) DO UPDATE SET content_type = EXCLUDED.content_type, image = EXCLUDED.image`,
-        [x.id, readFileSync(join(gifDir, `${x.id}.gif`))],
+        [exercise.id, readFileSync(join(gifDir, `${exercise.id}.gif`))],
       )
     }
     await client.query('COMMIT')

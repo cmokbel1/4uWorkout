@@ -10,6 +10,9 @@ const LIST_FIELDS = [
   'instructions', 'description', 'difficulty', 'category',
 ] as const
 
+// A field missing from a record comes out undefined and is dropped from the
+// JSON; the client must treat absent fields as unknown. (Every Pro record has
+// all ten, so this only matters for exercises we add ourselves.)
 function toListItem(data: ExerciseData): ExerciseData {
   const item: ExerciseData = {}
   for (const field of LIST_FIELDS) item[field] = data[field]

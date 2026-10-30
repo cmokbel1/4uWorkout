@@ -67,7 +67,7 @@ Schema: `src/db/schema.sql`, applied by the import script.
 
 All routes are prefixed `/exercises`. Errors return `{ error }` with 400/404/429/500.
 
-**Rate limit** — `/exercises/*` allows 100 requests per 15 minutes per client (`src/index.ts`), so the predictable ids can't be walked to scrape the catalogue (licence §13). Clients are keyed by App Platform's `do-connecting-ip` header, since `req.ip` is the load balancer; locally it falls back to `req.ip`. Counters are in memory per instance and reset on restart. `/health` is not limited.
+**Rate limit** — `/exercises/*` allows 100 requests per 15 minutes per client (`src/index.ts`), so the predictable ids can't be walked to scrape the catalogue (licence §13). Clients are keyed by App Platform's `do-connecting-ip` header, since `req.ip` is the load balancer; locally it falls back to `req.ip`. Counters are in memory per instance and reset on restart, so with N instances the effective limit is N × 100. The limiter is mounted on `/exercises` only — a new route prefix does not inherit it. `/health` is not limited.
 
 | Route | Notes |
 |-------|-------|
