@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons"
 import { StatusBar } from "expo-status-bar"
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   ActivityIndicator,
   Alert,
@@ -98,13 +98,15 @@ export function TrainingScreen({ navigation }: Props) {
   const resultCardYRef = useRef<number>(0)
   // Set when a workout is being loaded; cleared once it has been scrolled to.
   const scrollToResultPendingRef = useRef<boolean>(false)
-  // True while a loaded workout is on screen (not mid-load).
-  const scrollReadyRef = useRef<boolean>(false)
-  // Sizes needed to tell whether the scroll target is reachable yet.
+  // Used to keep scroll targets within the content: scrollTo doesn't stop at
+  // the end of the content on iOS.
   const contentHeightRef = useRef<number>(0)
   const viewportHeightRef = useRef<number>(0)
-  // Fades each newly shown workout in, instead of it popping into place.
-  const resultOpacity = useRef(new Animated.Value(1)).current
+  // Each newly shown workout starts hidden and fades in once its image has
+  // drawn (onResultImageLoad). A workout restored from the session does too.
+  const resultOpacity = useRef(
+    new Animated.Value(trainingSession.currentWorkout ? 0 : 1),
+  ).current
 
   // Collapsing top bar, driven by the scroll position on the native thread. As
   // the content scrolls up by `collapseDistance`, the whole bar (background and
@@ -181,8 +183,8 @@ export function TrainingScreen({ navigation }: Props) {
 
   // A workout is only "loaded" once every request has finished (isSearching)
   // AND its GIF has been decoded and drawn — the base64 image arrives with the
-  // request but takes a moment to render. Until then the card shows a spinner,
-  // and the scroll, fade-in and similar list wait.
+  // request but takes a moment to render. Until then the card shows a spinner;
+  // onResultImageLoad then fades it in and scrolls to it.
   const isImageLoading =
     Boolean(currentWorkout?.gifUrl) && loadedImageId !== currentWorkout?.id
   const isLoading = isSearching || isImageLoading
@@ -272,32 +274,6 @@ export function TrainingScreen({ navigation }: Props) {
       if (findCooldownRef.current) clearTimeout(findCooldownRef.current)
     }
   }, [])
-
-  // Once a loaded workout is on screen, scroll it to the top. If the content
-  // hasn't grown enough yet, onContentSizeChange retries as it does; if it never
-  // does (a very short result), the timer scrolls as far as it can go.
-  useEffect(() => {
-    scrollReadyRef.current = Boolean(currentWorkout) && !isLoading
-    if (!scrollReadyRef.current) return
-    finishPendingScroll()
-    const timer = setTimeout(() => finishPendingScroll(true), 250)
-    return () => clearTimeout(timer)
-  }, [currentWorkout, isLoading])
-
-  // Hide a newly set workout before it paints (layout effect), then fade it in
-  // once its image has drawn.
-  useLayoutEffect(() => {
-    if (isImageLoading) resultOpacity.setValue(0)
-  }, [currentWorkout?.id, isImageLoading, resultOpacity])
-
-  useEffect(() => {
-    if (!currentWorkout || isImageLoading) return
-    Animated.timing(resultOpacity, {
-      toValue: 1,
-      duration: 250,
-      useNativeDriver: true,
-    }).start()
-  }, [currentWorkout?.id, isImageLoading, resultOpacity])
 
   // Keep the session snapshot in sync so a later remount can restore it.
   useEffect(() => {
@@ -415,17 +391,34 @@ export function TrainingScreen({ navigation }: Props) {
     )
   }
 
-  // A ScrollView can't scroll past the end of its content: scrolling before the
-  // new workout has made the page long enough stops short, then has to jump
-  // again. So the scroll waits until the target is reachable — unless `force`,
-  // which goes as far as the content allows.
-  function finishPendingScroll(force = false): void {
-    if (!scrollToResultPendingRef.current || !scrollReadyRef.current) return
-    const target = resultScrollTarget()
+  // Scrolls the result card to just below the top bar, or as far as the content
+  // allows when the page is too short.
+  function scrollResultCardIntoPlace(): void {
     const maxY = Math.max(contentHeightRef.current - viewportHeightRef.current, 0)
-    if (target > maxY && !force) return
-    scrollToResultPendingRef.current = false
-    scrollViewRef.current?.scrollTo({ y: Math.min(target, maxY), animated: true })
+    scrollViewRef.current?.scrollTo({ y: Math.min(resultScrollTarget(), maxY), animated: true })
+  }
+
+  // Shows a newly loaded workout, hidden until its image has drawn.
+  function showWorkout(workout: Workout): void {
+    if (workout.gifUrl) resultOpacity.setValue(0)
+    setCurrentWorkout(workout)
+  }
+
+  // The one trigger for the end of loading: the workout's image has drawn (or
+  // failed to). The requests finished before the image was rendered, and the
+  // similar list was laid out with them, so the page is at full length: fade
+  // the card in, then scroll to it.
+  function onResultImageLoad(workoutId: string): void {
+    setLoadedImageId(workoutId)
+    Animated.timing(resultOpacity, {
+      toValue: 1,
+      duration: 250,
+      useNativeDriver: true,
+    }).start()
+    if (scrollToResultPendingRef.current) {
+      scrollToResultPendingRef.current = false
+      scrollResultCardIntoPlace()
+    }
   }
 
   // The card is a direct child of the scroll content, so its layout y is its
@@ -440,9 +433,7 @@ export function TrainingScreen({ navigation }: Props) {
   // Find it isn't, so it waits for a single smooth scroll at the end.
   function beginLoadingWorkout(): void {
     scrollToResultPendingRef.current = true
-    if (currentWorkout) {
-      scrollViewRef.current?.scrollTo({ y: resultScrollTarget(), animated: true })
-    }
+    if (currentWorkout) scrollResultCardIntoPlace()
   }
 
   async function onSelectSimilarWorkout(item: Workout): Promise<void> {
@@ -456,11 +447,11 @@ export function TrainingScreen({ navigation }: Props) {
     beginLoadingWorkout()
     try {
       const workout = await getExerciseById(item.id)
-      setCurrentWorkout(workout)
+      showWorkout(workout)
     } catch {
       try {
         const imageUrl = await getExerciseImageById(item.id)
-        setCurrentWorkout({ ...item, gifUrl: imageUrl })
+        showWorkout({ ...item, gifUrl: imageUrl })
       } catch (imgError) {
         console.error("Failed to fetch exercise:", item.id, imgError)
       }
@@ -476,7 +467,7 @@ export function TrainingScreen({ navigation }: Props) {
     beginLoadingWorkout()
     await getExerciseImageById(workout.id)
       .then((imageUrl) => {
-        setCurrentWorkout({ ...workout, gifUrl: imageUrl })
+        showWorkout({ ...workout, gifUrl: imageUrl })
       })
       .catch((error) => {
         console.error("Failed to fetch image for workout:", workout.id, error)
@@ -587,7 +578,6 @@ export function TrainingScreen({ navigation }: Props) {
           }}
           onContentSizeChange={(_width, height) => {
             contentHeightRef.current = height
-            finishPendingScroll()
           }}
         >
           <View style={styles.card}>
@@ -653,7 +643,7 @@ export function TrainingScreen({ navigation }: Props) {
                 <WorkoutPanel
                   workout={currentWorkout}
                   isDark={isDark}
-                  onImageLoad={() => setLoadedImageId(currentWorkout.id)}
+                  onImageLoad={() => onResultImageLoad(currentWorkout.id)}
                 />
               </Animated.View>
               {isLoading && (
@@ -680,8 +670,14 @@ export function TrainingScreen({ navigation }: Props) {
             </View>
           )}
 
-          {currentWorkout && !isLoading && (
-            <>
+          {currentWorkout && !isSearching && (
+            // Laid out as soon as the requests finish, so the page is at full
+            // length when the image draws and the scroll runs. Hidden and not
+            // tappable until then, it fades in with the card.
+            <Animated.View
+              style={[styles.similarSection, { opacity: resultOpacity }]}
+              pointerEvents={isImageLoading ? "none" : "auto"}
+            >
               <View style={styles.similarHeader}>
                 <Text style={styles.similarTitle}>Similar workouts</Text>
                 <Text style={styles.helperText}>
@@ -725,7 +721,7 @@ export function TrainingScreen({ navigation }: Props) {
                   </Text>
                 </View>
               ) : null}
-            </>
+            </Animated.View>
           )}
         </Animated.ScrollView>
 

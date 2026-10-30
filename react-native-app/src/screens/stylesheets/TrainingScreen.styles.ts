@@ -200,6 +200,11 @@ export function makeStyles(c: Palette) {
     },
 
     // Similar workouts
+    // Wraps the section so it can fade in with the result card; keeps the same
+    // spacing the content's gap gave its children before.
+    similarSection: {
+      gap: 16,
+    },
     similarHeader: {
       gap: 2,
       marginTop: 4,
