@@ -275,6 +275,13 @@ export function makeStyles(c: Palette) {
       lineHeight: 20,
     },
 
+    // Inline "no matches" state: an empty-state card with an action under it.
+    emptyAction: {
+      alignSelf: 'stretch',
+      flexDirection: 'row',
+      marginTop: 6,
+    },
+
     // Sticky action bar
     bottomBar: {
       position: 'absolute',

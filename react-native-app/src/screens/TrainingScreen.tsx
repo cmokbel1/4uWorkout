@@ -170,6 +170,8 @@ export function TrainingScreen({ navigation }: Props) {
   )
   // Id of the workout whose image has finished drawing (see isLoading below).
   const [loadedImageId, setLoadedImageId] = useState<string | null>(null)
+  // The last search matched nothing: shown inline instead of in an alert.
+  const [noMatches, setNoMatches] = useState<boolean>(false)
   const [savedMap, setSavedMap] = useState<SavedWorkoutsByDate>({})
   const [saveModalVisible, setSaveModalVisible] = useState<boolean>(false)
   const [setCount, setSetCount] = useState<number>(1)
@@ -188,6 +190,9 @@ export function TrainingScreen({ navigation }: Props) {
   const isImageLoading =
     Boolean(currentWorkout?.gifUrl) && loadedImageId !== currentWorkout?.id
   const isLoading = isSearching || isImageLoading
+  const hasActiveFilters = Boolean(
+    filters.difficulties?.length || filters.target || filters.equipmentTypes?.length,
+  )
 
   // Today's bucket drives the dedup/disable logic.
   const todaysWorkouts = savedMap[todayKey()] ?? []
@@ -314,18 +319,15 @@ export function TrainingScreen({ navigation }: Props) {
     }
 
     setIsSearching(true)
+    setNoMatches(false)
     try {
       const results = await searchExercisesByBodyPart(selectedBodyPart, filters)
       if (!results.length) {
-        const hasFilters = Boolean(
-          filters.difficulties?.length || filters.target || filters.equipmentTypes?.length,
-        )
-        Alert.alert(
-          "No workouts found",
-          hasFilters
-            ? "No workouts match these filters. Try removing some."
-            : "Try a different body part.",
-        )
+        // Clear the old result: it no longer matches what was asked for.
+        setCurrentWorkout(null)
+        setAllResults([])
+        setSearchResults([])
+        setNoMatches(true)
         return
       }
       // Filters can return fewer than 11, so shuffle by the actual length.
@@ -655,6 +657,32 @@ export function TrainingScreen({ navigation }: Props) {
           ) : isSearching ? (
             <View style={styles.resultCard} onLayout={onResultCardLayout}>
               <ActivityIndicator size="large" color={palette.accent} />
+            </View>
+          ) : noMatches ? (
+            <View style={styles.emptyCard} onLayout={onResultCardLayout}>
+              <View style={styles.emptyIcon}>
+                <Feather name="filter" size={20} color={palette.accent} />
+              </View>
+              <Text style={styles.emptyTitle}>No workouts match</Text>
+              <Text style={styles.emptyText}>
+                {hasActiveFilters
+                  ? "Try a wider difficulty range, or set Target or Equipment back to Any."
+                  : "Try a different body part."}
+              </Text>
+              {hasActiveFilters ? (
+                <View style={styles.emptyAction}>
+                  <ThemedButton
+                    palette={palette}
+                    label="Clear filters"
+                    icon="x"
+                    variant="secondary"
+                    onPress={() => {
+                      setFilters({})
+                      setNoMatches(false)
+                    }}
+                  />
+                </View>
+              ) : null}
             </View>
           ) : (
             // Same slot as the result card, so its position is known before the
