@@ -738,9 +738,9 @@ export function TrainingScreen({ navigation }: Props) {
                   ))}
                 </View>
               ) : null}
-              {/* Only filtered searches come back short: unfiltered, every body
-                  part fills the list. */}
-              {searchResults.length < MAX_SIMILAR_WORKOUTS ? (
+              {/* The advice is about filters, so it only shows when one is
+                  active (unfiltered, every body part fills the list anyway). */}
+              {hasActiveFilters && searchResults.length < MAX_SIMILAR_WORKOUTS ? (
                 <View style={styles.tip}>
                   <Feather name="info" size={16} color={palette.accent} />
                   <Text style={styles.tipText}>
