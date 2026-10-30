@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons"
 import type { ComponentProps } from "react"
-import { Pressable, StyleSheet, Text } from "react-native"
+import { ActivityIndicator, Pressable, StyleSheet, Text } from "react-native"
 
 import { fonts, radius, type Palette } from "../theme"
 
@@ -12,6 +12,9 @@ interface ThemedButtonProps {
   variant?: "primary" | "secondary"
   icon?: ComponentProps<typeof Feather>["name"]
   disabled?: boolean
+  // Shows a spinner in place of the icon. Callers usually also disable the
+  // button and change its label while loading.
+  loading?: boolean
 }
 
 // Button for the redesigned screens. (Older screens still use ActionButton.)
@@ -22,9 +25,13 @@ export function ThemedButton({
   variant = "primary",
   icon,
   disabled = false,
+  loading = false,
 }: ThemedButtonProps) {
   const isPrimary = variant === "primary"
-  const color = disabled
+  // A loading button can't be pressed but keeps its normal look, so it reads
+  // as "working" rather than "unavailable".
+  const looksDisabled = disabled && !loading
+  const color = looksDisabled
     ? palette.textDisabled
     : isPrimary
       ? palette.onAccent
@@ -33,23 +40,27 @@ export function ThemedButton({
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled}
+      disabled={disabled || loading}
       style={({ pressed }) => [
         styles.button,
         isPrimary
-          ? { backgroundColor: disabled ? palette.surfaceRaised : palette.accent }
+          ? { backgroundColor: looksDisabled ? palette.surfaceRaised : palette.accent }
           : {
               backgroundColor: palette.surface,
               borderWidth: 1,
               borderColor: palette.border,
             },
-        pressed && !disabled && styles.pressed,
+        pressed && !disabled && !loading && styles.pressed,
       ]}
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ disabled }}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
     >
-      {icon ? <Feather name={icon} size={18} color={color} /> : null}
+      {loading ? (
+        <ActivityIndicator size="small" color={color} />
+      ) : icon ? (
+        <Feather name={icon} size={18} color={color} />
+      ) : null}
       <Text style={[styles.label, { color }]} numberOfLines={1}>
         {label}
       </Text>

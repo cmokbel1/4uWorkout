@@ -30,7 +30,9 @@ const dark: Palette = {
   surfaceSunken: "#07121F",
   surfaceRaised: "#152840",
   border: "#162941",
-  borderStrong: "#1D3247",
+  // Brighter than the mockup's #34536F so field outlines and the inactive
+  // slider track reach 3:1 against the card (#0E1D30) and field fill.
+  borderStrong: "#4F7299",
   text: "#EAF2FB",
   textMuted: "#8FA6BF",
   textDisabled: "#5F7A96",
@@ -56,7 +58,8 @@ const light: Palette = {
   textDisabled: "#8A909C",
   accent: "#2F5BFF",
   onAccent: "#FFFFFF",
-  onAccentMuted: "#D5DEFF",
+  // 4.6:1 on the accent; the mockup's #D5DEFF was 3.9:1.
+  onAccentMuted: "#EEF2FF",
   sliderHandle: "#FFFFFF",
   scrim: "rgba(15, 17, 21, 0.4)",
   beginner: "#16A34A",

@@ -11,6 +11,9 @@ interface WorkoutPanelProps {
   // Training shows the name as the panel's heading; the detail screen renders
   // the name as its own heading, so it hides it here.
   showNameLabel?: boolean
+  // Called when the image has finished loading, or failed to, so a caller can
+  // hold back other UI until the panel is fully drawn.
+  onImageLoad?: () => void
 }
 
 // The shared workout detail block: name, detail chips, image, description, and
@@ -20,6 +23,7 @@ export function WorkoutPanel({
   workout,
   isDark,
   showNameLabel = true,
+  onImageLoad,
 }: WorkoutPanelProps) {
   const palette = getPalette(isDark)
   const styles = useMemo(() => makeStyles(palette), [palette])
@@ -50,6 +54,7 @@ export function WorkoutPanel({
         source={{ uri: workout.gifUrl }}
         style={styles.media}
         resizeMode="contain"
+        onLoadEnd={onImageLoad}
         accessibilityLabel={`Demonstration of ${workout.name}`}
       />
 
@@ -142,7 +147,9 @@ function makeStyles(c: Palette) {
       width: "100%",
       height: 240,
       borderRadius: radius.md,
-      backgroundColor: c.surfaceSunken,
+      // The GIFs have white backgrounds; matching it avoids dark bars beside
+      // the image in dark mode.
+      backgroundColor: "#FFFFFF",
     },
     description: {
       color: c.textMuted,

@@ -25,6 +25,8 @@ interface RangeSliderProps {
 
 const HANDLE = 28
 const DOT = 6
+// Minimum touch target height for the track and the level labels.
+const TOUCH = 44
 
 // Two-handle slider that snaps to a small set of levels. Drag either handle to
 // set a range; tap a level's label to pick just that level (tap it again to go
@@ -157,7 +159,7 @@ export function RangeSlider({ palette, levels, value, onChange }: RangeSliderPro
           <Pressable
             key={level}
             onPress={() => onTapLevel(index)}
-            hitSlop={8}
+            style={styles.labelTarget}
             accessibilityRole="button"
             accessibilityLabel={`${level} only`}
           >
@@ -172,10 +174,10 @@ export function RangeSlider({ palette, levels, value, onChange }: RangeSliderPro
 function makeStyles(c: Palette) {
   return StyleSheet.create({
     root: {
-      gap: 10,
+      gap: 2,
     },
     trackArea: {
-      height: HANDLE + 8,
+      height: TOUCH,
       justifyContent: "center",
     },
     track: {
@@ -219,6 +221,11 @@ function makeStyles(c: Palette) {
     labels: {
       flexDirection: "row",
       justifyContent: "space-between",
+    },
+    labelTarget: {
+      minHeight: TOUCH,
+      minWidth: TOUCH,
+      justifyContent: "center",
     },
     label: {
       color: c.text,

@@ -219,6 +219,23 @@ export function makeStyles(c: Palette) {
       fontSize: 13,
       textTransform: 'capitalize',
     },
+    tip: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 10,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.md,
+      padding: 14,
+    },
+    tipText: {
+      flex: 1,
+      color: c.textMuted,
+      fontFamily: fonts.medium,
+      fontSize: 14,
+      lineHeight: 20,
+    },
 
     // Sticky action bar
     bottomBar: {

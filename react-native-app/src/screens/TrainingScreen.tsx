@@ -1,9 +1,10 @@
 import { Feather } from "@expo/vector-icons"
 import { StatusBar } from "expo-status-bar"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Modal,
   Pressable,
   ScrollView,
@@ -11,6 +12,7 @@ import {
   Text,
   TextInput,
   View,
+  type LayoutChangeEvent,
 } from "react-native"
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useFocusEffect } from "@react-navigation/native"
@@ -57,6 +59,10 @@ type Props = NativeStackScreenProps<RootStackParamList, "Training">
 // list shows however many there are (possibly none).
 const MAX_SIMILAR_WORKOUTS = 10
 
+// Gap left above the result card when it's scrolled to the top of the screen
+// (matches the content's top padding).
+const RESULT_SCROLL_MARGIN = 12
+
 const DIFFICULTY_LABELS = DIFFICULTIES.map((level) => toTitleCase(level))
 const FULL_DIFFICULTY_RANGE: LevelRange = { min: 0, max: DIFFICULTIES.length - 1 }
 
@@ -79,7 +85,17 @@ const SET_COUNT_OPTIONS: SelectOption[] = Array.from({ length: 10 }, (_, i) => (
 
 export function TrainingScreen({ navigation }: Props) {
   const scrollViewRef = useRef<ScrollView>(null)
-  const workoutPanelRef = useRef<View>(null)
+  // Where the result card sits in the scroll content (from its onLayout).
+  const resultCardYRef = useRef<number>(0)
+  // Set when a workout is being loaded; cleared once it has been scrolled to.
+  const scrollToResultPendingRef = useRef<boolean>(false)
+  // True while a loaded workout is on screen (not mid-load).
+  const scrollReadyRef = useRef<boolean>(false)
+  // Sizes needed to tell whether the scroll target is reachable yet.
+  const contentHeightRef = useRef<number>(0)
+  const viewportHeightRef = useRef<number>(0)
+  // Fades each newly shown workout in, instead of it popping into place.
+  const resultOpacity = useRef(new Animated.Value(1)).current
   const insets = useSafeAreaInsets()
 
   const [isDark, setIsDark] = useState<boolean>(false)
@@ -114,6 +130,8 @@ export function TrainingScreen({ navigation }: Props) {
   const [currentWorkout, setCurrentWorkout] = useState<Workout | null>(
     () => trainingSession.currentWorkout,
   )
+  // Id of the workout whose image has finished drawing (see isLoading below).
+  const [loadedImageId, setLoadedImageId] = useState<string | null>(null)
   const [savedMap, setSavedMap] = useState<SavedWorkoutsByDate>({})
   const [saveModalVisible, setSaveModalVisible] = useState<boolean>(false)
   const [setCount, setSetCount] = useState<number>(1)
@@ -124,6 +142,14 @@ export function TrainingScreen({ navigation }: Props) {
 
   const palette = getPalette(isDark)
   const styles = useMemo(() => makeStyles(palette), [palette])
+
+  // A workout is only "loaded" once every request has finished (isSearching)
+  // AND its GIF has been decoded and drawn — the base64 image arrives with the
+  // request but takes a moment to render. Until then the card shows a spinner,
+  // and the scroll, fade-in and similar list wait.
+  const isImageLoading =
+    Boolean(currentWorkout?.gifUrl) && loadedImageId !== currentWorkout?.id
+  const isLoading = isSearching || isImageLoading
 
   // Today's bucket drives the dedup/disable logic.
   const todaysWorkouts = savedMap[todayKey()] ?? []
@@ -210,6 +236,32 @@ export function TrainingScreen({ navigation }: Props) {
       if (findCooldownRef.current) clearTimeout(findCooldownRef.current)
     }
   }, [])
+
+  // Once a loaded workout is on screen, scroll it to the top. If the content
+  // hasn't grown enough yet, onContentSizeChange retries as it does; if it never
+  // does (a very short result), the timer scrolls as far as it can go.
+  useEffect(() => {
+    scrollReadyRef.current = Boolean(currentWorkout) && !isLoading
+    if (!scrollReadyRef.current) return
+    finishPendingScroll()
+    const timer = setTimeout(() => finishPendingScroll(true), 250)
+    return () => clearTimeout(timer)
+  }, [currentWorkout, isLoading])
+
+  // Hide a newly set workout before it paints (layout effect), then fade it in
+  // once its image has drawn.
+  useLayoutEffect(() => {
+    if (isImageLoading) resultOpacity.setValue(0)
+  }, [currentWorkout?.id, isImageLoading, resultOpacity])
+
+  useEffect(() => {
+    if (!currentWorkout || isImageLoading) return
+    Animated.timing(resultOpacity, {
+      toValue: 1,
+      duration: 250,
+      useNativeDriver: true,
+    }).start()
+  }, [currentWorkout?.id, isImageLoading, resultOpacity])
 
   // Keep the session snapshot in sync so a later remount can restore it.
   useEffect(() => {
@@ -317,12 +369,39 @@ export function TrainingScreen({ navigation }: Props) {
     }))
   }
 
-  function scrollToWorkoutPanel(): void {
-    workoutPanelRef.current?.measureLayout(
-      scrollViewRef.current as any,
-      (_, y) => scrollViewRef.current?.scrollTo({ y, animated: true }),
-      () => {},
-    )
+  // Where the result card's top meets the top of the screen (with a margin).
+  function resultScrollTarget(): number {
+    return Math.max(resultCardYRef.current - RESULT_SCROLL_MARGIN, 0)
+  }
+
+  // A ScrollView can't scroll past the end of its content: scrolling before the
+  // new workout has made the page long enough stops short, then has to jump
+  // again. So the scroll waits until the target is reachable — unless `force`,
+  // which goes as far as the content allows.
+  function finishPendingScroll(force = false): void {
+    if (!scrollToResultPendingRef.current || !scrollReadyRef.current) return
+    const target = resultScrollTarget()
+    const maxY = Math.max(contentHeightRef.current - viewportHeightRef.current, 0)
+    if (target > maxY && !force) return
+    scrollToResultPendingRef.current = false
+    scrollViewRef.current?.scrollTo({ y: Math.min(target, maxY), animated: true })
+  }
+
+  // The card is a direct child of the scroll content, so its layout y is its
+  // position within the content.
+  function onResultCardLayout(event: LayoutChangeEvent): void {
+    resultCardYRef.current = event.nativeEvent.layout.y
+  }
+
+  // Marks that the workout being loaded should be scrolled to once shown. When
+  // one is already showing (picking a similar workout) the page is long enough
+  // to scroll now, which brings its loading spinner into view. On the first
+  // Find it isn't, so it waits for a single smooth scroll at the end.
+  function beginLoadingWorkout(): void {
+    scrollToResultPendingRef.current = true
+    if (currentWorkout) {
+      scrollViewRef.current?.scrollTo({ y: resultScrollTarget(), animated: true })
+    }
   }
 
   async function onSelectSimilarWorkout(item: Workout): Promise<void> {
@@ -333,7 +412,7 @@ export function TrainingScreen({ navigation }: Props) {
     }
     setSearchResults(pool.filter((w) => w.id !== item.id).slice(0, MAX_SIMILAR_WORKOUTS))
     setIsSearching(true)
-    scrollToWorkoutPanel()
+    beginLoadingWorkout()
     try {
       const workout = await getExerciseById(item.id)
       setCurrentWorkout(workout)
@@ -353,7 +432,7 @@ export function TrainingScreen({ navigation }: Props) {
     workout: Workout,
   ): Promise<void> {
     setIsSearching(true)
-    scrollToWorkoutPanel()
+    beginLoadingWorkout()
     await getExerciseImageById(workout.id)
       .then((imageUrl) => {
         setCurrentWorkout({ ...workout, gifUrl: imageUrl })
@@ -453,7 +532,17 @@ export function TrainingScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <StatusBar style={isDark ? "light" : "dark"} />
-      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.content}>
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={styles.content}
+        onLayout={(event) => {
+          viewportHeightRef.current = event.nativeEvent.layout.height
+        }}
+        onContentSizeChange={(_width, height) => {
+          contentHeightRef.current = height
+          finishPendingScroll()
+        }}
+      >
         <View style={styles.header}>
           <View>
             <Text style={styles.brand}>4UWORKOUT</Text>
@@ -549,20 +638,28 @@ export function TrainingScreen({ navigation }: Props) {
         </View>
 
         {currentWorkout ? (
-          <View ref={workoutPanelRef} style={styles.resultCard}>
-            <WorkoutPanel workout={currentWorkout} isDark={isDark} />
-            {isSearching && (
+          <View style={styles.resultCard} onLayout={onResultCardLayout}>
+            <Animated.View style={{ opacity: resultOpacity }}>
+              <WorkoutPanel
+                workout={currentWorkout}
+                isDark={isDark}
+                onImageLoad={() => setLoadedImageId(currentWorkout.id)}
+              />
+            </Animated.View>
+            {isLoading && (
               <View style={styles.resultOverlay}>
                 <ActivityIndicator size="large" color={palette.accent} />
               </View>
             )}
           </View>
         ) : isSearching ? (
-          <View ref={workoutPanelRef} style={styles.resultCard}>
+          <View style={styles.resultCard} onLayout={onResultCardLayout}>
             <ActivityIndicator size="large" color={palette.accent} />
           </View>
         ) : (
-          <View style={styles.emptyCard}>
+          // Same slot as the result card, so its position is known before the
+          // first search.
+          <View style={styles.emptyCard} onLayout={onResultCardLayout}>
             <View style={styles.emptyIcon}>
               <Feather name="shuffle" size={20} color={palette.accent} />
             </View>
@@ -573,7 +670,7 @@ export function TrainingScreen({ navigation }: Props) {
           </View>
         )}
 
-        {currentWorkout && !isSearching && (
+        {currentWorkout && !isLoading && (
           <>
             <View style={styles.similarHeader}>
               <Text style={styles.similarTitle}>Similar workouts</Text>
@@ -607,6 +704,17 @@ export function TrainingScreen({ navigation }: Props) {
                 ))}
               </View>
             ) : null}
+            {/* Only filtered searches come back short: unfiltered, every body
+                part fills the list. */}
+            {searchResults.length < MAX_SIMILAR_WORKOUTS ? (
+              <View style={styles.tip}>
+                <Feather name="info" size={16} color={palette.accent} />
+                <Text style={styles.tipText}>
+                  If you're stuck and the similar workouts list is too short,
+                  update your filters and try again, or change body part.
+                </Text>
+              </View>
+            ) : null}
           </>
         )}
       </ScrollView>
@@ -614,10 +722,11 @@ export function TrainingScreen({ navigation }: Props) {
       <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
         <ThemedButton
           palette={palette}
-          label="Find"
+          label={isLoading ? "Loading…" : "Find"}
           icon="shuffle"
           onPress={onSearchWorkout}
-          disabled={isSearching || isFindCoolingDown}
+          loading={isLoading}
+          disabled={isFindCoolingDown}
         />
         <ThemedButton
           palette={palette}
@@ -625,7 +734,7 @@ export function TrainingScreen({ navigation }: Props) {
           icon="bookmark"
           variant="secondary"
           onPress={openSaveModal}
-          disabled={isSearching || !currentWorkout || isCurrentSavedToday}
+          disabled={isLoading || !currentWorkout || isCurrentSavedToday}
         />
       </View>
 
