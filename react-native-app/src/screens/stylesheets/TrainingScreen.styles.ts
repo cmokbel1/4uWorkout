@@ -282,6 +282,46 @@ export function makeStyles(c: Palette) {
       marginTop: 6,
     },
 
+    // Menu sheet (opened from the cog): navigation rows and the dark mode switch.
+    menuList: {
+      gap: 4,
+      paddingBottom: 4,
+    },
+    menuRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
+      minHeight: 56,
+      paddingHorizontal: 12,
+      borderRadius: radius.sm,
+    },
+    menuIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: c.surfaceRaised,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    menuText: {
+      flex: 1,
+    },
+    menuLabel: {
+      color: c.text,
+      fontFamily: fonts.bold,
+      fontSize: 16,
+    },
+    menuSub: {
+      color: c.textMuted,
+      fontFamily: fonts.medium,
+      fontSize: 13,
+    },
+    menuDivider: {
+      height: 1,
+      backgroundColor: c.border,
+      marginVertical: 4,
+    },
+
     // Sticky action bar
     bottomBar: {
       position: 'absolute',
@@ -332,17 +372,6 @@ export function makeStyles(c: Palette) {
     modalActions: {
       flexDirection: 'row',
       gap: 12,
-    },
-    settingsRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingVertical: 4,
-    },
-    settingsRowLabel: {
-      color: c.text,
-      fontFamily: fonts.semibold,
-      fontSize: 16,
     },
     setRow: {
       gap: 8,

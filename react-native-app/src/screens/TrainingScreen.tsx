@@ -18,6 +18,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useFocusEffect } from "@react-navigation/native"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
+import { BottomSheet } from "../components/BottomSheet"
 import { NavCard } from "../components/NavCard"
 import { RangeSlider, type LevelRange } from "../components/RangeSlider"
 import { SelectField, type SelectOption } from "../components/SelectField"
@@ -137,7 +138,8 @@ export function TrainingScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets()
 
   const [isDark, setIsDark] = useState<boolean>(false)
-  const [settingsVisible, setSettingsVisible] = useState<boolean>(false)
+  // The cog's menu: Today's workouts, Calendar and the dark mode switch.
+  const [menuVisible, setMenuVisible] = useState<boolean>(false)
   const [isBootstrapping, setIsBootstrapping] = useState<boolean>(true)
   const [isSearching, setIsSearching] = useState<boolean>(false)
   const [isFindCoolingDown, setIsFindCoolingDown] = useState<boolean>(false)
@@ -765,9 +767,9 @@ export function TrainingScreen({ navigation }: Props) {
               </Animated.Text>
             </View>
             <Pressable
-              onPress={() => setSettingsVisible(true)}
+              onPress={() => setMenuVisible(true)}
               style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
-              accessibilityLabel="Open settings"
+              accessibilityLabel="Open menu"
               accessibilityRole="button"
             >
               <Feather name="settings" size={20} color={palette.text} />
@@ -818,34 +820,67 @@ export function TrainingScreen({ navigation }: Props) {
         />
       </View>
 
-      <Modal
-        visible={settingsVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSettingsVisible(false)}
+      <BottomSheet
+        palette={palette}
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        title="Menu"
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Settings</Text>
-            <View style={styles.settingsRow}>
-              <Text style={styles.settingsRowLabel}>Dark mode</Text>
-              <Switch
-                value={isDark}
-                onValueChange={onToggleDark}
-                trackColor={{ false: palette.borderStrong, true: palette.accent }}
-                thumbColor="#FFFFFF"
-              />
+        <View style={styles.menuList}>
+          <Pressable
+            onPress={() => {
+              setMenuVisible(false)
+              navigation.navigate("SavedWorkouts", { isDark })
+            }}
+            style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel="Today's workouts, Your plan"
+          >
+            <View style={styles.menuIcon}>
+              <Feather name="zap" size={17} color={palette.accent} />
             </View>
-            <View style={styles.modalActions}>
-              <ThemedButton
-                palette={palette}
-                label="Close"
-                onPress={() => setSettingsVisible(false)}
-              />
+            <View style={styles.menuText}>
+              <Text style={styles.menuLabel}>Today's workouts</Text>
+              <Text style={styles.menuSub}>Your plan</Text>
             </View>
+            <Feather name="chevron-right" size={18} color={palette.textMuted} />
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              setMenuVisible(false)
+              navigation.navigate("SavedWorkouts", { isDark, initialView: "calendar" })
+            }}
+            style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel="Calendar, Schedule"
+          >
+            <View style={styles.menuIcon}>
+              <Feather name="calendar" size={17} color={palette.accent} />
+            </View>
+            <View style={styles.menuText}>
+              <Text style={styles.menuLabel}>Calendar</Text>
+              <Text style={styles.menuSub}>Schedule</Text>
+            </View>
+            <Feather name="chevron-right" size={18} color={palette.textMuted} />
+          </Pressable>
+          <View style={styles.menuDivider} />
+          <View style={styles.menuRow}>
+            <View style={styles.menuIcon}>
+              <Feather name="moon" size={17} color={palette.accent} />
+            </View>
+            <View style={styles.menuText}>
+              <Text style={styles.menuLabel}>Dark mode</Text>
+            </View>
+            <Switch
+              value={isDark}
+              onValueChange={onToggleDark}
+              trackColor={{ false: palette.borderStrong, true: palette.accent }}
+              thumbColor="#FFFFFF"
+              accessibilityLabel="Dark mode"
+            />
           </View>
         </View>
-      </Modal>
+      </BottomSheet>
 
       <Modal
         visible={saveModalVisible}
