@@ -5,7 +5,6 @@ import {
   EQUIPMENT_TYPES,
   EquipmentType,
   ExerciseFilters,
-  emptyFilterOptions,
   filterOptionsByBodyPart,
   getExercise,
   getExerciseImage,
@@ -86,21 +85,11 @@ router.get('/exercise/:id', async (req: Request, res: Response) => {
   }
 })
 
-// GET /exercises/filters            — every body part's options, keyed by body part
-// GET /exercises/filters?bodyPart=  — one body part's options
-router.get('/filters', async (req: Request, res: Response) => {
+// GET /exercises/filters — every body part's options, keyed by body part.
+// The client loads this once at startup.
+router.get('/filters', async (_req: Request, res: Response) => {
   try {
-    const { bodyPart } = req.query
-    if (bodyPart !== undefined && (typeof bodyPart !== 'string' || !bodyPart.trim())) {
-      res.status(400).json({ error: 'bodyPart must be a single value' })
-      return
-    }
-    const options = await filterOptionsByBodyPart()
-    if (bodyPart === undefined) {
-      res.json(options)
-      return
-    }
-    res.json(options[bodyPart.trim().toLowerCase()] ?? emptyFilterOptions())
+    res.json(await filterOptionsByBodyPart())
   } catch (err) {
     console.error('[filters] error:', err instanceof Error ? err.message : err)
     res.status(500).json({ error: 'Internal server error' })

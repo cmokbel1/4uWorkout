@@ -70,14 +70,10 @@ export async function randomExercisesByBodyPart(
 
 type FilterOption = { value: string; count: number }
 
-export type FilterOptions = {
+type FilterOptions = {
   difficulties: FilterOption[]
   targets: FilterOption[]
   equipmentTypes: FilterOption[]
-}
-
-export function emptyFilterOptions(): FilterOptions {
-  return { difficulties: [], targets: [], equipmentTypes: [] }
 }
 
 // The choices that exist for every body part, keyed by body part, with how
@@ -97,12 +93,12 @@ export async function filterOptionsByBodyPart(): Promise<Record<string, FilterOp
        FROM exercises GROUP BY body_part, target
      UNION ALL
      SELECT body_part, 'equipmentTypes', data->'taxonomy'->>'equipmentCategory', count(*)::int
-       FROM exercises GROUP BY body_part, 3
+       FROM exercises GROUP BY body_part, data->'taxonomy'->>'equipmentCategory'
      ORDER BY body_part, count DESC`,
   )
   const options: Record<string, FilterOptions> = {}
   for (const { body_part, facet, value, count } of rows) {
-    options[body_part] ??= emptyFilterOptions()
+    options[body_part] ??= { difficulties: [], targets: [], equipmentTypes: [] }
     options[body_part][facet].push({ value, count })
   }
   const rank = (option: FilterOption) => DIFFICULTIES.indexOf(option.value as Difficulty)
