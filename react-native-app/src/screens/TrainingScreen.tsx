@@ -481,20 +481,8 @@ export function TrainingScreen({ navigation }: Props) {
       })
   }
 
+  // The Save button is disabled with no workout, or one already saved today.
   function openSaveModal(): void {
-    if (!currentWorkout) {
-      Alert.alert("No workout selected", "Find a workout before saving.")
-      return
-    }
-
-    if (isCurrentSavedToday) {
-      Alert.alert(
-        "Already saved",
-        "This workout is already saved for today.",
-      )
-      return
-    }
-
     setSetCount(1)
     setSetForms([{ weight: "", reps: "" }])
     setSaveModalVisible(true)
@@ -547,7 +535,7 @@ export function TrainingScreen({ navigation }: Props) {
       // This screen's state already reflects the write — stay clean so we
       // don't re-read storage on the next focus.
       markSavedWorkoutsClean()
-      Alert.alert("Saved", "Workout added to today's saved list.")
+      // No alert: the Save button now reads "Saved".
     } catch {
       Alert.alert("Save failed", "Could not write to local storage.")
     }
@@ -822,8 +810,8 @@ export function TrainingScreen({ navigation }: Props) {
         />
         <ThemedButton
           palette={palette}
-          label="Save workout"
-          icon="bookmark"
+          label={isCurrentSavedToday ? "Saved" : "Save workout"}
+          icon={isCurrentSavedToday ? "check" : "bookmark"}
           variant="secondary"
           onPress={openSaveModal}
           disabled={isLoading || !currentWorkout || isCurrentSavedToday}
