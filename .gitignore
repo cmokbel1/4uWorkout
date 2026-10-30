@@ -4,3 +4,16 @@ node_modules/
 *.tar.gz
 *.log
 
+
+# Licensed ExerciseDB Pro data and media must never be committed (public repo, EULA §12)
+exerciseData_pro*.json
+server/data/
+server/ca-certificate.crt
+
+# Server secrets (DATABASE_URL, DATABASE_CA_CERT, EXERCISE_API_KEY)
+server/.env
+server/.env.*
+!server/.env.example
+
+# Compiled server output
+server/dist/

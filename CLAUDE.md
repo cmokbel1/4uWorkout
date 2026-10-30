@@ -78,7 +78,8 @@ Each package has its own `package.json`, `node_modules`, and `CLAUDE.md`. There 
 | Var | Where set | Effect |
 |-----|-----------|--------|
 | `EXPO_PUBLIC_API_BASE_URL` | `react-native-app/.env` or `eas.json` | Base URL all client API calls use — baked at build time |
-| `EXERCISE_API_KEY` | DigitalOcean App Platform env | RapidAPI key — never goes to the client |
+| `DATABASE_URL` | DigitalOcean App Platform env / `server/.env` | Postgres connection (exercise catalogue only) — never goes to the client |
+| `DATABASE_CA_CERT` | DigitalOcean App Platform env / `server/.env` | DigitalOcean CA certificate (PEM) used to verify the database connection |
 | `PORT` | DigitalOcean App Platform env | Server listen port (defaults to 3000) |
 
 `.env.local` in `react-native-app/` takes priority over `.env` for local development.
