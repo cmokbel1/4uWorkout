@@ -26,11 +26,13 @@ function parseFilters(query: Request['query']): ExerciseFilters | string {
   const { difficulty, target, equipmentType } = query
   const filters: ExerciseFilters = {}
   if (difficulty !== undefined) {
-    const value = typeof difficulty === 'string' ? difficulty.trim().toLowerCase() : ''
-    if (!DIFFICULTIES.includes(value as Difficulty)) {
-      return `difficulty must be one of: ${DIFFICULTIES.join(', ')}`
+    const values = typeof difficulty === 'string'
+      ? difficulty.split(',').map((value) => value.trim().toLowerCase())
+      : []
+    if (!values.length || !values.every((value) => DIFFICULTIES.includes(value as Difficulty))) {
+      return `difficulty must be a comma-separated list of: ${DIFFICULTIES.join(', ')}`
     }
-    filters.maxDifficulty = value as Difficulty
+    filters.difficulties = values as Difficulty[]
   }
   if (target !== undefined) {
     if (typeof target !== 'string' || !target.trim()) return 'target must be a single value'

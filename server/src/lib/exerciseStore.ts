@@ -33,7 +33,7 @@ export async function listTargets(): Promise<string[]> {
   return rows.map((row) => row.target)
 }
 
-// Easiest first; a difficulty filter means "up to and including" that level.
+// Easiest first.
 export const DIFFICULTIES = ['beginner', 'intermediate', 'advanced'] as const
 export type Difficulty = (typeof DIFFICULTIES)[number]
 
@@ -43,7 +43,8 @@ export const EQUIPMENT_TYPES = ['free_weight', 'bodyweight', 'cable', 'machine',
 export type EquipmentType = (typeof EQUIPMENT_TYPES)[number]
 
 export type ExerciseFilters = {
-  maxDifficulty?: Difficulty
+  // Exact levels to include; the app sends a contiguous range from its slider.
+  difficulties?: Difficulty[]
   target?: string
   equipmentTypes?: EquipmentType[]
 }
@@ -53,9 +54,6 @@ export async function randomExercisesByBodyPart(
   filters: ExerciseFilters,
   limit: number,
 ): Promise<ExerciseData[]> {
-  const difficulties = filters.maxDifficulty
-    ? DIFFICULTIES.slice(0, DIFFICULTIES.indexOf(filters.maxDifficulty) + 1)
-    : null
   const { rows } = await getPool().query<{ data: ExerciseData }>(
     `SELECT data FROM exercises
      WHERE body_part = $1
@@ -63,7 +61,7 @@ export async function randomExercisesByBodyPart(
        AND ($3::text IS NULL OR target = $3)
        AND ($4::text[] IS NULL OR data->'taxonomy'->>'equipmentCategory' = ANY($4))
      ORDER BY random() LIMIT $5`,
-    [bodyPart, difficulties, filters.target ?? null, filters.equipmentTypes ?? null, limit],
+    [bodyPart, filters.difficulties ?? null, filters.target ?? null, filters.equipmentTypes ?? null, limit],
   )
   return rows.map((row) => toListItem(row.data))
 }

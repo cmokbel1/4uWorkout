@@ -33,8 +33,16 @@ React Navigation native stack in `App.tsx`; `RootStackParamList` is the source o
 ### State
 No global state/context/store — each screen owns its `useState`. `TrainingScreen` holds most of it (`isBootstrapping` gates initial load; `isSearching` gates both the search and the image fetch, sharing one indicator). Cross-screen sync uses a module-level dirty flag in `src/storage/savedWorkouts.ts` (`isSavedWorkoutsDirty` / `markSavedWorkoutsClean`): mutations set it; `TrainingScreen` re-reads storage on focus only when set.
 
+### Design System (redesign in progress)
+`src/theme.ts` holds the redesign's tokens: `getPalette(isDark)` (light/dark colors sampled from the mockups), `fonts` (Manrope weights) and `radius`. **Manrope** is loaded in `App.tsx` with `useFonts`; custom fonts choose their weight by family name, so set `fontFamily: fonts.bold` etc., never `fontWeight`. Icons are `Feather` from `@expo/vector-icons`.
+
+Only `TrainingScreen` and `WorkoutPanel` use the new design so far. `SavedWorkoutsScreen`, `CalendarView`, `StartScreen` and `WorkoutDetailScreen` keep their old styles (and `AppHeader` / `ActionButton`) until they get designs — `WorkoutDetailScreen.styles.ts` is the old Training stylesheet's subset that screen uses, split out unchanged.
+
 ### Shared Components
-`src/components/`. `WorkoutPanel` — shared workout-detail block (labels, difficulty, image, description, self-contained Instructions modal) used by `TrainingScreen` and `WorkoutDetailScreen`; the `showNameLabel` prop is the only difference between callers. `ActionButton` (variant/size). `BackToTrainingButton`. `CalendarView` wraps `react-native-calendars`.
+`src/components/`.
+- `WorkoutPanel` — shared workout-detail block (name, detail chips, image, description, self-contained Instructions sheet), new design, used by `TrainingScreen` and `WorkoutDetailScreen`; the `showNameLabel` prop is the only difference between callers.
+- New design: `SelectField` (dropdown-style field that opens a bottom sheet of options; `large` or `compact` with a caps label), `RangeSlider` (two-handle slider snapping to a few levels — drag, or tap a level label for just that level, tap again for all; handles are `adjustable` for screen readers), `ThemedButton` (`primary` / `secondary`, optional icon), `NavCard`.
+- Old design: `ActionButton` (variant/size), `AppHeader`, `BackToTrainingButton`. `CalendarView` wraps `react-native-calendars`.
 
 ### Search & Display Flow
 On mount, `TrainingScreen` fetches body parts and reads saved workouts. On search, results are Fisher-Yates shuffled into `allResults`; one becomes `currentWorkout`, the next 10 populate `searchResults` (the "Similar Workouts" list). `allResults` keeps the full set — selecting a similar workout re-shuffles and re-slices 10. Selecting a similar workout calls `getExerciseById` (server-cached), falling back to `getExerciseImageById` + local metadata. Selecting a saved workout sets `currentWorkout` directly — no fetch, `gifUrl` already stored.
@@ -43,7 +51,16 @@ On mount, `TrainingScreen` fetches body parts and reads saved workouts. On searc
 `Workout` (`src/types/workout.ts`) is the single type across API responses, AsyncStorage, and UI. New API fields go here first.
 
 ### API Layer
-`src/services/workoutApi.ts` — all requests go through `requestBuilder<T>()` (throws on non-2xx). Exercise images are fetched as blobs and converted to base64 data URLs via `FileReader` for offline display. `getExerciseById` hits the server cache endpoint (`GET /exercises/exercise/:id`), returning full metadata with `gifUrl` already base64. On bootstrap body-part fetch failure, falls back to `FALLBACK_TARGET_AREAS` (`src/constants/targetAreas.ts`). Target areas are not yet wired up — currently a no-op.
+`src/services/workoutApi.ts` — all requests go through `requestBuilder<T>()` (throws on non-2xx). Exercise images are fetched as blobs and converted to base64 data URLs via `FileReader` for offline display. `getExerciseById` hits `GET /exercises/exercise/:id`, returning full metadata with `gifUrl` already base64. `searchExercisesByBodyPart(bodyPart, filters)` returns **up to 11** random matches — filters can make it fewer, or none. `getFilterOptions` loads every body part's filter choices (`GET /exercises/filters`). The query string is built by hand because React Native's `URLSearchParams` doesn't implement `set()`.
+
+### Filters
+Types in `src/types/filters.ts`. `TrainingScreen` holds `filterOptions` (all body parts' choices) and `filters` (the user's choices), and sends `filters` with every search. Controls on the Training card:
+- **Difficulty** — `RangeSlider`; `filters.difficulties` is the contiguous range of exact levels (sent as `difficulty=intermediate,advanced`). The full range means "any" and is stored as `undefined`.
+- **Target** and **Equipment** — `SelectField`s fed from `filterOptions[selectedBodyPart]`, each with an "Any" choice (`""` → `undefined`). Equipment is single-select in the UI, though `equipmentTypes` (and the server) accept several.
+- Filter options are fetched once per session, without blocking bootstrap, and cached in `trainingSession`; if the request fails, filtering is just unavailable and the next mount retries.
+- Changing body part (`onChangeBodyPart`) drops a target or equipment type the new body part doesn't offer; difficulty is kept.
+- `filters` and `selectedBodyPart` are both kept in `trainingSession`, because filter choices only make sense for the body part they were picked under.
+- Narrow combinations return few or no results; the empty-result alert says so when filters are active.
 
 ### Persistence
 `src/storage/savedWorkouts.ts` — JSON in AsyncStorage under `saved_workouts_v3`, a `SavedWorkoutsByDate` map keyed by local date (`YYYY-MM-DD`); each `Workout` carries per-set `setDetails` (weight/reps). Earlier keys (`v1`, `v2`) are no longer read. Helpers: `readSavedWorkouts`, `writeSavedWorkouts`, `addWorkoutForToday`, `removeSavedWorkout`, `clearSavedWorkouts`. Per-day dedup (blocking a workout already saved today) lives in `TrainingScreen`, not the storage module. Dark-mode preference persists separately in `src/storage/theme.ts` (`readDarkMode` / `writeDarkMode`).

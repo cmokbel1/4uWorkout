@@ -8,7 +8,7 @@ import { ActionButton } from "../components/ActionButton"
 import { AppHeader } from "../components/AppHeader"
 import { WorkoutPanel } from "../components/WorkoutPanel"
 import type { RootStackParamList } from "../../App"
-import { makeStyles } from "./stylesheets/TrainingScreen.styles"
+import { makeStyles } from "./stylesheets/WorkoutDetailScreen.styles"
 
 type Props = NativeStackScreenProps<RootStackParamList, "WorkoutDetail">
 

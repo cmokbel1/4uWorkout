@@ -80,7 +80,7 @@ All routes are prefixed `/exercises`. Errors return `{ error }` with 400/404/429
 | `GET /health` | |
 
 **`/bodyPart` filters** — all optional; without them the route behaves as before, so older app builds are unaffected. Unknown `difficulty` / `equipmentType` values return 400. `target` is **not** validated: an unknown target, or a real one that doesn't belong to the body part (`chest` + `biceps`), returns `[]` with 200 — checking it against the database would cost a query and still miss the second case. Clients should only send targets from `/filters`.
-- `difficulty` — **up to and including** that level (`beginner` < `intermediate` < `advanced`), so "intermediate" also returns beginner exercises.
+- `difficulty` — comma-separated **exact** levels, any of `beginner, intermediate, advanced`. The app's range slider sends a contiguous range (`intermediate,advanced`), or one level for "just that one". (This replaced an earlier "up to and including" meaning before any app shipped with it.)
 - `target` — one target muscle, from `/filters` (Pro vocabulary).
 - `equipmentType` — comma-separated, any of `free_weight, bodyweight, cable, machine, accessory, band` (Pro's `taxonomy.equipmentCategory`). This is the main kind of resistance, not everything an exercise needs — a bodyweight dip still needs parallel bars. Filtering on the 173 individual `requiredEquipment` items was rejected as too fine-grained for users.
 

@@ -1,3 +1,4 @@
+import { Feather } from "@expo/vector-icons"
 import { StatusBar } from "expo-status-bar"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
@@ -11,19 +12,20 @@ import {
   TextInput,
   View,
 } from "react-native"
-import { SafeAreaView } from "react-native-safe-area-context"
-import { Picker } from "@react-native-picker/picker"
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useFocusEffect } from "@react-navigation/native"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
-import { ActionButton } from "../components/ActionButton"
-import { AppHeader } from "../components/AppHeader"
+import { NavCard } from "../components/NavCard"
+import { RangeSlider, type LevelRange } from "../components/RangeSlider"
+import { SelectField, type SelectOption } from "../components/SelectField"
+import { ThemedButton } from "../components/ThemedButton"
 import { WorkoutPanel } from "../components/WorkoutPanel"
-import { FALLBACK_TARGET_AREAS } from "../constants/targetAreas"
 import {
   getAllowedBodyParts,
   getExerciseById,
   getExerciseImageById,
+  getFilterOptions,
   searchExercisesByBodyPart,
 } from "../services/workoutApi"
 import {
@@ -35,6 +37,14 @@ import {
 } from "../storage/savedWorkouts"
 import { readDarkMode, writeDarkMode } from "../storage/theme"
 import { trainingSession } from "../state/trainingSession"
+import { getPalette } from "../theme"
+import {
+  DIFFICULTIES,
+  type EquipmentType,
+  type ExerciseFilters,
+  type FilterOption,
+  type FilterOptionsByBodyPart,
+} from "../types/filters"
 import type { Workout } from "../types/workout"
 import type { RootStackParamList } from "../../App"
 import { todayKey } from "../utils/date"
@@ -43,9 +53,34 @@ import { makeStyles } from "./stylesheets/TrainingScreen.styles"
 
 type Props = NativeStackScreenProps<RootStackParamList, "Training">
 
+// Upper bound, not a requirement: a filtered search can match fewer, and the
+// list shows however many there are (possibly none).
+const MAX_SIMILAR_WORKOUTS = 10
+
+const DIFFICULTY_LABELS = DIFFICULTIES.map((level) => toTitleCase(level))
+const FULL_DIFFICULTY_RANGE: LevelRange = { min: 0, max: DIFFICULTIES.length - 1 }
+
+const EQUIPMENT_LABELS: Record<EquipmentType, string> = {
+  free_weight: "Free weights",
+  bodyweight: "Bodyweight",
+  cable: "Cable",
+  machine: "Machine",
+  accessory: "Accessory",
+  band: "Band",
+}
+
+// "" stands for "no filter" in the target and equipment fields.
+const ANY_OPTION: SelectOption = { value: "", label: "Any" }
+
+const SET_COUNT_OPTIONS: SelectOption[] = Array.from({ length: 10 }, (_, i) => ({
+  value: String(i + 1),
+  label: String(i + 1),
+}))
+
 export function TrainingScreen({ navigation }: Props) {
   const scrollViewRef = useRef<ScrollView>(null)
   const workoutPanelRef = useRef<View>(null)
+  const insets = useSafeAreaInsets()
 
   const [isDark, setIsDark] = useState<boolean>(false)
   const [settingsVisible, setSettingsVisible] = useState<boolean>(false)
@@ -54,12 +89,19 @@ export function TrainingScreen({ navigation }: Props) {
   const [isFindCoolingDown, setIsFindCoolingDown] = useState<boolean>(false)
   const findCooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [bodyPartOptions, setBodyPartOptions] = useState<string[]>([])
-  const [selectedBodyPart, setSelectedBodyPart] = useState<string>("")
-  const [targetAreaOptions, setTargetAreaOptions] = useState<string[]>(
-    FALLBACK_TARGET_AREAS,
+  // Hydrated from the session too: the sync effect below writes this back on
+  // mount, before bootstrap reads it, so starting from "" would erase it.
+  const [selectedBodyPart, setSelectedBodyPart] = useState<string>(
+    () => trainingSession.selectedBodyPart,
   )
-  const [selectedTargetArea, setSelectedTargetArea] = useState<string>(
-    targetAreaOptions[0],
+  // Filter choices for every body part, fetched once per session. Empty when
+  // the request fails, which just leaves searches unfiltered.
+  const [filterOptions, setFilterOptions] = useState<FilterOptionsByBodyPart>(
+    () => trainingSession.filterOptions ?? {},
+  )
+  // The user's filter choices, sent with every search.
+  const [filters, setFilters] = useState<ExerciseFilters>(
+    () => trainingSession.filters,
   )
   // Hydrate the randomized search state from the in-memory session snapshot so
   // it survives a remount when navigating back to this screen.
@@ -80,11 +122,47 @@ export function TrainingScreen({ navigation }: Props) {
     { weight: "", reps: "" },
   ])
 
-  const styles = useMemo(() => makeStyles(isDark), [isDark])
+  const palette = getPalette(isDark)
+  const styles = useMemo(() => makeStyles(palette), [palette])
 
-  // Today's bucket drives the dedup/disable logic; the total across all days
-  // drives the "View Saved Workouts" count.
+  // Today's bucket drives the dedup/disable logic.
   const todaysWorkouts = savedMap[todayKey()] ?? []
+  const isCurrentSavedToday = Boolean(
+    currentWorkout && todaysWorkouts.some((w) => w.id === currentWorkout.id),
+  )
+
+  // The slider shows the selected difficulties as a range; no filter is the
+  // full range.
+  const difficultyRange: LevelRange = filters.difficulties?.length
+    ? {
+        min: DIFFICULTIES.indexOf(filters.difficulties[0]),
+        max: DIFFICULTIES.indexOf(filters.difficulties[filters.difficulties.length - 1]),
+      }
+    : FULL_DIFFICULTY_RANGE
+  const difficultyRangeLabel =
+    difficultyRange.min === difficultyRange.max
+      ? DIFFICULTY_LABELS[difficultyRange.min]
+      : `${DIFFICULTY_LABELS[difficultyRange.min]} – ${DIFFICULTY_LABELS[difficultyRange.max]}`
+
+  const bodyPartSelectOptions: SelectOption[] = bodyPartOptions.map((bodyPart) => ({
+    value: bodyPart,
+    label: toTitleCase(bodyPart),
+  }))
+  const currentFilterOptions = filterOptions[selectedBodyPart]
+  const targetSelectOptions: SelectOption[] = [
+    ANY_OPTION,
+    ...(currentFilterOptions?.targets ?? []).map((option) => ({
+      value: option.value,
+      label: toTitleCase(option.value),
+    })),
+  ]
+  const equipmentSelectOptions: SelectOption[] = [
+    ANY_OPTION,
+    ...(currentFilterOptions?.equipmentTypes ?? []).map((option) => ({
+      value: option.value,
+      label: EQUIPMENT_LABELS[option.value as EquipmentType] ?? toTitleCase(option.value),
+    })),
+  ]
 
   useEffect(() => {
     async function bootstrap(): Promise<void> {
@@ -94,11 +172,28 @@ export function TrainingScreen({ navigation }: Props) {
         // Keep default (light) when the preference can't be read.
       }
 
+      // Not awaited: the screen doesn't need filter options to render. A
+      // failure leaves session.filterOptions null, so the next mount retries.
+      if (!trainingSession.filterOptions) {
+        getFilterOptions()
+          .then((options) => {
+            trainingSession.filterOptions = options
+            setFilterOptions(options)
+          })
+          .catch(() => {})
+      }
+
       try {
         const allowedBodyParts = await getAllowedBodyParts()
         if (allowedBodyParts.length) {
           setBodyPartOptions(allowedBodyParts)
-          setSelectedBodyPart(allowedBodyParts[0])
+          // Restore the body part from before a remount, so it still matches
+          // the restored filters.
+          setSelectedBodyPart(
+            allowedBodyParts.includes(trainingSession.selectedBodyPart)
+              ? trainingSession.selectedBodyPart
+              : allowedBodyParts[0],
+          )
         }
       } catch {
         // Keep fallback options when endpoint is unavailable.
@@ -121,7 +216,9 @@ export function TrainingScreen({ navigation }: Props) {
     trainingSession.allResults = allResults
     trainingSession.searchResults = searchResults
     trainingSession.currentWorkout = currentWorkout
-  }, [allResults, searchResults, currentWorkout])
+    trainingSession.filters = filters
+    trainingSession.selectedBodyPart = selectedBodyPart
+  }, [allResults, searchResults, currentWorkout, filters, selectedBodyPart])
 
   // Re-sync saved workouts on focus only when a mutation happened elsewhere
   // (e.g. sets/reps edited on the Saved Workouts screen). Skips the storage
@@ -154,19 +251,30 @@ export function TrainingScreen({ navigation }: Props) {
 
     setIsSearching(true)
     try {
-      const results = await searchExercisesByBodyPart(selectedBodyPart)
+      const results = await searchExercisesByBodyPart(selectedBodyPart, filters)
       if (!results.length) {
-        Alert.alert("No workouts found", "Try a different body part.")
+        const hasFilters = Boolean(
+          filters.difficulties?.length || filters.target || filters.equipmentTypes?.length,
+        )
+        Alert.alert(
+          "No workouts found",
+          hasFilters
+            ? "No workouts match these filters. Try removing some."
+            : "Try a different body part.",
+        )
         return
       }
+      // Filters can return fewer than 11, so shuffle by the actual length.
       const shuffled = [...results]
-      for (let i = 10; i > 0; i--) {
+      for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1))
         ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
       }
       const selected = shuffled[Math.floor(Math.random() * shuffled.length)]
       setAllResults(shuffled)
-      setSearchResults(shuffled.filter((w) => w.id !== selected.id).slice(0, 10))
+      setSearchResults(
+        shuffled.filter((w) => w.id !== selected.id).slice(0, MAX_SIMILAR_WORKOUTS),
+      )
       await getImageAndUpdateWorkoutState(selected)
     } catch (error: unknown) {
       Alert.alert("Search failed", getErrorMessage(error))
@@ -175,6 +283,38 @@ export function TrainingScreen({ navigation }: Props) {
       setIsFindCoolingDown(true)
       findCooldownRef.current = setTimeout(() => setIsFindCoolingDown(false), 3000)
     }
+  }
+
+  // Targets and equipment types differ per body part, so drop choices the new
+  // body part doesn't have. Difficulty applies to every body part and is kept.
+  function onChangeBodyPart(bodyPart: string): void {
+    setSelectedBodyPart(bodyPart)
+    const options = filterOptions[bodyPart]
+    const isOffered = (list: FilterOption[] | undefined, value: string) =>
+      Boolean(list?.some((option) => option.value === value))
+    setFilters((prev) => {
+      const equipmentTypes = prev.equipmentTypes?.filter((type) =>
+        isOffered(options?.equipmentTypes, type),
+      )
+      return {
+        difficulties: prev.difficulties,
+        target:
+          prev.target && isOffered(options?.targets, prev.target)
+            ? prev.target
+            : undefined,
+        equipmentTypes: equipmentTypes?.length ? equipmentTypes : undefined,
+      }
+    })
+  }
+
+  // The full range means "any difficulty", so it clears the filter.
+  function onChangeDifficultyRange(range: LevelRange): void {
+    const isFullRange =
+      range.min === FULL_DIFFICULTY_RANGE.min && range.max === FULL_DIFFICULTY_RANGE.max
+    setFilters((prev) => ({
+      ...prev,
+      difficulties: isFullRange ? undefined : DIFFICULTIES.slice(range.min, range.max + 1),
+    }))
   }
 
   function scrollToWorkoutPanel(): void {
@@ -191,7 +331,7 @@ export function TrainingScreen({ navigation }: Props) {
       const j = Math.floor(Math.random() * (i + 1))
       ;[pool[i], pool[j]] = [pool[j], pool[i]]
     }
-    setSearchResults(pool.filter((w) => w.id !== item.id).slice(0, 10))
+    setSearchResults(pool.filter((w) => w.id !== item.id).slice(0, MAX_SIMILAR_WORKOUTS))
     setIsSearching(true)
     scrollToWorkoutPanel()
     try {
@@ -232,7 +372,7 @@ export function TrainingScreen({ navigation }: Props) {
       return
     }
 
-    if (todaysWorkouts.some((w) => w.id === currentWorkout.id)) {
+    if (isCurrentSavedToday) {
       Alert.alert(
         "Already saved",
         "This workout is already saved for today.",
@@ -303,178 +443,220 @@ export function TrainingScreen({ navigation }: Props) {
       <SafeAreaView style={styles.safeArea}>
         <StatusBar style={isDark ? "light" : "dark"} />
         <View style={styles.bootstrapLoader}>
-          <ActivityIndicator size="large" color="#3B6FD4" style={styles.bootstrapSpinner} />
-          <Text style={styles.bootstrapLoaderText}>Loading...</Text>
+          <ActivityIndicator size="large" color={palette.accent} />
+          <Text style={styles.bootstrapLoaderText}>Loading…</Text>
         </View>
       </SafeAreaView>
     )
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <StatusBar style={isDark ? "light" : "dark"} />
-      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.container}>
-        <AppHeader
-          isDark={isDark}
-          right={
-            <Pressable
-              onPress={() => setSettingsVisible(true)}
-              style={styles.cogButton}
-              accessibilityLabel="Open settings"
-              accessibilityRole="button"
-            >
-              <Text style={styles.cogIcon}>⚙</Text>
-            </Pressable>
-          }
-        />
-
-        <Modal
-          visible={settingsVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setSettingsVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Settings</Text>
-              <View style={styles.settingsRow}>
-                <Text style={styles.settingsRowLabel}>Dark Mode</Text>
-                <Switch
-                  value={isDark}
-                  onValueChange={onToggleDark}
-                  trackColor={{ false: "#C9D3E0", true: "#3B6FD4" }}
-                  thumbColor="#FFFFFF"
-                />
-              </View>
-              <Pressable
-                style={styles.modalClose}
-                onPress={() => setSettingsVisible(false)}
-                accessibilityLabel="Close settings"
-                accessibilityRole="button"
-              >
-                <Text style={styles.modalCloseText}>Close</Text>
-              </Pressable>
-            </View>
+      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.brand}>4UWORKOUT</Text>
+            <Text style={styles.title} accessibilityRole="header">
+              Trainer
+            </Text>
           </View>
-        </Modal>
+          <Pressable
+            onPress={() => setSettingsVisible(true)}
+            style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+            accessibilityLabel="Open settings"
+            accessibilityRole="button"
+          >
+            <Feather name="settings" size={20} color={palette.text} />
+          </Pressable>
+        </View>
 
-        <View style={styles.card}>
-          <View style={styles.row}>
-            <ActionButton
-              label="Today's Workouts"
-              onPress={() => navigation.navigate("SavedWorkouts", { isDark })}
-            />
-            <ActionButton
-              label="Calendar"
-              variant="tertiary"
-              onPress={() =>
-                navigation.navigate("SavedWorkouts", {
-                  isDark,
-                  initialView: "calendar",
-                })
-              }
-            />
-          </View>
+        <View style={styles.navRow}>
+          <NavCard
+            palette={palette}
+            highlighted
+            icon="zap"
+            title="Today's workouts"
+            subtitle="Your plan"
+            onPress={() => navigation.navigate("SavedWorkouts", { isDark })}
+          />
+          <NavCard
+            palette={palette}
+            icon="calendar"
+            title="Calendar"
+            subtitle="Schedule"
+            onPress={() =>
+              navigation.navigate("SavedWorkouts", { isDark, initialView: "calendar" })
+            }
+          />
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Select a Body Part</Text>
-          <Text style={styles.fieldLabel}>Find a workout for:</Text>
-          <View style={styles.pickerWrap}>
-            <Picker
-              selectedValue={selectedBodyPart}
-              onValueChange={(value) => setSelectedBodyPart(String(value))}
-              dropdownIconColor={isDark ? "#8B949E" : "#DDE6F6"}
-              style={styles.picker}
-              itemStyle={styles.pickerItem}
-            >
-              {bodyPartOptions.map((bodyPart) => (
-                <Picker.Item
-                  key={bodyPart}
-                  label={toTitleCase(bodyPart)}
-                  value={bodyPart}
-                />
-              ))}
-            </Picker>
-          </View>
+          <Text style={styles.sectionLabel}>SELECT A BODY PART</Text>
+          <SelectField
+            palette={palette}
+            title="Body part"
+            options={bodyPartSelectOptions}
+            value={selectedBodyPart}
+            onChange={onChangeBodyPart}
+          />
 
-          <View style={styles.row}>
-            <ActionButton
-              label="Find"
-              onPress={onSearchWorkout}
-              disabled={isSearching || isFindCoolingDown}
-            />
-            <ActionButton
-              label="Save Workout"
-              variant="accent"
-              onPress={openSaveModal}
-              disabled={
-                isSearching ||
-                !currentWorkout ||
-                todaysWorkouts.some((w) => w.id === currentWorkout.id)
-              }
-            />
-          </View>
-
-          {currentWorkout ? (
-            <View ref={workoutPanelRef} style={styles.workoutPanelWrap}>
-              <WorkoutPanel workout={currentWorkout} isDark={isDark} />
-              {isSearching && (
-                <View style={styles.workoutPanelOverlay}>
-                  <ActivityIndicator
-                    size="large"
-                    color={isDark ? "#8B949E" : "#4A5568"}
-                    style={styles.searchSpinner}
-                  />
-                </View>
-              )}
-            </View>
-          ) : isSearching ? (
-            <ActivityIndicator
-              size="large"
-              color={isDark ? "#8B949E" : "#4A5568"}
-              style={[styles.loadingIndicator, styles.searchSpinner]}
-            />
-          ) : (
-            <Text style={styles.helperText}>
-              Choose a body part and tap Find.
+          <View style={styles.difficultyHeader}>
+            <Text style={styles.difficultyTitle}>
+              Difficulty <Text style={styles.optional}>(optional)</Text>
             </Text>
-          )}
+            <Text style={styles.rangeLabel}>{difficultyRangeLabel}</Text>
+          </View>
+          <RangeSlider
+            palette={palette}
+            levels={DIFFICULTY_LABELS}
+            value={difficultyRange}
+            onChange={onChangeDifficultyRange}
+          />
+          <Text style={styles.helperText}>
+            Drag the handles for a range, or tap a level for just that one.
+          </Text>
 
-          {currentWorkout && !isSearching && (
-            <>
-              <Text style={styles.savedTitle}>Similar Workouts</Text>
-              <Text style={styles.fieldLabel}>
-                Select a workout for more information
+          <View style={styles.selectRow}>
+            <View style={styles.selectCell}>
+              <SelectField
+                palette={palette}
+                size="compact"
+                title="Target"
+                options={targetSelectOptions}
+                value={filters.target ?? ""}
+                onChange={(value) =>
+                  setFilters((prev) => ({ ...prev, target: value || undefined }))
+                }
+              />
+            </View>
+            <View style={styles.selectCell}>
+              <SelectField
+                palette={palette}
+                size="compact"
+                title="Equipment"
+                options={equipmentSelectOptions}
+                value={filters.equipmentTypes?.[0] ?? ""}
+                onChange={(value) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    equipmentTypes: value ? [value as EquipmentType] : undefined,
+                  }))
+                }
+              />
+            </View>
+          </View>
+        </View>
+
+        {currentWorkout ? (
+          <View ref={workoutPanelRef} style={styles.resultCard}>
+            <WorkoutPanel workout={currentWorkout} isDark={isDark} />
+            {isSearching && (
+              <View style={styles.resultOverlay}>
+                <ActivityIndicator size="large" color={palette.accent} />
+              </View>
+            )}
+          </View>
+        ) : isSearching ? (
+          <View ref={workoutPanelRef} style={styles.resultCard}>
+            <ActivityIndicator size="large" color={palette.accent} />
+          </View>
+        ) : (
+          <View style={styles.emptyCard}>
+            <View style={styles.emptyIcon}>
+              <Feather name="shuffle" size={20} color={palette.accent} />
+            </View>
+            <Text style={styles.emptyTitle}>Your workout appears here</Text>
+            <Text style={styles.emptyText}>
+              Choose a body part and tap Find for a random workout.
+            </Text>
+          </View>
+        )}
+
+        {currentWorkout && !isSearching && (
+          <>
+            <View style={styles.similarHeader}>
+              <Text style={styles.similarTitle}>Similar workouts</Text>
+              <Text style={styles.helperText}>
+                {searchResults.length
+                  ? "Tap one for more information."
+                  : "No other workouts match these filters."}
               </Text>
-              {searchResults.length ? (
-                searchResults.map((item, idx) => (
+            </View>
+            {searchResults.length ? (
+              <View style={styles.similarList}>
+                {searchResults.map((item, idx) => (
                   <Pressable
                     key={item.id}
                     onPress={() => onSelectSimilarWorkout(item)}
-                    style={({ pressed }) => [styles.resultItem, pressed && styles.pressedItem]}
+                    style={({ pressed }) => [styles.similarItem, pressed && styles.pressed]}
                     accessibilityLabel={`Select ${item.name}`}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.resultItemText}>
-                      {idx + 1}. {item.name}
-                    </Text>
-                    <Text style={styles.resultItemSubtext}>
-                      Target: {item.target}
-                    </Text>
+                    <View style={styles.similarIndex}>
+                      <Text style={styles.similarIndexText}>{idx + 1}</Text>
+                    </View>
+                    <View style={styles.similarText}>
+                      <Text style={styles.similarName} numberOfLines={2}>
+                        {item.name}
+                      </Text>
+                      <Text style={styles.similarSub}>Target: {item.target}</Text>
+                    </View>
+                    <Feather name="chevron-right" size={18} color={palette.textMuted} />
                   </Pressable>
-                ))
-              ) : (
-                <Text style={styles.helperText}>
-                  Similar workouts will appear when a search is executed and
-                  similar exercises are found.
-                </Text>
-              )}
-            </>
-          )}
-
-        </View>
+                ))}
+              </View>
+            ) : null}
+          </>
+        )}
       </ScrollView>
+
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+        <ThemedButton
+          palette={palette}
+          label="Find"
+          icon="shuffle"
+          onPress={onSearchWorkout}
+          disabled={isSearching || isFindCoolingDown}
+        />
+        <ThemedButton
+          palette={palette}
+          label="Save workout"
+          icon="bookmark"
+          variant="secondary"
+          onPress={openSaveModal}
+          disabled={isSearching || !currentWorkout || isCurrentSavedToday}
+        />
+      </View>
+
+      <Modal
+        visible={settingsVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSettingsVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Settings</Text>
+            <View style={styles.settingsRow}>
+              <Text style={styles.settingsRowLabel}>Dark mode</Text>
+              <Switch
+                value={isDark}
+                onValueChange={onToggleDark}
+                trackColor={{ false: palette.borderStrong, true: palette.accent }}
+                thumbColor="#FFFFFF"
+              />
+            </View>
+            <View style={styles.modalActions}>
+              <ThemedButton
+                palette={palette}
+                label="Close"
+                onPress={() => setSettingsVisible(false)}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={saveModalVisible}
@@ -484,34 +666,28 @@ export function TrainingScreen({ navigation }: Props) {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Save Workout</Text>
+            <Text style={styles.modalTitle}>Save workout</Text>
             {currentWorkout ? (
-              <Text style={styles.detailLabel}>{currentWorkout.name}</Text>
+              <Text style={styles.modalSubtitle}>{currentWorkout.name}</Text>
             ) : null}
-            <Text style={styles.fieldLabel}>
-              How many sets? (weight and reps are optional — you can edit them
-              later)
+            <Text style={styles.helperText}>
+              Weight and reps are optional — you can edit them later.
             </Text>
-            <View style={styles.pickerWrap}>
-              <Picker
-                selectedValue={setCount}
-                onValueChange={(value) => onChangeSetCount(Number(value))}
-                dropdownIconColor={isDark ? "#8B949E" : "#DDE6F6"}
-                style={styles.picker}
-                itemStyle={styles.pickerItem}
-              >
-                {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                  <Picker.Item key={n} label={String(n)} value={n} />
-                ))}
-              </Picker>
-            </View>
+            <SelectField
+              palette={palette}
+              size="compact"
+              title="Sets"
+              options={SET_COUNT_OPTIONS}
+              value={String(setCount)}
+              onChange={(value) => onChangeSetCount(Number(value))}
+            />
             <ScrollView style={styles.modalBody}>
               {setForms.map((form, index) => (
                 <View key={index} style={styles.setRow}>
                   <Text style={styles.setRowLabel}>Set {index + 1}</Text>
                   <View style={styles.inputRow}>
                     <View style={styles.inputGroup}>
-                      <Text style={styles.inputLabel}>Weight (lbs)</Text>
+                      <Text style={styles.inputLabel}>WEIGHT (LBS)</Text>
                       <TextInput
                         style={styles.numberInput}
                         value={form.weight}
@@ -520,13 +696,13 @@ export function TrainingScreen({ navigation }: Props) {
                         }
                         keyboardType="number-pad"
                         placeholder="0"
-                        placeholderTextColor={isDark ? "#6E7681" : "#A0AEC0"}
+                        placeholderTextColor={palette.textDisabled}
                         maxLength={4}
                         accessibilityLabel={`Weight for set ${index + 1}`}
                       />
                     </View>
                     <View style={styles.inputGroup}>
-                      <Text style={styles.inputLabel}>Reps</Text>
+                      <Text style={styles.inputLabel}>REPS</Text>
                       <TextInput
                         style={styles.numberInput}
                         value={form.reps}
@@ -535,7 +711,7 @@ export function TrainingScreen({ navigation }: Props) {
                         }
                         keyboardType="number-pad"
                         placeholder="0"
-                        placeholderTextColor={isDark ? "#6E7681" : "#A0AEC0"}
+                        placeholderTextColor={palette.textDisabled}
                         maxLength={3}
                         accessibilityLabel={`Reps for set ${index + 1}`}
                       />
@@ -544,12 +720,18 @@ export function TrainingScreen({ navigation }: Props) {
                 </View>
               ))}
             </ScrollView>
-            <View style={styles.row}>
-              <ActionButton label="Save" variant="accent" onPress={onConfirmSave} />
-              <ActionButton
+            <View style={styles.modalActions}>
+              <ThemedButton
+                palette={palette}
                 label="Cancel"
                 variant="secondary"
                 onPress={() => setSaveModalVisible(false)}
+              />
+              <ThemedButton
+                palette={palette}
+                label="Save"
+                icon="check"
+                onPress={onConfirmSave}
               />
             </View>
           </View>
@@ -558,4 +740,3 @@ export function TrainingScreen({ navigation }: Props) {
     </SafeAreaView>
   )
 }
-
