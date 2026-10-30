@@ -73,10 +73,19 @@ All routes are prefixed `/exercises`. Errors return `{ error }` with 400/404/429
 |-------|-------|
 | `GET /exercises/bodyPartList` | Distinct body parts from the data |
 | `GET /exercises/targetList` | Distinct targets from the data (Pro vocabulary — e.g. `quadriceps`, not `quads`). **Not yet wired into the client UI** |
-| `GET /exercises/bodyPart/:bodyPart` | **A random 11** exercises (one to show + 10 "similar"), list fields only — see Licence |
+| `GET /exercises/bodyPart/:bodyPart` | **A random 11** exercises (one to show + 10 "similar"), list fields only — see Licence. Optional filters, see below |
+| `GET /exercises/filters` | Every body part's filter choices, keyed by body part: `{ "<body part>": { difficulties, targets, equipmentTypes: [{ value, count }] } }`. About 4 KB — the client loads it **once at startup** (alongside `/bodyPartList`) and keeps it for the session, so switching body parts needs no request. Only changes on a re-import |
+| `GET /exercises/filters?bodyPart=` | The same choices for one body part (unknown body part → empty lists) |
 | `GET /exercises/exercise/:id` | Full Pro record (taxonomy, equipment lists, relationships) with `gifUrl` as a base64 data URL |
 | `GET /exercises/image?exerciseId=` | Binary GIF. `resolution` is accepted for compatibility and ignored — only 360 is stored |
 | `GET /health` | |
+
+**`/bodyPart` filters** — all optional; without them the route behaves as before, so older app builds are unaffected. Unknown values return 400.
+- `difficulty` — **up to and including** that level (`beginner` < `intermediate` < `advanced`), so "intermediate" also returns beginner exercises.
+- `target` — one target muscle, from `/filters` (Pro vocabulary).
+- `equipmentType` — comma-separated, any of `free_weight, bodyweight, cable, machine, accessory, band` (Pro's `taxonomy.equipmentCategory`). This is the main kind of resistance, not everything an exercise needs — a bodyweight dip still needs parallel bars. Filtering on the 173 individual `requiredEquipment` items was rejected as too fine-grained for users.
+
+Combinations can match fewer than 11 exercises, or none (e.g. shoulders + beginner + rear deltoids + cable → 0), so the client must handle short and empty lists. `/filters` counts are per choice on its own, not for combinations.
 
 List items carry exactly the fields the old RapidAPI list returned (`bodyPart, equipment, id, name, target, secondaryMuscles, instructions, description, difficulty, category`), so app builds released before the Pro switch keep working.
 
