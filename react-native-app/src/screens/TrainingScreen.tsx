@@ -223,6 +223,7 @@ export function TrainingScreen({ navigation }: Props) {
     ...(currentFilterOptions?.targets ?? []).map((option) => ({
       value: option.value,
       label: toTitleCase(option.value),
+      detail: String(option.count),
     })),
   ]
   const equipmentSelectOptions: SelectOption[] = [
@@ -230,6 +231,7 @@ export function TrainingScreen({ navigation }: Props) {
     ...(currentFilterOptions?.equipmentTypes ?? []).map((option) => ({
       value: option.value,
       label: EQUIPMENT_LABELS[option.value as EquipmentType] ?? toTitleCase(option.value),
+      detail: String(option.count),
     })),
   ]
 
