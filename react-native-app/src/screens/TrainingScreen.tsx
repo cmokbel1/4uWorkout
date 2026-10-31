@@ -857,42 +857,32 @@ export function TrainingScreen({ navigation }: Props) {
         title="Menu"
       >
         <View style={styles.menuList}>
-          <Pressable
-            onPress={() => {
-              setMenuVisible(false)
-              openTodaysWorkouts()
-            }}
-            style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel="Today's workouts, Your plan"
-          >
-            <View style={styles.menuIcon}>
-              <Feather name="zap" size={17} color={palette.accent} />
-            </View>
-            <View style={styles.menuText}>
-              <Text style={styles.menuLabel}>Today's workouts</Text>
-              <Text style={styles.menuSub}>Your plan</Text>
-            </View>
-            <Feather name="chevron-right" size={18} color={palette.textMuted} />
-          </Pressable>
-          <Pressable
-            onPress={() => {
-              setMenuVisible(false)
-              openCalendar()
-            }}
-            style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel="Calendar, Schedule"
-          >
-            <View style={styles.menuIcon}>
-              <Feather name="calendar" size={17} color={palette.accent} />
-            </View>
-            <View style={styles.menuText}>
-              <Text style={styles.menuLabel}>Calendar</Text>
-              <Text style={styles.menuSub}>Schedule</Text>
-            </View>
-            <Feather name="chevron-right" size={18} color={palette.textMuted} />
-          </Pressable>
+          {(
+            [
+              { title: "Today's workouts", subtitle: "Your plan", icon: "zap", open: openTodaysWorkouts },
+              { title: "Calendar", subtitle: "Schedule", icon: "calendar", open: openCalendar },
+            ] as const
+          ).map((link) => (
+            <Pressable
+              key={link.title}
+              onPress={() => {
+                setMenuVisible(false)
+                link.open()
+              }}
+              style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel={`${link.title}, ${link.subtitle}`}
+            >
+              <View style={styles.menuIcon}>
+                <Feather name={link.icon} size={17} color={palette.accent} />
+              </View>
+              <View style={styles.menuText}>
+                <Text style={styles.menuLabel}>{link.title}</Text>
+                <Text style={styles.menuSub}>{link.subtitle}</Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={palette.textMuted} />
+            </Pressable>
+          ))}
           <View style={styles.menuDivider} />
           <View style={styles.menuRow}>
             <View style={styles.menuIcon}>
