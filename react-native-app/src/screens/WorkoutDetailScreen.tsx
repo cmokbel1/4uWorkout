@@ -5,8 +5,10 @@ import { Image, Pressable, ScrollView, Text, View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
+import { AppMenu } from "../components/AppMenu"
 import { InstructionsModal } from "../components/InstructionsModal"
 import { ScreenHeader } from "../components/ScreenHeader"
+import { writeDarkMode } from "../storage/theme"
 import { getPalette } from "../theme"
 import { DIFFICULTIES, type Difficulty } from "../types/filters"
 import type { RootStackParamList } from "../../App"
@@ -18,7 +20,10 @@ type Props = NativeStackScreenProps<RootStackParamList, "WorkoutDetail">
 // as a route param (it already carries a base64 gifUrl), so nothing is fetched
 // here. Editing sets stays on the Saved Workouts card.
 export function WorkoutDetailScreen({ route, navigation }: Props) {
-  const { workout, isDark } = route.params
+  const { workout } = route.params
+  // Starts from the previous screen's setting; the cog's menu can change it.
+  const [isDark, setIsDark] = useState<boolean>(route.params.isDark)
+  const [menuVisible, setMenuVisible] = useState(false)
   const palette = getPalette(isDark)
   const styles = useMemo(() => makeStyles(palette), [palette])
   const [instructionsVisible, setInstructionsVisible] = useState(false)
@@ -35,7 +40,12 @@ export function WorkoutDetailScreen({ route, navigation }: Props) {
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <StatusBar style={isDark ? "light" : "dark"} />
-      <ScreenHeader palette={palette} title="Trainer" onBack={() => navigation.goBack()} />
+      <ScreenHeader
+        palette={palette}
+        title="Trainer"
+        onBack={() => navigation.goBack()}
+        onOpenMenu={() => setMenuVisible(true)}
+      />
 
       <ScrollView contentContainerStyle={styles.content}>
         <Pressable
@@ -125,6 +135,33 @@ export function WorkoutDetailScreen({ route, navigation }: Props) {
           </View>
         ) : null}
       </ScrollView>
+
+      <AppMenu
+        palette={palette}
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        links={[
+          {
+            title: "Training",
+            subtitle: "Find a workout",
+            icon: "shuffle",
+            onPress: () => navigation.navigate("Training"),
+          },
+          {
+            title: "Saved Workouts",
+            subtitle: "Back to your list",
+            icon: "list",
+            onPress: () => navigation.goBack(),
+          },
+        ]}
+        isDark={isDark}
+        onToggleDark={(value) => {
+          setIsDark(value)
+          writeDarkMode(value).catch(() => {
+            // Non-fatal: the toggle still applies for this session.
+          })
+        }}
+      />
 
       <InstructionsModal
         palette={palette}
