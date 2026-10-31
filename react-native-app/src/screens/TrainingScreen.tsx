@@ -498,21 +498,16 @@ export function TrainingScreen({ navigation }: Props) {
     }
   }
 
-  async function getImageAndUpdateWorkoutState(
-    workout: Workout,
-  ): Promise<void> {
-    setIsSearching(true)
+  // Loads the image for the workout a search picked and shows it. Runs inside
+  // onSearchWorkout, which sets and clears isSearching around it.
+  async function getImageAndUpdateWorkoutState(workout: Workout): Promise<void> {
     beginLoadingWorkout()
-    await getExerciseImageById(workout.id)
-      .then((imageUrl) => {
-        showWorkout({ ...workout, gifUrl: imageUrl })
-      })
-      .catch((error) => {
-        console.error("Failed to fetch image for workout:", workout.id, error)
-      })
-      .finally(() => {
-        setIsSearching(false)
-      })
+    try {
+      const imageUrl = await getExerciseImageById(workout.id)
+      showWorkout({ ...workout, gifUrl: imageUrl })
+    } catch (error) {
+      console.error("Failed to fetch image for workout:", workout.id, error)
+    }
   }
 
   // The Save button is disabled with no workout, or one already saved today.
