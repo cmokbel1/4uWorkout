@@ -23,6 +23,23 @@ export function markSavedWorkoutsClean(): void {
   savedWorkoutsDirty = false;
 }
 
+// Keeps the first (newest) copy of each workout per day. The same workout
+// could be saved twice in one day before addWorkoutForToday checked, which
+// breaks list keys and makes edit/delete hit both copies. Cleaned on read;
+// the cleaned map is written back on the next save.
+function withoutDuplicates(map: SavedWorkoutsByDate): SavedWorkoutsByDate {
+  const clean: SavedWorkoutsByDate = {};
+  for (const [date, workouts] of Object.entries(map)) {
+    const seen = new Set<string>();
+    clean[date] = workouts.filter((workout) => {
+      if (seen.has(workout.id)) return false;
+      seen.add(workout.id);
+      return true;
+    });
+  }
+  return clean;
+}
+
 export async function readSavedWorkouts(): Promise<SavedWorkoutsByDate> {
   const raw = await AsyncStorage.getItem(SAVED_WORKOUTS_KEY);
   if (!raw) return {};
@@ -30,7 +47,7 @@ export async function readSavedWorkouts(): Promise<SavedWorkoutsByDate> {
   try {
     const parsed: unknown = JSON.parse(raw);
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-      ? (parsed as SavedWorkoutsByDate)
+      ? withoutDuplicates(parsed as SavedWorkoutsByDate)
       : {};
   } catch {
     return {};
@@ -50,12 +67,15 @@ export async function clearSavedWorkouts(): Promise<void> {
 }
 
 // Saves a workout under today's date (newest first). Returns the updated map.
+// A workout already saved today is left as it is (sets included), so the
+// store never holds the same workout twice in a day.
 export async function addWorkoutForToday(
   workout: Workout,
 ): Promise<SavedWorkoutsByDate> {
   const map = await readSavedWorkouts();
   const key = todayKey();
   const day = map[key] ?? [];
+  if (day.some((saved) => saved.id === workout.id)) return map;
   const next: SavedWorkoutsByDate = { ...map, [key]: [workout, ...day] };
   await writeSavedWorkouts(next);
   return next;
