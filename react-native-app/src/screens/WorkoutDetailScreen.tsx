@@ -7,6 +7,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 import { ActionButton } from "../components/ActionButton"
 import { AppHeader } from "../components/AppHeader"
 import { WorkoutPanel } from "../components/WorkoutPanel"
+import { getPalette } from "../theme"
 import type { RootStackParamList } from "../../App"
 import { makeStyles } from "./stylesheets/WorkoutDetailScreen.styles"
 
@@ -39,7 +40,7 @@ export function WorkoutDetailScreen({ route, navigation }: Props) {
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{workout.name}</Text>
-          <WorkoutPanel workout={workout} isDark={isDark} showNameLabel={false} />
+          <WorkoutPanel workout={workout} palette={getPalette(isDark)} showNameLabel={false} />
 
           {sets.length ? (
             <>

@@ -2,12 +2,12 @@ import { Feather } from "@expo/vector-icons"
 import { useMemo, useState } from "react"
 import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 
-import { fonts, getPalette, radius, type Palette } from "../theme"
+import { fonts, radius, type Palette } from "../theme"
 import type { Workout } from "../types/workout"
 
 interface WorkoutPanelProps {
   workout: Workout
-  isDark: boolean
+  palette: Palette
   // Training shows the name as the panel's heading; the detail screen renders
   // the name as its own heading, so it hides it here.
   showNameLabel?: boolean
@@ -21,11 +21,10 @@ interface WorkoutPanelProps {
 // the current workout) and the Workout Detail screen (as a saved workout).
 export function WorkoutPanel({
   workout,
-  isDark,
+  palette,
   showNameLabel = true,
   onImageLoad,
 }: WorkoutPanelProps) {
-  const palette = getPalette(isDark)
   const styles = useMemo(() => makeStyles(palette), [palette])
   const [instructionsVisible, setInstructionsVisible] = useState<boolean>(false)
   const difficultyColor =

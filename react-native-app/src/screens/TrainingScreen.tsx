@@ -669,7 +669,7 @@ export function TrainingScreen({ navigation }: Props) {
               <Animated.View style={{ opacity: resultOpacity }}>
                 <WorkoutPanel
                   workout={currentWorkout}
-                  isDark={isDark}
+                  palette={palette}
                   onImageLoad={() => onResultImageLoad(currentWorkout.id)}
                 />
               </Animated.View>

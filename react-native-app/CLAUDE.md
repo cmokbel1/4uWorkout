@@ -46,7 +46,7 @@ Only `TrainingScreen` and `WorkoutPanel` use the new design so far. `SavedWorkou
 
 ### Shared Components
 `src/components/`.
-- `WorkoutPanel` — shared workout-detail block (name, detail chips, image, description, self-contained Instructions sheet), new design, used by `TrainingScreen` and `WorkoutDetailScreen`; the `showNameLabel` prop is the only difference between callers.
+- `WorkoutPanel` — shared workout-detail block (name, detail chips, image, description, self-contained Instructions sheet), new design, used by `TrainingScreen` and `WorkoutDetailScreen`; the `showNameLabel` prop is the only difference between callers. Like the other new-design components it takes a `palette`, not `isDark` (`WorkoutDetailScreen` passes `getPalette(isDark)`).
 - New design: `BottomSheet` (slides up over a fading scrim and back down before unmounting; used by `SelectField` and the Training menu), `SelectField` (dropdown-style field that opens a `BottomSheet` of options; `large` or `compact` with a caps label; options can carry a `detail`, e.g. the counts from `/filters`), `RangeSlider` (two-handle slider snapping to a few levels — drag, or tap a level label for just that level, tap again for all; handles are `adjustable` for screen readers), `ThemedButton` (`primary` / `secondary`, optional icon), `NavCard`.
 - Old design: `ActionButton` (variant/size), `AppHeader`, `BackToTrainingButton`. `CalendarView` wraps `react-native-calendars`.
 
