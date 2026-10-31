@@ -93,6 +93,16 @@ const SET_COUNT_OPTIONS: SelectOption[] = Array.from({ length: 10 }, (_, i) => (
   label: String(i + 1),
 }))
 
+// Fisher-Yates shuffle into a new array.
+function shuffled<T>(items: T[]): T[] {
+  const result = [...items]
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[result[i], result[j]] = [result[j], result[i]]
+  }
+  return result
+}
+
 export function TrainingScreen({ navigation }: Props) {
   const scrollViewRef = useRef<ScrollView>(null)
   // Where the result card sits in the scroll content (from its onLayout).
@@ -350,17 +360,12 @@ export function TrainingScreen({ navigation }: Props) {
         setNoMatches(true)
         return
       }
-      // Filters can return fewer than 11, so shuffle by the actual length.
-      const shuffled = [...results]
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1))
-        ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-      }
-      const selected = shuffled[Math.floor(Math.random() * shuffled.length)]
-      setAllResults(shuffled)
-      setSearchResults(
-        shuffled.filter((w) => w.id !== selected.id).slice(0, MAX_SIMILAR_WORKOUTS),
-      )
+      // The first shuffled result is shown; the rest (up to the maximum, or
+      // fewer when filters narrow the search) become the similar list.
+      const shuffledResults = shuffled(results)
+      const [selected, ...others] = shuffledResults
+      setAllResults(shuffledResults)
+      setSearchResults(others.slice(0, MAX_SIMILAR_WORKOUTS))
       await getImageAndUpdateWorkoutState(selected)
     } catch (error: unknown) {
       Alert.alert("Search failed", getErrorMessage(error))
@@ -459,12 +464,9 @@ export function TrainingScreen({ navigation }: Props) {
   }
 
   async function onSelectSimilarWorkout(item: Workout): Promise<void> {
-    const pool = [...allResults]
-    for (let i = pool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[pool[i], pool[j]] = [pool[j], pool[i]]
-    }
-    setSearchResults(pool.filter((w) => w.id !== item.id).slice(0, MAX_SIMILAR_WORKOUTS))
+    setSearchResults(
+      shuffled(allResults).filter((w) => w.id !== item.id).slice(0, MAX_SIMILAR_WORKOUTS),
+    )
     setIsSearching(true)
     beginLoadingWorkout()
     try {
