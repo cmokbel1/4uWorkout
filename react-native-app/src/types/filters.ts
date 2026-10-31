@@ -28,6 +28,9 @@ export interface ExerciseFilters {
 export interface FilterOption {
   value: string;
   count: number;
+  // `count` split by difficulty (levels with none are left out). Optional: a
+  // server from before this field was added doesn't send it.
+  byDifficulty?: Partial<Record<Difficulty, number>>;
 }
 
 export interface FilterOptions {

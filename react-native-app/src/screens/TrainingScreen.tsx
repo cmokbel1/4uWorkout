@@ -225,21 +225,32 @@ export function TrainingScreen({ navigation }: Props) {
     label: toTitleCase(bodyPart),
   }))
   const currentFilterOptions = filterOptions[selectedBodyPart]
+  // How many exercises an option matches within the selected difficulty range:
+  // exercises outside the range don't count. Without a difficulty filter (or
+  // from a server that doesn't send byDifficulty) it's the plain total.
+  const countInDifficultyRange = (option: FilterOption): number =>
+    filters.difficulties?.length && option.byDifficulty
+      ? filters.difficulties.reduce((sum, level) => sum + (option.byDifficulty?.[level] ?? 0), 0)
+      : option.count
+  // An option with nothing in range is shown with its 0 but can't be picked.
+  const toSelectOption = (option: FilterOption, label: string): SelectOption => {
+    const count = countInDifficultyRange(option)
+    return { value: option.value, label, detail: String(count), disabled: count === 0 }
+  }
   const targetSelectOptions: SelectOption[] = [
     ANY_OPTION,
-    ...(currentFilterOptions?.targets ?? []).map((option) => ({
-      value: option.value,
-      label: toTitleCase(option.value),
-      detail: String(option.count),
-    })),
+    ...(currentFilterOptions?.targets ?? []).map((option) =>
+      toSelectOption(option, toTitleCase(option.value)),
+    ),
   ]
   const equipmentSelectOptions: SelectOption[] = [
     ANY_OPTION,
-    ...(currentFilterOptions?.equipmentTypes ?? []).map((option) => ({
-      value: option.value,
-      label: EQUIPMENT_LABELS[option.value as EquipmentType] ?? toTitleCase(option.value),
-      detail: String(option.count),
-    })),
+    ...(currentFilterOptions?.equipmentTypes ?? []).map((option) =>
+      toSelectOption(
+        option,
+        EQUIPMENT_LABELS[option.value as EquipmentType] ?? toTitleCase(option.value),
+      ),
+    ),
   ]
 
   useEffect(() => {
