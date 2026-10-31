@@ -35,7 +35,7 @@ export function WorkoutDetailScreen({ route, navigation }: Props) {
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <StatusBar style={isDark ? "light" : "dark"} />
-      <ScreenHeader palette={palette} title="Saved workout" onBack={() => navigation.goBack()} />
+      <ScreenHeader palette={palette} title="Trainer" onBack={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.content}>
         <Pressable
