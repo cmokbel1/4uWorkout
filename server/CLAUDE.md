@@ -74,7 +74,7 @@ All routes are prefixed `/exercises`. Errors return `{ error }` with 400/404/429
 | `GET /exercises/bodyPartList` | Distinct body parts from the data |
 | `GET /exercises/targetList` | Distinct targets from the data (Pro vocabulary — e.g. `quadriceps`, not `quads`). **Not yet wired into the client UI** |
 | `GET /exercises/bodyPart/:bodyPart` | **A random 11** exercises (one to show + 10 "similar"), list fields only — see Licence. Optional filters, see below |
-| `GET /exercises/filters` | Every body part's filter choices, keyed by body part: `{ "<body part>": { difficulties, targets, equipmentTypes: [{ value, count }] } }`. About 4 KB — the client loads it **once at startup** (alongside `/bodyPartList`) and keeps it for the session, so switching body parts needs no request. Only changes on a re-import. There is deliberately no per-body-part form |
+| `GET /exercises/filters` | Every body part's filter choices, keyed by body part: `{ "<body part>": { difficulties, targets, equipmentTypes: [{ value, count, byDifficulty }] } }`. `byDifficulty` splits `count` by level (levels with none are omitted), so the app can count only options inside the user's difficulty range. About 4 KB — the client loads it **once at startup** (alongside `/bodyPartList`) and keeps it for the session, so switching body parts needs no request. Only changes on a re-import. There is deliberately no per-body-part form |
 | `GET /exercises/exercise/:id` | Full Pro record (taxonomy, equipment lists, relationships) with `gifUrl` as a base64 data URL |
 | `GET /exercises/image?exerciseId=` | Binary GIF. `resolution` is accepted for compatibility and ignored — only 360 is stored |
 | `GET /health` | |
