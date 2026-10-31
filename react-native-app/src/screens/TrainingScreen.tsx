@@ -93,6 +93,12 @@ const SET_COUNT_OPTIONS: SelectOption[] = Array.from({ length: 10 }, (_, i) => (
   label: String(i + 1),
 }))
 
+// The two inputs on each set row of the save dialog.
+const SET_FIELDS = [
+  { field: "weight", label: "WEIGHT (LBS)", name: "Weight", maxLength: 4 },
+  { field: "reps", label: "REPS", name: "Reps", maxLength: 3 },
+] as const
+
 // Fisher-Yates shuffle into a new array.
 function shuffled<T>(items: T[]): T[] {
   const result = [...items]
@@ -930,36 +936,21 @@ export function TrainingScreen({ navigation }: Props) {
                 <View key={index} style={styles.setRow}>
                   <Text style={styles.setRowLabel}>Set {index + 1}</Text>
                   <View style={styles.inputRow}>
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.inputLabel}>WEIGHT (LBS)</Text>
-                      <TextInput
-                        style={styles.numberInput}
-                        value={form.weight}
-                        onChangeText={(text) =>
-                          onChangeSetField(index, "weight", text)
-                        }
-                        keyboardType="number-pad"
-                        placeholder="0"
-                        placeholderTextColor={palette.textDisabled}
-                        maxLength={4}
-                        accessibilityLabel={`Weight for set ${index + 1}`}
-                      />
-                    </View>
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.inputLabel}>REPS</Text>
-                      <TextInput
-                        style={styles.numberInput}
-                        value={form.reps}
-                        onChangeText={(text) =>
-                          onChangeSetField(index, "reps", text)
-                        }
-                        keyboardType="number-pad"
-                        placeholder="0"
-                        placeholderTextColor={palette.textDisabled}
-                        maxLength={3}
-                        accessibilityLabel={`Reps for set ${index + 1}`}
-                      />
-                    </View>
+                    {SET_FIELDS.map((input) => (
+                      <View key={input.field} style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>{input.label}</Text>
+                        <TextInput
+                          style={styles.numberInput}
+                          value={form[input.field]}
+                          onChangeText={(text) => onChangeSetField(index, input.field, text)}
+                          keyboardType="number-pad"
+                          placeholder="0"
+                          placeholderTextColor={palette.textDisabled}
+                          maxLength={input.maxLength}
+                          accessibilityLabel={`${input.name} for set ${index + 1}`}
+                        />
+                      </View>
+                    ))}
                   </View>
                 </View>
               ))}
