@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import {
   Animated,
-  Dimensions,
   Easing,
   Modal,
   Pressable,
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
@@ -26,6 +26,9 @@ interface BottomSheetProps {
 // before it unmounts.
 export function BottomSheet({ palette, visible, onClose, title, children }: BottomSheetProps) {
   const insets = useSafeAreaInsets()
+  // Updates when the window resizes (rotation, iPad Split View), so the sheet
+  // always starts fully off-screen.
+  const { height: windowHeight } = useWindowDimensions()
   const styles = useMemo(() => makeStyles(palette), [palette])
   // Stays mounted while the closing animation runs.
   const [mounted, setMounted] = useState(visible)
@@ -54,7 +57,7 @@ export function BottomSheet({ palette, visible, onClose, title, children }: Bott
 
   const translateY = progress.interpolate({
     inputRange: [0, 1],
-    outputRange: [Dimensions.get("window").height, 0],
+    outputRange: [windowHeight, 0],
   })
 
   return (
