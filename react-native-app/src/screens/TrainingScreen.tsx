@@ -195,6 +195,9 @@ export function TrainingScreen({ navigation }: Props) {
   // The last search matched nothing: shown inline instead of in an alert.
   const [noMatches, setNoMatches] = useState<boolean>(false)
   const [savedMap, setSavedMap] = useState<SavedWorkoutsByDate>({})
+  // Whether this mount has loaded savedMap yet. The dirty flag is module-level,
+  // so it can say "clean" from an earlier mount while this one still has {}.
+  const savedMapLoadedRef = useRef<boolean>(false)
   const [saveModalVisible, setSaveModalVisible] = useState<boolean>(false)
   const [setCount, setSetCount] = useState<number>(1)
   // One {weight, reps} form per set, held as strings for controlled inputs.
@@ -324,17 +327,20 @@ export function TrainingScreen({ navigation }: Props) {
     trainingSession.selectedBodyPart = selectedBodyPart
   }, [allResults, searchResults, currentWorkout, filters, selectedBodyPart])
 
-  // Re-sync saved workouts on focus only when a mutation happened elsewhere
-  // (e.g. sets/reps edited on the Saved Workouts screen). Skips the storage
-  // read entirely when nothing changed.
+  // Load saved workouts on this mount's first focus, then re-sync only when a
+  // mutation happened elsewhere (e.g. sets/reps edited on the Saved Workouts
+  // screen). Without the first load, a remount (navigating back can remount
+  // this screen) kept an empty savedMap, so Save stayed enabled for a workout
+  // already saved today.
   useFocusEffect(
     useCallback(() => {
-      if (!isSavedWorkoutsDirty()) return
+      if (savedMapLoadedRef.current && !isSavedWorkoutsDirty()) return
       let active = true
       readSavedWorkouts()
         .then((map) => {
           if (active) {
             setSavedMap(map)
+            savedMapLoadedRef.current = true
             markSavedWorkoutsClean()
           }
         })
