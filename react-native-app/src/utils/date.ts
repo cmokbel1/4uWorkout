@@ -13,9 +13,10 @@ export function todayKey(): string {
   return toDateKey(new Date())
 }
 
-// Short date for a date key, e.g. "Thu, Jun 26". Parses the key as a local
-// date (avoids the UTC shift of `new Date("YYYY-MM-DD")`).
-export function formatShortDate(key: string): string {
+// Human label for a date key, e.g. "Today" or "Thu, Jun 26". Parses the key
+// as a local date (avoids the UTC shift of `new Date("YYYY-MM-DD")`).
+export function formatDateLabel(key: string): string {
+  if (key === todayKey()) return "Today"
   const [year, month, day] = key.split("-").map(Number)
   const date = new Date(year, month - 1, day)
   return date.toLocaleDateString(undefined, {
@@ -23,10 +24,4 @@ export function formatShortDate(key: string): string {
     month: "short",
     day: "numeric",
   })
-}
-
-// Human label for a date key, e.g. "Today" or "Thu, Jun 26".
-export function formatDateLabel(key: string): string {
-  if (key === todayKey()) return "Today"
-  return formatShortDate(key)
 }
