@@ -615,6 +615,12 @@ export function TrainingScreen({ navigation }: Props) {
             <Text style={styles.helperText}>
               Drag the handles for a range, or tap a level for just that one.
             </Text>
+            <View style={styles.filterHint}>
+              <Feather name="info" size={14} color={palette.accent} style={styles.filterHintIcon} />
+              <Text style={styles.filterHintText}>
+                Target and Equipment counts update to match your difficulty range.
+              </Text>
+            </View>
 
             <View style={styles.selectRow}>
               <View style={styles.selectCell}>

@@ -140,6 +140,23 @@ export function makeStyles(c: Palette) {
       fontSize: 13,
       lineHeight: 18,
     },
+    // Note between the slider and the Target / Equipment fields.
+    filterHint: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 8,
+    },
+    // Lines the icon up with the first line of text.
+    filterHintIcon: {
+      marginTop: 2,
+    },
+    filterHintText: {
+      flex: 1,
+      color: c.textMuted,
+      fontFamily: fonts.medium,
+      fontSize: 13,
+      lineHeight: 18,
+    },
     selectRow: {
       flexDirection: 'row',
       gap: 12,
