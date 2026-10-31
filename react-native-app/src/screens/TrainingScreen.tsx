@@ -408,6 +408,14 @@ export function TrainingScreen({ navigation }: Props) {
     }))
   }
 
+  function openTodaysWorkouts(): void {
+    navigation.navigate("SavedWorkouts", { isDark })
+  }
+
+  function openCalendar(): void {
+    navigation.navigate("SavedWorkouts", { isDark, initialView: "calendar" })
+  }
+
   // Scroll position that puts the result card's top just below the top bar.
   // The card sits far enough down that the bar is fully collapsed by then, so
   // it's the collapsed bar's height that the card has to clear.
@@ -810,16 +818,14 @@ export function TrainingScreen({ navigation }: Props) {
               icon="zap"
               title="Today's workouts"
               subtitle="Your plan"
-              onPress={() => navigation.navigate("SavedWorkouts", { isDark })}
+              onPress={openTodaysWorkouts}
             />
             <NavCard
               palette={palette}
               icon="calendar"
               title="Calendar"
               subtitle="Schedule"
-              onPress={() =>
-                navigation.navigate("SavedWorkouts", { isDark, initialView: "calendar" })
-              }
+              onPress={openCalendar}
             />
           </Animated.View>
         </Animated.View>
@@ -854,7 +860,7 @@ export function TrainingScreen({ navigation }: Props) {
           <Pressable
             onPress={() => {
               setMenuVisible(false)
-              navigation.navigate("SavedWorkouts", { isDark })
+              openTodaysWorkouts()
             }}
             style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
             accessibilityRole="button"
@@ -872,7 +878,7 @@ export function TrainingScreen({ navigation }: Props) {
           <Pressable
             onPress={() => {
               setMenuVisible(false)
-              navigation.navigate("SavedWorkouts", { isDark, initialView: "calendar" })
+              openCalendar()
             }}
             style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
             accessibilityRole="button"
