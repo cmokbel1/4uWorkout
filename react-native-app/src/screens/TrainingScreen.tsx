@@ -606,15 +606,15 @@ export function TrainingScreen({ navigation }: Props) {
               </Text>
               <Text style={styles.rangeLabel}>{difficultyRangeLabel}</Text>
             </View>
+            <Text style={styles.helperText}>
+              Drag the handles for a range, or tap a level for just that one.
+            </Text>
             <RangeSlider
               palette={palette}
               levels={DIFFICULTY_LABELS}
               value={difficultyRange}
               onChange={onChangeDifficultyRange}
             />
-            <Text style={styles.helperText}>
-              Drag the handles for a range, or tap a level for just that one.
-            </Text>
             <View style={styles.filterHint}>
               <Feather name="info" size={14} color={palette.accent} style={styles.filterHintIcon} />
               <Text style={styles.filterHintText}>
