@@ -165,13 +165,10 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
         isDark={isDark}
         onToggleDark={onToggleDark}
         markedDates={markedDates}
-        selectedDate={selectedDate}
-        dayWorkouts={dayWorkouts}
-        onSelectDate={setSelectedDate}
-        onOpenWorkout={(workout) =>
-          navigation.navigate("WorkoutDetail", { workout, isDark })
-        }
-        onEditDay={() => setViewMode("day")}
+        onSelectDate={(date) => {
+          setSelectedDate(date)
+          setViewMode("day")
+        }}
         onOpenToday={() => {
           setSelectedDate(todayKey())
           setViewMode("day")

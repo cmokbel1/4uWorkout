@@ -8,41 +8,29 @@ import { SafeAreaView } from "react-native-safe-area-context"
 import { Calendar } from "react-native-calendars"
 
 import { fonts, getPalette, radius, type Palette } from "../theme"
-import type { Workout } from "../types/workout"
 import type { RootStackParamList } from "../../App"
-import { formatShortDate, todayKey } from "../utils/date"
+import { todayKey } from "../utils/date"
 import { AppMenu } from "./AppMenu"
-import { ThemedButton } from "./ThemedButton"
 
 interface CalendarViewProps {
   isDark: boolean
   onToggleDark: (value: boolean) => void
   // Calendar markings (dotted days + selected day) built by the parent screen.
   markedDates: Record<string, object>
-  selectedDate: string
-  // Workouts saved on the selected date.
-  dayWorkouts: Workout[]
+  // Opens the day view for the tapped date.
   onSelectDate: (date: string) => void
-  onOpenWorkout: (workout: Workout) => void
-  // Opens the day view (where sets are edited and workouts deleted) for the
-  // selected date.
-  onEditDay: () => void
   // Opens the day view for today ("Today's workouts" in the menu).
   onOpenToday: () => void
 }
 
 // The month view of the Saved Workouts screen, in the redesigned look. Same
-// header as Training (brand, title, cog menu). Tapping a day selects it and
-// shows that day's saved workouts below the calendar.
+// header as Training (brand, title, cog menu). Tapping a day opens the day view
+// for it — the same screen Training's "Today's workouts" opens.
 export function CalendarView({
   isDark,
   onToggleDark,
   markedDates,
-  selectedDate,
-  dayWorkouts,
   onSelectDate,
-  onOpenWorkout,
-  onEditDay,
   onOpenToday,
 }: CalendarViewProps) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
@@ -56,7 +44,6 @@ export function CalendarView({
   // there's nothing to save in the future.
   const currentMonth = today.slice(0, 7)
   const [visibleMonth, setVisibleMonth] = useState(currentMonth)
-  const isToday = selectedDate === today
   const openTraining = () => navigation.navigate("Training")
 
   return (
@@ -102,7 +89,7 @@ export function CalendarView({
           <Calendar
             // The library reads its theme once; remount it when the theme changes.
             key={isDark ? "dark" : "light"}
-            current={selectedDate}
+            current={today}
             maxDate={today}
             hideExtraDays={false}
             disableArrowRight={visibleMonth >= currentMonth}
@@ -123,67 +110,6 @@ export function CalendarView({
             theme={calendarTheme}
           />
         </View>
-
-        <View style={styles.dayHeader}>
-          <Text style={styles.dayTitle}>
-            {isToday ? `Today · ${formatShortDate(selectedDate)}` : formatShortDate(selectedDate)}
-          </Text>
-          {dayWorkouts.length ? (
-            <Pressable
-              onPress={onEditDay}
-              hitSlop={10}
-              accessibilityRole="button"
-              accessibilityLabel={`Edit workouts saved on ${formatShortDate(selectedDate)}`}
-            >
-              <Text style={styles.editLink}>Edit</Text>
-            </Pressable>
-          ) : (
-            <Text style={styles.dayStatus}>Nothing saved</Text>
-          )}
-        </View>
-
-        {dayWorkouts.length ? (
-          <View style={styles.list}>
-            {dayWorkouts.map((workout) => {
-              const sets = workout.setDetails?.length ?? 0
-              return (
-                <Pressable
-                  key={workout.id}
-                  onPress={() => onOpenWorkout(workout)}
-                  style={({ pressed }) => [styles.item, pressed && styles.pressed]}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${workout.name}, ${sets} ${sets === 1 ? "set" : "sets"}`}
-                >
-                  <View style={styles.itemText}>
-                    <Text style={styles.itemName} numberOfLines={2}>
-                      {workout.name}
-                    </Text>
-                    <Text style={styles.itemSub}>
-                      {sets} {sets === 1 ? "set" : "sets"}
-                    </Text>
-                  </View>
-                  <Feather name="chevron-right" size={18} color={palette.textMuted} />
-                </Pressable>
-              )
-            })}
-          </View>
-        ) : (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>No workouts saved for this day</Text>
-            {/* Workouts are always saved for today, so finding one only helps
-                when today is selected. */}
-            {isToday ? (
-              <View style={styles.emptyAction}>
-                <ThemedButton
-                  palette={palette}
-                  label="Find a workout"
-                  icon="shuffle"
-                  onPress={openTraining}
-                />
-              </View>
-            ) : null}
-          </View>
-        )}
       </ScrollView>
 
       <AppMenu
@@ -324,75 +250,6 @@ function makeStyles(c: Palette) {
       backgroundColor: c.surfaceRaised,
       alignItems: "center",
       justifyContent: "center",
-    },
-    dayHeader: {
-      flexDirection: "row",
-      alignItems: "baseline",
-      justifyContent: "space-between",
-      marginTop: 4,
-    },
-    dayTitle: {
-      color: c.text,
-      fontFamily: fonts.extrabold,
-      fontSize: 18,
-    },
-    dayStatus: {
-      color: c.textMuted,
-      fontFamily: fonts.semibold,
-      fontSize: 13,
-    },
-    editLink: {
-      color: c.accent,
-      fontFamily: fonts.bold,
-      fontSize: 14,
-    },
-    list: {
-      gap: 10,
-    },
-    item: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.border,
-      borderRadius: radius.md,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-    },
-    itemText: {
-      flex: 1,
-      gap: 2,
-    },
-    itemName: {
-      color: c.text,
-      fontFamily: fonts.bold,
-      fontSize: 15,
-      textTransform: "capitalize",
-    },
-    itemSub: {
-      color: c.textMuted,
-      fontFamily: fonts.medium,
-      fontSize: 13,
-    },
-    emptyCard: {
-      borderWidth: 1.5,
-      borderStyle: "dashed",
-      borderColor: c.borderStrong,
-      borderRadius: radius.lg,
-      paddingVertical: 28,
-      paddingHorizontal: 24,
-      alignItems: "center",
-      gap: 14,
-    },
-    emptyTitle: {
-      color: c.text,
-      fontFamily: fonts.bold,
-      fontSize: 16,
-      textAlign: "center",
-    },
-    emptyAction: {
-      flexDirection: "row",
     },
   })
 }
