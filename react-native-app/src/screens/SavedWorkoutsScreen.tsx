@@ -1,21 +1,10 @@
-import { StatusBar } from "expo-status-bar"
 import { useCallback, useMemo, useState } from "react"
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "react-native"
-import { SafeAreaView } from "react-native-safe-area-context"
+import { Alert } from "react-native"
 import { useFocusEffect, usePreventRemove } from "@react-navigation/native"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
-import { ActionButton } from "../components/ActionButton"
-import { AppHeader } from "../components/AppHeader"
-import { BackToTrainingButton } from "../components/BackToTrainingButton"
 import { CalendarView } from "../components/CalendarView"
+import { DayView, type SetField } from "../components/DayView"
 import {
   readSavedWorkouts,
   removeSavedWorkout,
@@ -27,17 +16,14 @@ import type { RootStackParamList } from "../../App"
 import { readDarkMode, writeDarkMode } from "../storage/theme"
 import { getPalette } from "../theme"
 import { formatDateLabel, todayKey } from "../utils/date"
-import { makeStyles } from "./stylesheets/SavedWorkoutsScreen.styles"
 
 type Props = NativeStackScreenProps<RootStackParamList, "SavedWorkouts">
 
 type ViewMode = "day" | "calendar"
 
 export function SavedWorkoutsScreen({ route, navigation }: Props) {
-  // Starts from Training's setting; the Calendar's menu can change it.
+  // Starts from Training's setting; the cog menus can change it.
   const [isDark, setIsDark] = useState<boolean>(route.params?.isDark ?? false)
-  const styles = useMemo(() => makeStyles(isDark), [isDark])
-  // The calendar uses the redesign's palette (the day view keeps its old look).
   const accent = getPalette(isDark).accent
 
   const [map, setMap] = useState<SavedWorkoutsByDate>({})
@@ -50,12 +36,6 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
   const viewMode = viewHistory[viewHistory.length - 1]
   const showView = (mode: ViewMode) => setViewHistory((prev) => [...prev, mode])
   const [selectedDate, setSelectedDate] = useState<string>(todayKey())
-  // Which workout cards are expanded to show their sets. Collapsed by default.
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
-
-  function toggleExpanded(id: string): void {
-    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }))
-  }
 
   // Dark mode can also be changed from Workout Detail's menu while this screen
   // stays mounted underneath, so re-read it whenever it comes back into focus.
@@ -113,17 +93,24 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
     return marks
   }, [map, selectedDate, accent])
 
-  function onChangeSetField(
+  function persist(next: SavedWorkoutsByDate): void {
+    writeSavedWorkouts(next).catch(() => {
+      Alert.alert("Save failed", "Could not update local storage.")
+    })
+  }
+
+  // Updates one set on the selected day. Stepper taps save straight away;
+  // typed values are saved when editing ends (onSaveSets).
+  function onChangeSet(
     workoutId: string,
     setIndex: number,
-    field: "weight" | "reps",
-    text: string,
+    field: SetField,
+    value: number | undefined,
+    save: boolean,
   ): void {
-    const digits = text.replace(/[^0-9]/g, "")
-    const value = digits === "" ? undefined : Number(digits)
-    setMap((prev) => ({
-      ...prev,
-      [selectedDate]: (prev[selectedDate] ?? []).map((w) =>
+    const next: SavedWorkoutsByDate = {
+      ...map,
+      [selectedDate]: (map[selectedDate] ?? []).map((w) =>
         w.id === workoutId
           ? {
               ...w,
@@ -133,19 +120,15 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
             }
           : w,
       ),
-    }))
+    }
+    setMap(next)
+    if (save) persist(next)
   }
 
   function onToggleDark(value: boolean): void {
     setIsDark(value)
     writeDarkMode(value).catch(() => {
       // Non-fatal: the toggle still applies for this session.
-    })
-  }
-
-  function persist(): void {
-    writeSavedWorkouts(map).catch(() => {
-      Alert.alert("Save failed", "Could not update local storage.")
     })
   }
 
@@ -190,128 +173,17 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style={isDark ? "light" : "dark"} />
-      <View style={[styles.container, styles.dayContainer]}>
-        <AppHeader isDark={isDark} onBack={() => navigation.goBack()} />
-        <View style={styles.card}>
-          <View style={styles.headerButtonsRow}>
-            <BackToTrainingButton />
-            <ActionButton
-              label="View Calendar"
-              size="small"
-              onPress={() => showView("calendar")}
-            />
-          </View>
-        </View>
-        <View style={[styles.card, styles.dayCard]}>
-          <Text style={styles.heading}>{formatDateLabel(selectedDate)}</Text>
-          {dayWorkouts.length ? (
-            <Text style={styles.helperText}>
-              Tap a workout to view and edit its sets.
-            </Text>
-          ) : (
-            <Text style={styles.helperText}>
-              No workouts saved on this day. Tap "view calendar" to pick another
-              day, or find a workout on the training screen to save for today.
-            </Text>
-          )}
-          {dayWorkouts.length ? (
-            <ScrollView
-              style={styles.workoutList}
-              contentContainerStyle={styles.workoutListContent}
-              nestedScrollEnabled
-            >
-              {dayWorkouts.map((item) => {
-          const setCount = (item.setDetails ?? []).length
-          const isExpanded = !!expanded[item.id]
-          return (
-          <View
-            key={item.id}
-            style={[styles.card, !isExpanded && styles.cardCollapsed]}
-          >
-            <View style={styles.cardHeader}>
-              <Pressable
-                onPress={() => toggleExpanded(item.id)}
-                style={styles.cardTitlePress}
-                accessibilityLabel={`${isExpanded ? "Collapse" : "Expand"} ${item.name}`}
-                accessibilityRole="button"
-              >
-                <Text style={styles.chevron}>{isExpanded ? "▾" : "▸"}</Text>
-                <View style={styles.cardTitleTextWrap}>
-                  <Text style={styles.cardTitle}>{item.name}</Text>
-                  <Text style={styles.cardSubtitle}>
-                    {setCount} {setCount === 1 ? "set" : "sets"}
-                  </Text>
-                </View>
-              </Pressable>
-              <ActionButton
-                label="View"
-                size="small"
-                onPress={() =>
-                  navigation.navigate("WorkoutDetail", { workout: item, isDark })
-                }
-              />
-              <Pressable
-                onPress={() => onDelete(item)}
-                style={({ pressed }) => [
-                  styles.deleteButton,
-                  pressed && styles.deleteButtonPressed,
-                ]}
-                accessibilityLabel={`Delete ${item.name}`}
-                accessibilityRole="button"
-                hitSlop={8}
-              >
-                <Text style={styles.deleteButtonText}>Delete</Text>
-              </Pressable>
-            </View>
-            {isExpanded &&
-              (item.setDetails ?? []).map((set, index) => (
-              <View key={index} style={styles.setRow}>
-                <Text style={styles.setRowLabel}>Set {index + 1}</Text>
-                <View style={styles.inputRow}>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Weight (lbs)</Text>
-                    <TextInput
-                      style={styles.numberInput}
-                      value={set.weight != null ? String(set.weight) : ""}
-                      onChangeText={(text) =>
-                        onChangeSetField(item.id, index, "weight", text)
-                      }
-                      onEndEditing={persist}
-                      keyboardType="number-pad"
-                      placeholder="0"
-                      placeholderTextColor={isDark ? "#6E7681" : "#A0AEC0"}
-                      maxLength={4}
-                      accessibilityLabel={`Weight for set ${index + 1} of ${item.name}`}
-                    />
-                  </View>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Reps</Text>
-                    <TextInput
-                      style={styles.numberInput}
-                      value={set.reps != null ? String(set.reps) : ""}
-                      onChangeText={(text) =>
-                        onChangeSetField(item.id, index, "reps", text)
-                      }
-                      onEndEditing={persist}
-                      keyboardType="number-pad"
-                      placeholder="0"
-                      placeholderTextColor={isDark ? "#6E7681" : "#A0AEC0"}
-                      maxLength={3}
-                      accessibilityLabel={`Reps for set ${index + 1} of ${item.name}`}
-                    />
-                  </View>
-                </View>
-              </View>
-              ))}
-          </View>
-          )
-        })}
-            </ScrollView>
-          ) : null}
-        </View>
-      </View>
-    </SafeAreaView>
+    <DayView
+      isDark={isDark}
+      onToggleDark={onToggleDark}
+      date={selectedDate}
+      workouts={dayWorkouts}
+      onBack={() => navigation.goBack()}
+      onOpenCalendar={() => showView("calendar")}
+      onOpenWorkout={(workout) => navigation.navigate("WorkoutDetail", { workout, isDark })}
+      onDelete={onDelete}
+      onChangeSet={onChangeSet}
+      onSaveSets={() => persist(map)}
+    />
   )
 }
