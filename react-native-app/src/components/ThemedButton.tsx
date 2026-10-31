@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons"
-import type { ComponentProps } from "react"
+import type { ComponentProps, ReactNode } from "react"
 import { ActivityIndicator, Pressable, StyleSheet, Text } from "react-native"
 
 import { fonts, radius, type Palette } from "../theme"
@@ -11,6 +11,9 @@ interface ThemedButtonProps {
   // "primary" is filled with the accent; "secondary" is a bordered surface.
   variant?: "primary" | "secondary"
   icon?: ComponentProps<typeof Feather>["name"]
+  // Used instead of `icon` for an icon from another set (e.g. a dumbbell);
+  // the caller colours it to match the label.
+  iconElement?: ReactNode
   disabled?: boolean
   // Shows a spinner in place of the icon. Callers usually also disable the
   // button and change its label while loading.
@@ -24,6 +27,7 @@ export function ThemedButton({
   onPress,
   variant = "primary",
   icon,
+  iconElement,
   disabled = false,
   loading = false,
 }: ThemedButtonProps) {
@@ -58,6 +62,8 @@ export function ThemedButton({
     >
       {loading ? (
         <ActivityIndicator size="small" color={color} />
+      ) : iconElement ? (
+        iconElement
       ) : icon ? (
         <Feather name={icon} size={18} color={color} />
       ) : null}
