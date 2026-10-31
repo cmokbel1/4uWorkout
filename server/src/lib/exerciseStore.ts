@@ -33,7 +33,7 @@ export async function listTargets(): Promise<string[]> {
   return rows.map((row) => row.target)
 }
 
-// Easiest first; a difficulty filter means "up to and including" that level.
+// Easiest first.
 export const DIFFICULTIES = ['beginner', 'intermediate', 'advanced'] as const
 export type Difficulty = (typeof DIFFICULTIES)[number]
 
@@ -43,7 +43,8 @@ export const EQUIPMENT_TYPES = ['free_weight', 'bodyweight', 'cable', 'machine',
 export type EquipmentType = (typeof EQUIPMENT_TYPES)[number]
 
 export type ExerciseFilters = {
-  maxDifficulty?: Difficulty
+  // Exact levels to include; the app sends a contiguous range from its slider.
+  difficulties?: Difficulty[]
   target?: string
   equipmentTypes?: EquipmentType[]
 }
@@ -53,9 +54,6 @@ export async function randomExercisesByBodyPart(
   filters: ExerciseFilters,
   limit: number,
 ): Promise<ExerciseData[]> {
-  const difficulties = filters.maxDifficulty
-    ? DIFFICULTIES.slice(0, DIFFICULTIES.indexOf(filters.maxDifficulty) + 1)
-    : null
   const { rows } = await getPool().query<{ data: ExerciseData }>(
     `SELECT data FROM exercises
      WHERE body_part = $1
@@ -63,12 +61,18 @@ export async function randomExercisesByBodyPart(
        AND ($3::text IS NULL OR target = $3)
        AND ($4::text[] IS NULL OR data->'taxonomy'->>'equipmentCategory' = ANY($4))
      ORDER BY random() LIMIT $5`,
-    [bodyPart, difficulties, filters.target ?? null, filters.equipmentTypes ?? null, limit],
+    [bodyPart, filters.difficulties ?? null, filters.target ?? null, filters.equipmentTypes ?? null, limit],
   )
   return rows.map((row) => toListItem(row.data))
 }
 
-type FilterOption = { value: string; count: number }
+type FilterOption = {
+  value: string
+  count: number
+  // The same count split by difficulty (levels with none are left out), so the
+  // app can count only what falls inside the user's difficulty range.
+  byDifficulty: Partial<Record<Difficulty, number>>
+}
 
 type FilterOptions = {
   difficulties: FilterOption[]
@@ -77,33 +81,43 @@ type FilterOptions = {
 }
 
 // The choices that exist for every body part, keyed by body part, with how
-// many exercises each matches on its own. Counts are per choice, not for
-// combinations of choices. Small enough (a few KB) for the client to load once.
+// many exercises each matches on its own — in total and per difficulty. Counts
+// are per choice, not for combinations of choices (apart from the difficulty
+// split). Small enough (a few KB) for the client to load once.
 export async function filterOptionsByBodyPart(): Promise<Record<string, FilterOptions>> {
   const { rows } = await getPool().query<{
     body_part: string
     facet: keyof FilterOptions
     value: string
+    difficulty: Difficulty
     count: number
   }>(
-    `SELECT body_part, 'difficulties' AS facet, difficulty AS value, count(*)::int AS count
+    `SELECT body_part, 'difficulties' AS facet, difficulty AS value, difficulty, count(*)::int AS count
        FROM exercises GROUP BY body_part, difficulty
      UNION ALL
-     SELECT body_part, 'targets', target, count(*)::int
-       FROM exercises GROUP BY body_part, target
+     SELECT body_part, 'targets', target, difficulty, count(*)::int
+       FROM exercises GROUP BY body_part, target, difficulty
      UNION ALL
-     SELECT body_part, 'equipmentTypes', data->'taxonomy'->>'equipmentCategory', count(*)::int
-       FROM exercises GROUP BY body_part, data->'taxonomy'->>'equipmentCategory'
-     ORDER BY body_part, count DESC`,
+     SELECT body_part, 'equipmentTypes', data->'taxonomy'->>'equipmentCategory', difficulty, count(*)::int
+       FROM exercises GROUP BY body_part, data->'taxonomy'->>'equipmentCategory', difficulty`,
   )
   const options: Record<string, FilterOptions> = {}
-  for (const { body_part, facet, value, count } of rows) {
+  for (const { body_part, facet, value, difficulty, count } of rows) {
     options[body_part] ??= { difficulties: [], targets: [], equipmentTypes: [] }
-    options[body_part][facet].push({ value, count })
+    const list = options[body_part][facet]
+    let option = list.find((existing) => existing.value === value)
+    if (!option) {
+      option = { value, count: 0, byDifficulty: {} }
+      list.push(option)
+    }
+    option.count += count
+    option.byDifficulty[difficulty] = count
   }
   const rank = (option: FilterOption) => DIFFICULTIES.indexOf(option.value as Difficulty)
   for (const bodyPartOptions of Object.values(options)) {
     bodyPartOptions.difficulties.sort((a, b) => rank(a) - rank(b))
+    bodyPartOptions.targets.sort((a, b) => b.count - a.count)
+    bodyPartOptions.equipmentTypes.sort((a, b) => b.count - a.count)
   }
   return options
 }
