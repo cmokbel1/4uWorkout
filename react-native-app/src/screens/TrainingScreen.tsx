@@ -8,7 +8,6 @@ import {
   Modal,
   Pressable,
   ScrollView,
-  Switch,
   Text,
   TextInput,
   View,
@@ -18,7 +17,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useFocusEffect } from "@react-navigation/native"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
-import { BottomSheet } from "../components/BottomSheet"
+import { AppMenu } from "../components/AppMenu"
 import { NavCard } from "../components/NavCard"
 import { RangeSlider, type LevelRange } from "../components/RangeSlider"
 import { SelectField, type SelectOption } from "../components/SelectField"
@@ -862,57 +861,17 @@ export function TrainingScreen({ navigation }: Props) {
         />
       </View>
 
-      <BottomSheet
+      <AppMenu
         palette={palette}
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
-        title="Menu"
-      >
-        <View style={styles.menuList}>
-          {(
-            [
-              { title: "Today's workouts", subtitle: "Your plan", icon: "zap", open: openTodaysWorkouts },
-              { title: "Calendar", subtitle: "Schedule", icon: "calendar", open: openCalendar },
-            ] as const
-          ).map((link) => (
-            <Pressable
-              key={link.title}
-              onPress={() => {
-                setMenuVisible(false)
-                link.open()
-              }}
-              style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel={`${link.title}, ${link.subtitle}`}
-            >
-              <View style={styles.menuIcon}>
-                <Feather name={link.icon} size={17} color={palette.accent} />
-              </View>
-              <View style={styles.menuText}>
-                <Text style={styles.menuLabel}>{link.title}</Text>
-                <Text style={styles.menuSub}>{link.subtitle}</Text>
-              </View>
-              <Feather name="chevron-right" size={18} color={palette.textMuted} />
-            </Pressable>
-          ))}
-          <View style={styles.menuDivider} />
-          <View style={styles.menuRow}>
-            <View style={styles.menuIcon}>
-              <Feather name="moon" size={17} color={palette.accent} />
-            </View>
-            <View style={styles.menuText}>
-              <Text style={styles.menuLabel}>Dark mode</Text>
-            </View>
-            <Switch
-              value={isDark}
-              onValueChange={onToggleDark}
-              trackColor={{ false: palette.borderStrong, true: palette.accent }}
-              thumbColor="#FFFFFF"
-              accessibilityLabel="Dark mode"
-            />
-          </View>
-        </View>
-      </BottomSheet>
+        links={[
+          { title: "Today's workouts", subtitle: "Your plan", icon: "zap", onPress: openTodaysWorkouts },
+          { title: "Calendar", subtitle: "Schedule", icon: "calendar", onPress: openCalendar },
+        ]}
+        isDark={isDark}
+        onToggleDark={onToggleDark}
+      />
 
       <Modal
         visible={saveModalVisible}
