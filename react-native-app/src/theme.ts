@@ -22,6 +22,8 @@ export interface Palette {
   beginner: string
   intermediate: string
   advanced: string
+  // Destructive actions (e.g. delete).
+  danger: string
 }
 
 const dark: Palette = {
@@ -44,6 +46,7 @@ const dark: Palette = {
   beginner: "#4ADE80",
   intermediate: "#FBBF24",
   advanced: "#F87171",
+  danger: "#F87171",
 }
 
 const light: Palette = {
@@ -65,6 +68,7 @@ const light: Palette = {
   beginner: "#16A34A",
   intermediate: "#D97706",
   advanced: "#DC2626",
+  danger: "#DC2626",
 }
 
 export function getPalette(isDark: boolean): Palette {
