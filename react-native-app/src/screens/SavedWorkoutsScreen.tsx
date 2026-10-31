@@ -1,8 +1,7 @@
 import { StatusBar } from "expo-status-bar"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import {
   Alert,
-  BackHandler,
   Pressable,
   ScrollView,
   Text,
@@ -10,7 +9,7 @@ import {
   View,
 } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
-import { useFocusEffect } from "@react-navigation/native"
+import { useFocusEffect, usePreventRemove } from "@react-navigation/native"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
 import { ActionButton } from "../components/ActionButton"
@@ -25,25 +24,31 @@ import {
 } from "../storage/savedWorkouts"
 import type { Workout } from "../types/workout"
 import type { RootStackParamList } from "../../App"
+import { writeDarkMode } from "../storage/theme"
+import { getPalette } from "../theme"
 import { formatDateLabel, todayKey } from "../utils/date"
-import { makeStyles, palette } from "./stylesheets/SavedWorkoutsScreen.styles"
+import { makeStyles } from "./stylesheets/SavedWorkoutsScreen.styles"
 
 type Props = NativeStackScreenProps<RootStackParamList, "SavedWorkouts">
 
 type ViewMode = "day" | "calendar"
 
 export function SavedWorkoutsScreen({ route, navigation }: Props) {
-  const isDark = route.params?.isDark ?? false
+  // Starts from Training's setting; the Calendar's menu can change it.
+  const [isDark, setIsDark] = useState<boolean>(route.params?.isDark ?? false)
   const styles = useMemo(() => makeStyles(isDark), [isDark])
-  const accent = palette(isDark).accent
+  // The calendar uses the redesign's palette (the day view keeps its old look).
+  const accent = getPalette(isDark).accent
 
   const [map, setMap] = useState<SavedWorkoutsByDate>({})
-  const [viewMode, setViewMode] = useState<ViewMode>(
+  // The day and calendar views are modes of this one screen, so the navigator
+  // never sees moves between them. Their back history is kept here instead:
+  // the last entry is the view on screen.
+  const [viewHistory, setViewHistory] = useState<ViewMode[]>([
     route.params?.initialView ?? "day",
-  )
-  // True when the calendar was opened from the day view (vs. straight from
-  // Training), so back from the calendar returns to the day view.
-  const [calendarFromDay, setCalendarFromDay] = useState(false)
+  ])
+  const viewMode = viewHistory[viewHistory.length - 1]
+  const showView = (mode: ViewMode) => setViewHistory((prev) => [...prev, mode])
   const [selectedDate, setSelectedDate] = useState<string>(todayKey())
   // Which workout cards are expanded to show their sets. Collapsed by default.
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
@@ -68,17 +73,16 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
     }, []),
   )
 
-  // Android hardware back: the calendar is a view mode, not a stack screen, so
-  // without this it would pop the whole screen instead of returning to the day
-  // view it was opened from.
-  useEffect(() => {
-    if (viewMode !== "calendar" || !calendarFromDay) return
-    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-      setViewMode("day")
-      return true
-    })
-    return () => sub.remove()
-  }, [viewMode, calendarFromDay])
+  // While there's a previous view, going back (the day view's back button,
+  // Android's back button, iOS's back swipe) returns to it instead of leaving
+  // the screen. Other ways out, like the Training buttons, go ahead.
+  usePreventRemove(viewHistory.length > 1, ({ data }) => {
+    if (data.action.type === "GO_BACK" || data.action.type === "POP") {
+      setViewHistory((prev) => prev.slice(0, -1))
+    } else {
+      navigation.dispatch(data.action)
+    }
+  })
 
   const dayWorkouts = map[selectedDate] ?? []
 
@@ -120,6 +124,13 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
     }))
   }
 
+  function onToggleDark(value: boolean): void {
+    setIsDark(value)
+    writeDarkMode(value).catch(() => {
+      // Non-fatal: the toggle still applies for this session.
+    })
+  }
+
   function persist(): void {
     writeSavedWorkouts(map).catch(() => {
       Alert.alert("Save failed", "Could not update local storage.")
@@ -152,14 +163,16 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
     return (
       <CalendarView
         isDark={isDark}
+        onToggleDark={onToggleDark}
         markedDates={markedDates}
         onSelectDate={(date) => {
           setSelectedDate(date)
-          setViewMode("day")
+          showView("day")
         }}
-        onBack={() =>
-          calendarFromDay ? setViewMode("day") : navigation.goBack()
-        }
+        onOpenToday={() => {
+          setSelectedDate(todayKey())
+          showView("day")
+        }}
       />
     )
   }
@@ -175,10 +188,7 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
             <ActionButton
               label="View Calendar"
               size="small"
-              onPress={() => {
-                setCalendarFromDay(true)
-                setViewMode("calendar")
-              }}
+              onPress={() => showView("calendar")}
             />
           </View>
         </View>

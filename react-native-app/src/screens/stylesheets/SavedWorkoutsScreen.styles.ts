@@ -30,24 +30,6 @@ export function palette(isDark: boolean) {
       }
 }
 
-// Theme object for react-native-calendars, derived from the same palette.
-export function makeCalendarTheme(isDark: boolean) {
-  const c = palette(isDark)
-  return {
-    calendarBackground: c.cardBg,
-    monthTextColor: c.textPrimary,
-    dayTextColor: c.textPrimary,
-    textSectionTitleColor: c.textSecondary,
-    textDisabledColor: c.textMuted,
-    todayTextColor: c.accent,
-    arrowColor: c.accent,
-    selectedDayBackgroundColor: c.accent,
-    selectedDayTextColor: '#FFFFFF',
-    dotColor: c.accent,
-    selectedDotColor: '#FFFFFF',
-  }
-}
-
 export function makeStyles(isDark: boolean) {
   const c = palette(isDark)
 
