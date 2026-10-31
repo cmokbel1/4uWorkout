@@ -110,31 +110,36 @@ export function TrainingScreen({ navigation }: Props) {
   ).current
 
   // Collapsing top bar, driven by the scroll position on the native thread. As
-  // the content scrolls up by `collapseDistance`, the whole bar (background and
-  // divider) slides up by that much while the title row is shifted back down
-  // to stay put (rising only by the brand label's height). The nav cards slide
-  // up behind the title row and fade, the brand fades, and "Trainer" shrinks,
-  // leaving a slim bar. The bar floats over the content, so its size never
-  // changes the scroll view's layout.
+  // the content scrolls up by `collapseDistance`, the nav cards slide up behind
+  // the title row and fade, and "Trainer" shrinks toward its bottom-left. The
+  // app name stays visible at full size: it slides down by the space the
+  // shrinking title gives up, so it stays right above it. The whole bar
+  // (background and divider) slides up by `collapseDistance` while the title
+  // row is shifted back down by `navCollapse`, so the row rises only by that
+  // freed space — leaving a slim bar that still reads "4UWORKOUT / Trainer".
+  // The bar floats over the content, so its size never changes the scroll
+  // view's layout.
   const scrollY = useRef(new Animated.Value(0)).current
   const [topBarHeight, setTopBarHeight] = useState<number>(TOP_BAR_HEIGHT_ESTIMATE)
   const [navRowHeight, setNavRowHeight] = useState<number>(0)
-  const [brandHeight, setBrandHeight] = useState<number>(0)
+  const [titleHeight, setTitleHeight] = useState<number>(0)
   const navCollapse = navRowHeight + TOP_BAR_GAP
+  // Height "Trainer" gives up when it shrinks.
+  const titleShrink = titleHeight * (1 - COLLAPSED_TITLE_SCALE)
   // Clamped to 1 so the interpolations below stay valid before measuring.
-  const collapseDistance = Math.max(navCollapse + brandHeight, 1)
+  const collapseDistance = Math.max(navCollapse + titleShrink, 1)
   const collapsedTopBarHeight = topBarHeight - collapseDistance
-  const { barShift, headerShift, brandOpacity, navOpacity, titleScale } = useMemo(() => {
+  const { barShift, headerShift, brandShift, navOpacity, titleScale } = useMemo(() => {
     const range = (output: number[], end = collapseDistance) =>
       scrollY.interpolate({ inputRange: [0, end], outputRange: output, extrapolate: "clamp" })
     return {
       barShift: range([0, -collapseDistance]),
       headerShift: range([0, navCollapse]),
-      brandOpacity: range([1, 0], collapseDistance * 0.4),
+      brandShift: range([0, titleShrink]),
       navOpacity: range([1, 0], collapseDistance * 0.6),
       titleScale: range([1, COLLAPSED_TITLE_SCALE]),
     }
-  }, [scrollY, collapseDistance, navCollapse])
+  }, [scrollY, collapseDistance, navCollapse, titleShrink])
   const insets = useSafeAreaInsets()
 
   const [isDark, setIsDark] = useState<boolean>(false)
@@ -754,13 +759,13 @@ export function TrainingScreen({ navigation }: Props) {
           >
             <View>
               <Animated.Text
-                style={[styles.brand, { opacity: brandOpacity }]}
-                onLayout={(event) => setBrandHeight(event.nativeEvent.layout.height)}
+                style={[styles.brand, { transform: [{ translateY: brandShift }] }]}
               >
                 4UWORKOUT
               </Animated.Text>
               <Animated.Text
                 style={[styles.title, styles.titleOrigin, { transform: [{ scale: titleScale }] }]}
+                onLayout={(event) => setTitleHeight(event.nativeEvent.layout.height)}
                 accessibilityRole="header"
               >
                 Trainer
