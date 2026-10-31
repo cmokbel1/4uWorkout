@@ -347,6 +347,18 @@ export function TrainingScreen({ navigation }: Props) {
     }, []),
   )
 
+  // Dark mode can also be changed from the Calendar's menu, while this screen
+  // stays mounted underneath — so re-read it whenever it comes back into focus.
+  useFocusEffect(
+    useCallback(() => {
+      readDarkMode()
+        .then(setIsDark)
+        .catch(() => {
+          // Keep the current theme if the preference can't be read.
+        })
+    }, []),
+  )
+
   async function onSearchWorkout(): Promise<void> {
     if (!selectedBodyPart) {
       Alert.alert("Body part required", "Select a body part before searching.")
