@@ -11,6 +11,7 @@ import { fonts, getPalette, radius, type Palette } from "../theme"
 import type { RootStackParamList } from "../../App"
 import { todayKey } from "../utils/date"
 import { AppMenu } from "./AppMenu"
+import { ScreenHeader } from "./ScreenHeader"
 
 interface CalendarViewProps {
   isDark: boolean
@@ -49,37 +50,15 @@ export function CalendarView({
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <StatusBar style={isDark ? "light" : "dark"} />
-      <View style={styles.topBar}>
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            {/* A GO_BACK like Android's back button, so it follows the Saved
-                Workouts screen's view history: back to the day view if that's
-                where the calendar was opened from, otherwise out to Training. */}
-            <Pressable
-              onPress={() => navigation.goBack()}
-              style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
-              accessibilityLabel="Go back"
-              accessibilityRole="button"
-            >
-              <Feather name="chevron-left" size={22} color={palette.text} />
-            </Pressable>
-            <View>
-              <Text style={styles.brand}>4UWORKOUT</Text>
-              <Text style={styles.title} accessibilityRole="header">
-                Trainer
-              </Text>
-            </View>
-          </View>
-          <Pressable
-            onPress={() => setMenuVisible(true)}
-            style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
-            accessibilityLabel="Open menu"
-            accessibilityRole="button"
-          >
-            <Feather name="settings" size={20} color={palette.text} />
-          </Pressable>
-        </View>
-      </View>
+      {/* Back is a GO_BACK like Android's back button, so it follows the Saved
+          Workouts screen's view history: back to the day view if that's where
+          the calendar was opened from, otherwise out to Training. */}
+      <ScreenHeader
+        palette={palette}
+        title="Trainer"
+        onBack={() => navigation.goBack()}
+        onOpenMenu={() => setMenuVisible(true)}
+      />
 
       <ScrollView contentContainerStyle={styles.content}>
         <Pressable
@@ -168,47 +147,6 @@ function makeStyles(c: Palette) {
     safeArea: {
       flex: 1,
       backgroundColor: c.bg,
-    },
-    // Same header as Training's top bar (without its collapsing nav cards).
-    topBar: {
-      paddingHorizontal: 20,
-      paddingTop: 12,
-      paddingBottom: 16,
-      backgroundColor: c.bg,
-      borderBottomWidth: 1,
-      borderBottomColor: c.border,
-    },
-    header: {
-      flexDirection: "row",
-      alignItems: "flex-end",
-      justifyContent: "space-between",
-    },
-    headerLeft: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
-    },
-    brand: {
-      color: c.accent,
-      fontFamily: fonts.extrabold,
-      fontSize: 13,
-      letterSpacing: 1.4,
-    },
-    title: {
-      color: c.text,
-      fontFamily: fonts.extrabold,
-      fontSize: 34,
-      lineHeight: 40,
-    },
-    iconButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 14,
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.border,
     },
     pressed: {
       opacity: 0.75,
