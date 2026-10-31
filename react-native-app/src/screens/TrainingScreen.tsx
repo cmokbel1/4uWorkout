@@ -441,6 +441,17 @@ export function TrainingScreen({ navigation }: Props) {
 
   // Shows a newly loaded workout, hidden until its image has drawn.
   function showWorkout(workout: Workout): void {
+    // Same image as the one already on screen (e.g. a search picks the workout
+    // already shown): React Native's Image only reloads when its source
+    // changes, so no onImageLoad would come and the card would stay hidden.
+    // Keep it visible and finish loading now. (`currentWorkout` is the one on
+    // screen when loading began; Find and the similar list are disabled until
+    // loading ends, so it can't have changed since.)
+    if (workout.gifUrl && workout.gifUrl === currentWorkout?.gifUrl) {
+      setCurrentWorkout(workout)
+      onResultImageLoad(workout.id)
+      return
+    }
     if (workout.gifUrl) resultOpacity.setValue(0)
     setCurrentWorkout(workout)
   }
