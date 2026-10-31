@@ -38,16 +38,7 @@
     "plugins": [
       "expo-asset",
       "expo-fmt-consteval-fix",
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "targetSdkVersion": 35,
-            "compileSdkVersion": 35,
-            "buildToolsVersion": "35.0.0"
-          }
-        }
-      ]
+      "expo-font"
     ]
   }
 }
