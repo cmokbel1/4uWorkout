@@ -29,8 +29,8 @@ const DOT = 6
 const TOUCH = 44
 
 // Two-handle slider that snaps to a small set of levels. Drag either handle to
-// set a range; tap a level's label to pick just that level (tap it again to go
-// back to all levels).
+// set a range; tap a level's button to pick just that level (tap it again to go
+// back to all levels). Buttons for levels inside the range are highlighted.
 export function RangeSlider({ palette, levels, value, onChange }: RangeSliderProps) {
   const [width, setWidth] = useState(0)
   const styles = useMemo(() => makeStyles(palette), [palette])
@@ -154,18 +154,30 @@ export function RangeSlider({ palette, levels, value, onChange }: RangeSliderPro
         <View style={StyleSheet.absoluteFill} accessible={false} {...responder.panHandlers} />
       </View>
 
-      <View style={styles.labels}>
-        {levels.map((level, index) => (
-          <Pressable
-            key={level}
-            onPress={() => onTapLevel(index)}
-            style={styles.labelTarget}
-            accessibilityRole="button"
-            accessibilityLabel={`${level} only`}
-          >
-            <Text style={styles.label}>{level}</Text>
-          </Pressable>
-        ))}
+      <View style={styles.levels}>
+        {levels.map((level, index) => {
+          const inRange = index >= value.min && index <= value.max
+          return (
+            <Pressable
+              key={level}
+              onPress={() => onTapLevel(index)}
+              // 36pt button + 4pt slop on each side keeps the 44pt touch target.
+              hitSlop={4}
+              style={({ pressed }) => [
+                styles.levelButton,
+                inRange && styles.levelButtonActive,
+                pressed && styles.levelButtonPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={`${level} only`}
+              accessibilityState={{ selected: inRange }}
+            >
+              <Text style={[styles.levelText, inRange && styles.levelTextActive]}>
+                {level}
+              </Text>
+            </Pressable>
+          )
+        })}
       </View>
     </View>
   )
@@ -174,7 +186,7 @@ export function RangeSlider({ palette, levels, value, onChange }: RangeSliderPro
 function makeStyles(c: Palette) {
   return StyleSheet.create({
     root: {
-      gap: 2,
+      gap: 6,
     },
     trackArea: {
       height: TOUCH,
@@ -218,19 +230,36 @@ function makeStyles(c: Palette) {
       shadowRadius: 3,
       elevation: 3,
     },
-    labels: {
+    levels: {
       flexDirection: "row",
       justifyContent: "space-between",
     },
-    labelTarget: {
-      minHeight: TOUCH,
+    levelButton: {
+      minHeight: 36,
       minWidth: TOUCH,
+      paddingHorizontal: 12,
+      alignItems: "center",
       justifyContent: "center",
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: c.borderStrong,
+      backgroundColor: c.surfaceSunken,
     },
-    label: {
-      color: c.text,
-      fontFamily: fonts.bold,
+    levelButtonActive: {
+      borderColor: c.accent,
+      backgroundColor: c.surface,
+    },
+    levelButtonPressed: {
+      opacity: 0.7,
+    },
+    levelText: {
+      color: c.textMuted,
+      fontFamily: fonts.semibold,
       fontSize: 13,
+    },
+    levelTextActive: {
+      color: c.accent,
+      fontFamily: fonts.bold,
     },
   })
 }
