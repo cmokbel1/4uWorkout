@@ -62,7 +62,7 @@ These guidelines are working if: fewer unnecessary changes in diffs, fewer rewri
 ```
 4uWorkout-1/
 ├── server/              # Express/TypeScript API proxy (Node.js)
-└── react-native-app/    # Expo 52 / React Native 0.76 mobile client
+└── react-native-app/    # Expo 54 / React Native 0.81 mobile client
 ```
 
 Each package has its own `package.json`, `node_modules`, and `CLAUDE.md`. There is no shared code or workspace linking between them — they communicate only over HTTP at runtime.
