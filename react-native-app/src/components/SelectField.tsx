@@ -10,6 +10,8 @@ export interface SelectOption {
   label: string
   // Secondary text on the right of the option row, e.g. a count.
   detail?: string
+  // Shown greyed out and can't be picked (e.g. a choice with 0 matches).
+  disabled?: boolean
 }
 
 interface SelectFieldProps {
@@ -90,16 +92,18 @@ export function SelectField({
                   onChange(option.value)
                   setOpen(false)
                 }}
+                disabled={option.disabled}
                 style={({ pressed }) => [
                   styles.option,
                   isSelected && styles.optionSelected,
                   pressed && styles.pressed,
+                  option.disabled && styles.optionDisabled,
                 ]}
                 accessibilityRole="button"
                 accessibilityLabel={
                   option.detail ? `${option.label}, ${option.detail}` : option.label
                 }
-                accessibilityState={{ selected: isSelected }}
+                accessibilityState={{ selected: isSelected, disabled: option.disabled }}
               >
                 <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
                   {option.label}
@@ -182,6 +186,9 @@ function makeStyles(c: Palette) {
     },
     optionSelected: {
       backgroundColor: c.surfaceSunken,
+    },
+    optionDisabled: {
+      opacity: 0.4,
     },
     optionText: {
       color: c.text,
