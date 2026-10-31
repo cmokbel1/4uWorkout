@@ -2,7 +2,7 @@
 
 ## What This App Is
 
-**4UWorkout Trainer** — React Native app (Expo 52, RN 0.76, TypeScript strict) for discovering and saving exercises. `TrainingScreen` is the primary surface (search by body part, GIF display, similar-exercise browsing). Saved workouts live on `SavedWorkoutsScreen` (per-day log with inline set editing + calendar) and `WorkoutDetailScreen` (read-only single workout).
+**4UWorkout Trainer** — React Native app (Expo 54, RN 0.81, TypeScript strict) for discovering and saving exercises. `TrainingScreen` is the primary surface (search by body part, GIF display, similar-exercise browsing). Saved workouts live on `SavedWorkoutsScreen` (per-day log with inline set editing + calendar) and `WorkoutDetailScreen` (read-only single workout).
 
 ## Commands
 
@@ -76,9 +76,11 @@ Types in `src/types/filters.ts`. `TrainingScreen` holds `filterOptions` (all bod
 `src/storage/savedWorkouts.ts` — JSON in AsyncStorage under `saved_workouts_v3`, a `SavedWorkoutsByDate` map keyed by local date (`YYYY-MM-DD`); each `Workout` carries per-set `setDetails` (weight/reps). Earlier keys (`v1`, `v2`) are no longer read. Helpers: `readSavedWorkouts`, `writeSavedWorkouts`, `addWorkoutForToday`, `removeSavedWorkout`, `clearSavedWorkouts`. Per-day dedup is enforced in the storage module: `addWorkoutForToday` leaves a workout already saved today unchanged, and `readSavedWorkouts` drops repeat copies within a day (cleaning up duplicates saved before this check existed). `TrainingScreen` also disables Save for a workout already saved today; it loads `savedMap` on each mount's first focus (not only when the dirty flag is set), since the flag is module-level and survives a remount. Dark-mode preference persists separately in `src/storage/theme.ts` (`readDarkMode` / `writeDarkMode`).
 
 ### Non-Obvious Constraints
-**Safe area** — always use `SafeAreaView` from `react-native-safe-area-context`, never the `react-native` built-in (a no-op on Android, so content runs under the system nav bar — especially with `targetSdkVersion: 35` edge-to-edge). `SafeAreaProvider` is in `App.tsx`.
+**Safe area** — always use `SafeAreaView` from `react-native-safe-area-context`, never the `react-native` built-in (a no-op on Android, so content runs under the system nav bar — especially with the edge-to-edge layout Android enforces at `targetSdkVersion` 35 and above). `SafeAreaProvider` is in `App.tsx`.
 
-**Android SDK** — `expo-build-properties` in `app.json` pins `targetSdkVersion: 35`. Removing it builds against SDK 34, which Google Play rejects.
+**Android SDK** — Expo SDK 54 compiles and targets API 36 by default, which Google Play requires. There is no pin in `app.json`; don't add one that lowers it.
+
+**Direct dependencies `expo-file-system` and `babel-preset-expo`** — both come with `expo`, but npm installs them under `expo/node_modules`, where Android autolinking and Babel don't look. Keep them in `package.json`. Without `expo-file-system`, Android release builds can't load any bundled font (Manrope falls back to Roboto and every icon is blank); without `babel-preset-expo`, bundling fails.
 
 ## What Not To Do
 - React Navigation is the router — don't add a second (e.g. Expo Router). New screens go in the `App.tsx` stack + `RootStackParamList`.
