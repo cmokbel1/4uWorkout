@@ -14,6 +14,8 @@ interface ThemedButtonProps {
   // Used instead of `icon` for an icon from another set (e.g. a dumbbell);
   // the caller colours it to match the label.
   iconElement?: ReactNode
+  // Puts the icon after the label (e.g. a forward arrow) instead of before it.
+  iconAfter?: boolean
   disabled?: boolean
   // Shows a spinner in place of the icon. Callers usually also disable the
   // button and change its label while loading.
@@ -28,6 +30,7 @@ export function ThemedButton({
   variant = "primary",
   icon,
   iconElement,
+  iconAfter = false,
   disabled = false,
   loading = false,
 }: ThemedButtonProps) {
@@ -40,6 +43,7 @@ export function ThemedButton({
     : isPrimary
       ? palette.onAccent
       : palette.text
+  const iconNode = iconElement ?? (icon ? <Feather name={icon} size={18} color={color} /> : null)
 
   return (
     <Pressable
@@ -60,16 +64,11 @@ export function ThemedButton({
       accessibilityLabel={label}
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
     >
-      {loading ? (
-        <ActivityIndicator size="small" color={color} />
-      ) : iconElement ? (
-        iconElement
-      ) : icon ? (
-        <Feather name={icon} size={18} color={color} />
-      ) : null}
+      {loading ? <ActivityIndicator size="small" color={color} /> : iconAfter ? null : iconNode}
       <Text style={[styles.label, { color }]} numberOfLines={1}>
         {label}
       </Text>
+      {!loading && iconAfter ? iconNode : null}
     </Pressable>
   )
 }
