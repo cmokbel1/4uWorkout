@@ -24,7 +24,7 @@ import {
 } from "../storage/savedWorkouts"
 import type { Workout } from "../types/workout"
 import type { RootStackParamList } from "../../App"
-import { writeDarkMode } from "../storage/theme"
+import { readDarkMode, writeDarkMode } from "../storage/theme"
 import { getPalette } from "../theme"
 import { formatDateLabel, todayKey } from "../utils/date"
 import { makeStyles } from "./stylesheets/SavedWorkoutsScreen.styles"
@@ -56,6 +56,18 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
   function toggleExpanded(id: string): void {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }))
   }
+
+  // Dark mode can also be changed from Workout Detail's menu while this screen
+  // stays mounted underneath, so re-read it whenever it comes back into focus.
+  useFocusEffect(
+    useCallback(() => {
+      readDarkMode()
+        .then(setIsDark)
+        .catch(() => {
+          // Keep the current theme if the preference can't be read.
+        })
+    }, []),
+  )
 
   useFocusEffect(
     useCallback(() => {

@@ -1,13 +1,16 @@
+import { Feather } from "@expo/vector-icons"
 import { StatusBar } from "expo-status-bar"
-import { useMemo } from "react"
-import { ScrollView, Text, View } from "react-native"
+import { useMemo, useState } from "react"
+import { Image, Pressable, ScrollView, Text, View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
-import { ActionButton } from "../components/ActionButton"
-import { AppHeader } from "../components/AppHeader"
-import { WorkoutPanel } from "../components/WorkoutPanel"
+import { AppMenu } from "../components/AppMenu"
+import { InstructionsModal } from "../components/InstructionsModal"
+import { ScreenHeader } from "../components/ScreenHeader"
+import { writeDarkMode } from "../storage/theme"
 import { getPalette } from "../theme"
+import { DIFFICULTIES, type Difficulty } from "../types/filters"
 import type { RootStackParamList } from "../../App"
 import { makeStyles } from "./stylesheets/WorkoutDetailScreen.styles"
 
@@ -17,48 +20,155 @@ type Props = NativeStackScreenProps<RootStackParamList, "WorkoutDetail">
 // as a route param (it already carries a base64 gifUrl), so nothing is fetched
 // here. Editing sets stays on the Saved Workouts card.
 export function WorkoutDetailScreen({ route, navigation }: Props) {
-  const { workout, isDark } = route.params
-  const styles = useMemo(() => makeStyles(isDark), [isDark])
+  const { workout } = route.params
+  // Starts from the previous screen's setting; the cog's menu can change it.
+  const [isDark, setIsDark] = useState<boolean>(route.params.isDark)
+  const [menuVisible, setMenuVisible] = useState(false)
+  const palette = getPalette(isDark)
+  const styles = useMemo(() => makeStyles(palette), [palette])
+  const [instructionsVisible, setInstructionsVisible] = useState(false)
 
   const sets = workout.setDetails ?? []
+  // 0-based position of the level, for the bar icon (-1 if unknown).
+  const level = DIFFICULTIES.indexOf(workout.difficulty as Difficulty)
+  const details = [
+    { label: "TARGET", value: workout.target },
+    { label: "GROUP", value: workout.bodyPart },
+    { label: "GEAR", value: workout.equipment },
+  ]
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <StatusBar style={isDark ? "light" : "dark"} />
-      <ScrollView contentContainerStyle={styles.container}>
-        <AppHeader isDark={isDark} onBack={() => navigation.goBack()} />
-        <View style={styles.card}>
-          <View style={styles.row}>
-            <ActionButton
-              label="Saved Workouts"
-              variant="secondary"
-              size="small"
-              onPress={() => navigation.goBack()}
-            />
-          </View>
-        </View>
+      <ScreenHeader
+        palette={palette}
+        title="Trainer"
+        onBack={() => navigation.goBack()}
+        onOpenMenu={() => setMenuVisible(true)}
+      />
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{workout.name}</Text>
-          <WorkoutPanel workout={workout} palette={getPalette(isDark)} showNameLabel={false} />
+      <ScrollView contentContainerStyle={styles.content}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Saved Workouts"
+        >
+          <Feather name="list" size={16} color={palette.text} />
+          <Text style={styles.backButtonText}>Saved Workouts</Text>
+        </Pressable>
 
-          {sets.length ? (
-            <>
-              <Text style={styles.savedTitle}>Sets</Text>
-              {sets.map((set, index) => (
-                <View key={index} style={styles.setRow}>
-                  <Text style={styles.setRowLabel}>Set {index + 1}</Text>
-                  <Text style={styles.detailLabel}>
-                    Weight: {set.weight != null ? `${set.weight} lbs` : "—"}
-                    {"   ·   "}
-                    Reps: {set.reps != null ? set.reps : "—"}
-                  </Text>
-                </View>
-              ))}
-            </>
+        <Image
+          source={{ uri: workout.gifUrl }}
+          style={styles.media}
+          resizeMode="contain"
+          accessibilityLabel={`Demonstration of ${workout.name}`}
+        />
+
+        <View>
+          {level >= 0 ? (
+            <View style={styles.levelRow}>
+              <View style={styles.levelBars}>
+                {DIFFICULTIES.map((difficulty, index) => (
+                  <View
+                    key={difficulty}
+                    style={[
+                      styles.levelBar,
+                      { height: 6 + index * 4 },
+                      index <= level ? styles.levelBarOn : null,
+                    ]}
+                  />
+                ))}
+              </View>
+              <Text style={styles.levelText}>{workout.difficulty.toUpperCase()}</Text>
+            </View>
           ) : null}
+          <Text style={styles.name} accessibilityRole="header">
+            {workout.name}
+          </Text>
         </View>
+
+        <View style={styles.tiles}>
+          {details.map((detail) => (
+            <View key={detail.label} style={styles.tile}>
+              <Text style={styles.tileLabel}>{detail.label}</Text>
+              <Text style={styles.tileValue} numberOfLines={2}>
+                {detail.value}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        <Text style={styles.description}>{workout.description}</Text>
+
+        <Pressable
+          onPress={() => setInstructionsVisible(true)}
+          style={({ pressed }) => [styles.instructionsRow, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="View instructions"
+        >
+          <View style={styles.playIcon}>
+            <Feather name="play" size={14} color={palette.onAccent} />
+          </View>
+          <Text style={styles.instructionsText}>Instructions</Text>
+          <Feather name="chevron-right" size={18} color={palette.textMuted} />
+        </Pressable>
+
+        {sets.length ? (
+          <View style={styles.sets}>
+            <View style={styles.setsHeader}>
+              <Text style={styles.setsTitle}>Sets</Text>
+              <Text style={styles.setsCount}>
+                {sets.length} {sets.length === 1 ? "set" : "sets"}
+              </Text>
+            </View>
+            {sets.map((set, index) => (
+              <View key={index} style={styles.setRow}>
+                <Text style={styles.setLabel}>Set {index + 1}</Text>
+                <Text style={styles.setValue}>
+                  {set.weight != null ? `${set.weight} lbs` : "—"}
+                  {"  ×  "}
+                  {set.reps != null ? `${set.reps} reps` : "—"}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
       </ScrollView>
+
+      <AppMenu
+        palette={palette}
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        links={[
+          {
+            title: "Training",
+            subtitle: "Find a workout",
+            icon: "shuffle",
+            onPress: () => navigation.navigate("Training"),
+          },
+          {
+            title: "Saved Workouts",
+            subtitle: "Back to your list",
+            icon: "list",
+            onPress: () => navigation.goBack(),
+          },
+        ]}
+        isDark={isDark}
+        onToggleDark={(value) => {
+          setIsDark(value)
+          writeDarkMode(value).catch(() => {
+            // Non-fatal: the toggle still applies for this session.
+          })
+        }}
+      />
+
+      <InstructionsModal
+        palette={palette}
+        visible={instructionsVisible}
+        onClose={() => setInstructionsVisible(false)}
+        instructions={workout.instructions}
+      />
     </SafeAreaView>
   )
 }
