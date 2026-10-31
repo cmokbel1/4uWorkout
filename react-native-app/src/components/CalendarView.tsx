@@ -24,7 +24,7 @@ interface CalendarViewProps {
 }
 
 // The month view of the Saved Workouts screen, in the redesigned look. Same
-// header as Training (brand, title, cog menu). Tapping a day opens the day view
+// header as Training (brand, title, cog menu) plus a back button. Tapping a day opens the day view
 // for it — the same screen Training's "Today's workouts" opens.
 export function CalendarView({
   isDark,
@@ -51,11 +51,24 @@ export function CalendarView({
       <StatusBar style={isDark ? "light" : "dark"} />
       <View style={styles.topBar}>
         <View style={styles.header}>
-          <View>
-            <Text style={styles.brand}>4UWORKOUT</Text>
-            <Text style={styles.title} accessibilityRole="header">
-              Trainer
-            </Text>
+          <View style={styles.headerLeft}>
+            {/* A GO_BACK like Android's back button, so it follows the Saved
+                Workouts screen's view history: back to the day view if that's
+                where the calendar was opened from, otherwise out to Training. */}
+            <Pressable
+              onPress={() => navigation.goBack()}
+              style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+              accessibilityLabel="Go back"
+              accessibilityRole="button"
+            >
+              <Feather name="chevron-left" size={22} color={palette.text} />
+            </Pressable>
+            <View>
+              <Text style={styles.brand}>4UWORKOUT</Text>
+              <Text style={styles.title} accessibilityRole="header">
+                Trainer
+              </Text>
+            </View>
           </View>
           <Pressable
             onPress={() => setMenuVisible(true)}
@@ -169,6 +182,11 @@ function makeStyles(c: Palette) {
       flexDirection: "row",
       alignItems: "flex-end",
       justifyContent: "space-between",
+    },
+    headerLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
     },
     brand: {
       color: c.accent,
