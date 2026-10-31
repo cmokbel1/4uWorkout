@@ -22,7 +22,7 @@ interface ThemedButtonProps {
   loading?: boolean
 }
 
-// Button for the redesigned screens. (Older screens still use ActionButton.)
+// The app's button.
 export function ThemedButton({
   palette,
   label,
