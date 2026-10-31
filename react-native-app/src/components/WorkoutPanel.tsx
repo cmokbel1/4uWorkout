@@ -9,21 +9,16 @@ import { InstructionsModal } from "./InstructionsModal"
 interface WorkoutPanelProps {
   workout: Workout
   palette: Palette
-  // Training shows the name as the panel's heading; the detail screen renders
-  // the name as its own heading, so it hides it here.
-  showNameLabel?: boolean
   // Called when the image has finished loading, or failed to, so a caller can
   // hold back other UI until the panel is fully drawn.
   onImageLoad?: () => void
 }
 
-// The shared workout detail block: name, detail chips, image, description, and
-// the self-contained Instructions sheet. Used by both the Training screen (as
-// the current workout) and the Workout Detail screen (as a saved workout).
+// The Training screen's workout block: name, detail chips, image, description,
+// and an Instructions button. (Workout Detail has its own layout.)
 export function WorkoutPanel({
   workout,
   palette,
-  showNameLabel = true,
   onImageLoad,
 }: WorkoutPanelProps) {
   const styles = useMemo(() => makeStyles(palette), [palette])
@@ -34,7 +29,7 @@ export function WorkoutPanel({
 
   return (
     <View style={styles.panel}>
-      {showNameLabel ? <Text style={styles.name}>{workout.name}</Text> : null}
+      <Text style={styles.name}>{workout.name}</Text>
 
       <View style={styles.chips}>
         <View style={styles.chip}>
