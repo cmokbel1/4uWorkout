@@ -25,17 +25,21 @@ import {
 } from "../storage/savedWorkouts"
 import type { Workout } from "../types/workout"
 import type { RootStackParamList } from "../../App"
+import { writeDarkMode } from "../storage/theme"
+import { getPalette } from "../theme"
 import { formatDateLabel, todayKey } from "../utils/date"
-import { makeStyles, palette } from "./stylesheets/SavedWorkoutsScreen.styles"
+import { makeStyles } from "./stylesheets/SavedWorkoutsScreen.styles"
 
 type Props = NativeStackScreenProps<RootStackParamList, "SavedWorkouts">
 
 type ViewMode = "day" | "calendar"
 
 export function SavedWorkoutsScreen({ route, navigation }: Props) {
-  const isDark = route.params?.isDark ?? false
+  // Starts from Training's setting; the Calendar's menu can change it.
+  const [isDark, setIsDark] = useState<boolean>(route.params?.isDark ?? false)
   const styles = useMemo(() => makeStyles(isDark), [isDark])
-  const accent = palette(isDark).accent
+  // The calendar uses the redesign's palette (the day view keeps its old look).
+  const accent = getPalette(isDark).accent
 
   const [map, setMap] = useState<SavedWorkoutsByDate>({})
   const [viewMode, setViewMode] = useState<ViewMode>(
@@ -120,6 +124,13 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
     }))
   }
 
+  function onToggleDark(value: boolean): void {
+    setIsDark(value)
+    writeDarkMode(value).catch(() => {
+      // Non-fatal: the toggle still applies for this session.
+    })
+  }
+
   function persist(): void {
     writeSavedWorkouts(map).catch(() => {
       Alert.alert("Save failed", "Could not update local storage.")
@@ -152,14 +163,19 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
     return (
       <CalendarView
         isDark={isDark}
+        onToggleDark={onToggleDark}
         markedDates={markedDates}
-        onSelectDate={(date) => {
-          setSelectedDate(date)
+        selectedDate={selectedDate}
+        dayWorkouts={dayWorkouts}
+        onSelectDate={setSelectedDate}
+        onOpenWorkout={(workout) =>
+          navigation.navigate("WorkoutDetail", { workout, isDark })
+        }
+        onEditDay={() => setViewMode("day")}
+        onOpenToday={() => {
+          setSelectedDate(todayKey())
           setViewMode("day")
         }}
-        onBack={() =>
-          calendarFromDay ? setViewMode("day") : navigation.goBack()
-        }
       />
     )
   }
