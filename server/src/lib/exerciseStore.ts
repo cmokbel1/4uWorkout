@@ -139,10 +139,12 @@ export async function getExercise(publicId: string): Promise<ExerciseData | unde
 
   const relationsOf = (field: (typeof RELATION_FIELDS)[number]) => row.data[field] as Relation[] | undefined
   const linkedIds = RELATION_FIELDS.flatMap((field) => (relationsOf(field) ?? []).map((relation) => relation.id))
-  const { rows: idRows } = await getPool().query<{ id: string; public_id: string }>(
-    'SELECT id, public_id FROM exercises WHERE id = ANY($1)',
-    [linkedIds],
-  )
+  const { rows: idRows } = linkedIds.length
+    ? await getPool().query<{ id: string; public_id: string }>(
+        'SELECT id, public_id FROM exercises WHERE id = ANY($1)',
+        [linkedIds],
+      )
+    : { rows: [] }
   const publicIds = new Map(idRows.map((idRow) => [idRow.id, idRow.public_id]))
 
   const exercise: ExerciseData = { ...row.data, id: row.public_id }

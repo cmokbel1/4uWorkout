@@ -25,7 +25,11 @@ npx tsc && node --env-file=.env dist/scripts/importPro.js <exerciseData_pro.json
 ```
 Takes ~13 minutes from a laptop (one round trip per row). `npm run import:pro -- <json> <dir>` does the same, but see the stray-Node gotcha below.
 
-The import is also how `src/db/schema.sql` reaches a database — the server never applies it. Apply a schema change to both databases **before** deploying server code that depends on it.
+**Apply the schema only** (seconds, no Pro package needed, safe against the live database):
+```bash
+npx tsc && node --env-file=.env dist/scripts/applySchema.js
+```
+The server never applies `src/db/schema.sql` itself; this script and the import do. Apply a schema change to both databases **before** deploying server code that depends on it. The import applies the schema *before* its own transaction: `ALTER TABLE` holds a lock that blocks reads until its transaction ends, so inside the ~13-minute import it would stall the live server.
 
 No linter, no tests. TypeScript strict mode is the only quality gate.
 
@@ -65,6 +69,7 @@ Schema: `src/db/schema.sql`, applied by the import script.
 - `src/lib/db.ts` — shared `pg` pool
 - `src/lib/exerciseStore.ts` — every query the routes use
 - `src/scripts/importPro.ts` — Pro package import
+- `src/scripts/applySchema.ts` — applies `schema.sql` alone
 
 ### Routes
 

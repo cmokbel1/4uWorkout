@@ -26,8 +26,11 @@ async function main(): Promise<void> {
   const exercises = JSON.parse(readFileSync(jsonPath, 'utf8')) as ProExercise[]
   const client = await getPool().connect()
   try {
-    await client.query('BEGIN')
+    // Before BEGIN, not inside the import's transaction: ALTER TABLE locks the
+    // table against reads until its transaction ends, which here would stall
+    // the live server for the whole import.
     await client.query(readFileSync(join(__dirname, '../../src/db/schema.sql'), 'utf8'))
+    await client.query('BEGIN')
     for (const exercise of exercises) {
       await client.query(
         `INSERT INTO exercises (id, source, name, body_part, target, equipment, difficulty, category, required_equipment, data)
