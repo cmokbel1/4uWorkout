@@ -13,6 +13,12 @@ CREATE TABLE IF NOT EXISTS exercises (
   data               jsonb NOT NULL   -- the full record, exactly as delivered
 );
 
+-- The only id the API exposes. The delivered ids are sequential, so serving
+-- them would let a script walk the catalogue (EULA §13). Random per row, set
+-- once: the import's upsert never touches it, so it survives re-imports.
+ALTER TABLE exercises
+  ADD COLUMN IF NOT EXISTS public_id uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE;
+
 CREATE INDEX IF NOT EXISTS exercises_body_part_idx ON exercises (body_part);
 CREATE INDEX IF NOT EXISTS exercises_target_idx ON exercises (target);
 

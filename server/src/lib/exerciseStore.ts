@@ -54,8 +54,8 @@ export async function randomExercisesByBodyPart(
   filters: ExerciseFilters,
   limit: number,
 ): Promise<ExerciseData[]> {
-  const { rows } = await getPool().query<{ data: ExerciseData }>(
-    `SELECT data FROM exercises
+  const { rows } = await getPool().query<{ public_id: string; data: ExerciseData }>(
+    `SELECT public_id, data FROM exercises
      WHERE body_part = $1
        AND ($2::text[] IS NULL OR difficulty = ANY($2))
        AND ($3::text IS NULL OR target = $3)
@@ -63,7 +63,7 @@ export async function randomExercisesByBodyPart(
      ORDER BY random() LIMIT $5`,
     [bodyPart, filters.difficulties ?? null, filters.target ?? null, filters.equipmentTypes ?? null, limit],
   )
-  return rows.map((row) => toListItem(row.data))
+  return rows.map((row) => ({ ...toListItem(row.data), id: row.public_id }))
 }
 
 type FilterOption = {
@@ -122,18 +122,48 @@ export async function filterOptionsByBodyPart(): Promise<Record<string, FilterOp
   return options
 }
 
-export async function getExercise(id: string): Promise<ExerciseData | undefined> {
-  const { rows } = await getPool().query<{ data: ExerciseData }>(
-    'SELECT data FROM exercises WHERE id = $1',
-    [id],
+// Pro fields that link to other exercises by their delivered id.
+const RELATION_FIELDS = ['similarExercises', 'substitutions', 'progressions', 'regressions'] as const
+type Relation = { id: string } & Record<string, unknown>
+
+// The full record, with its own id and every relation's id swapped for public
+// ids. A relation whose exercise isn't in the table is dropped rather than
+// sent with its delivered id.
+export async function getExercise(publicId: string): Promise<ExerciseData | undefined> {
+  const { rows } = await getPool().query<{ public_id: string; data: ExerciseData }>(
+    'SELECT public_id, data FROM exercises WHERE public_id = $1',
+    [publicId],
   )
-  return rows[0]?.data
+  const row = rows[0]
+  if (!row) return undefined
+
+  const relationsOf = (field: (typeof RELATION_FIELDS)[number]) => row.data[field] as Relation[] | undefined
+  const linkedIds = RELATION_FIELDS.flatMap((field) => (relationsOf(field) ?? []).map((relation) => relation.id))
+  const { rows: idRows } = linkedIds.length
+    ? await getPool().query<{ id: string; public_id: string }>(
+        'SELECT id, public_id FROM exercises WHERE id = ANY($1)',
+        [linkedIds],
+      )
+    : { rows: [] }
+  const publicIds = new Map(idRows.map((idRow) => [idRow.id, idRow.public_id]))
+
+  const exercise: ExerciseData = { ...row.data, id: row.public_id }
+  for (const field of RELATION_FIELDS) {
+    const relations = relationsOf(field)
+    if (!relations) continue
+    exercise[field] = relations
+      .filter((relation) => publicIds.has(relation.id))
+      .map((relation) => ({ ...relation, id: publicIds.get(relation.id) }))
+  }
+  return exercise
 }
 
-export async function getExerciseImage(id: string): Promise<{ contentType: string; image: Buffer } | undefined> {
+export async function getExerciseImage(publicId: string): Promise<{ contentType: string; image: Buffer } | undefined> {
   const { rows } = await getPool().query<{ content_type: string; image: Buffer }>(
-    'SELECT content_type, image FROM exercise_images WHERE exercise_id = $1',
-    [id],
+    `SELECT images.content_type, images.image
+     FROM exercise_images images JOIN exercises ON exercises.id = images.exercise_id
+     WHERE exercises.public_id = $1`,
+    [publicId],
   )
   return rows[0] ? { contentType: rows[0].content_type, image: rows[0].image } : undefined
 }

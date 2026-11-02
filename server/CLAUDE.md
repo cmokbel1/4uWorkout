@@ -25,6 +25,12 @@ npx tsc && node --env-file=.env dist/scripts/importPro.js <exerciseData_pro.json
 ```
 Takes ~13 minutes from a laptop (one round trip per row). `npm run import:pro -- <json> <dir>` does the same, but see the stray-Node gotcha below.
 
+**Apply the schema only** (seconds, no Pro package needed, safe against the live database):
+```bash
+npx tsc && node --env-file=.env dist/scripts/applySchema.js
+```
+The server never applies `src/db/schema.sql` itself; this script and the import do. Apply a schema change to both databases **before** deploying server code that depends on it. The import applies the schema *before* its own transaction: `ALTER TABLE` holds a lock that blocks reads until its transaction ends, so inside the ~13-minute import it would stall the live server.
+
 No linter, no tests. TypeScript strict mode is the only quality gate.
 
 ## Environment
@@ -51,7 +57,8 @@ DigitalOcean managed Postgres cluster `app-4a3a3b15-…` (ID `96f5d06b-39cb-4566
 Both users are normal (non-admin) roles that were granted `CREATE ON SCHEMA public` by `doadmin` — Postgres 15+ only lets the database owner create tables in `public` otherwise. Trusted sources limit who can connect; add your IP with `doctl databases firewalls append <cluster-id> --rule ip_addr:<ip>` (use `append`, never `replace` — that drops the app's own rule).
 
 Schema: `src/db/schema.sql`, applied by the import script.
-- `exercises` — `id`, `source` (`exercisedb_pro` or `4u` for our own additions), the filterable columns (`body_part`, `target`, `equipment`, `difficulty`, `category`, `required_equipment`), and `data jsonb` holding the full record exactly as delivered.
+- `exercises` — `id` (the delivered id), `public_id`, `source` (`exercisedb_pro` or `4u` for our own additions), the filterable columns (`body_part`, `target`, `equipment`, `difficulty`, `category`, `required_equipment`), and `data jsonb` holding the full record exactly as delivered.
+- `public_id` — a random UUID per exercise and **the only id the API exposes**. The delivered ids are sequential, so serving them would let a script walk the catalogue. It defaults to `gen_random_uuid()` and the import's upsert never touches it, so it survives re-imports. The delivered `id` stays the primary key and the join key for `exercise_images`.
 - `exercise_images` — one 360px GIF per exercise as `bytea`.
 
 ## Architecture
@@ -62,12 +69,15 @@ Schema: `src/db/schema.sql`, applied by the import script.
 - `src/lib/db.ts` — shared `pg` pool
 - `src/lib/exerciseStore.ts` — every query the routes use
 - `src/scripts/importPro.ts` — Pro package import
+- `src/scripts/applySchema.ts` — applies `schema.sql` alone
 
 ### Routes
 
 All routes are prefixed `/exercises`. Errors return `{ error }` with 400/404/429/500.
 
-**Rate limit** — `/exercises/*` allows 100 requests per 15 minutes per client (`src/index.ts`), so the predictable ids can't be walked to scrape the catalogue (licence §13). Clients are keyed by App Platform's `do-connecting-ip` header, since `req.ip` is the load balancer; locally it falls back to `req.ip`. Counters are in memory per instance and reset on restart, so with N instances the effective limit is N × 100. The limiter is mounted on `/exercises` only — a new route prefix does not inherit it. `/health` is not limited.
+**Ids** — every id in a response, and every id a route accepts, is a `public_id`. `/exercise/:id` and `/image` answer 404 to anything that isn't a UUID, including delivered ids.
+
+**Rate limit** — `/exercises/*` allows 100 requests per 15 minutes per client (`src/index.ts`), so the catalogue can't be scraped quickly (licence §13). Public ids can't be counted through, but they can still be collected from `/bodyPart` samples and from the relation lists in `/exercise/:id`, so the limit is still what slows a scrape down. Clients are keyed by App Platform's `do-connecting-ip` header, since `req.ip` is the load balancer; locally it falls back to `req.ip`. Counters are in memory per instance and reset on restart, so with N instances the effective limit is N × 100. The limiter is mounted on `/exercises` only — a new route prefix does not inherit it. `/health` is not limited.
 
 | Route | Notes |
 |-------|-------|
@@ -75,8 +85,8 @@ All routes are prefixed `/exercises`. Errors return `{ error }` with 400/404/429
 | `GET /exercises/targetList` | Distinct targets from the data (Pro vocabulary — e.g. `quadriceps`, not `quads`). **Not yet wired into the client UI** |
 | `GET /exercises/bodyPart/:bodyPart` | **A random 11** exercises (one to show + 10 "similar"), list fields only — see Licence. Optional filters, see below |
 | `GET /exercises/filters` | Every body part's filter choices, keyed by body part: `{ "<body part>": { difficulties, targets, equipmentTypes: [{ value, count, byDifficulty }] } }`. `byDifficulty` splits `count` by level (levels with none are omitted), so the app can count only options inside the user's difficulty range. About 4 KB — the client loads it **once at startup** (alongside `/bodyPartList`) and keeps it for the session, so switching body parts needs no request. Only changes on a re-import. There is deliberately no per-body-part form |
-| `GET /exercises/exercise/:id` | Full Pro record (taxonomy, equipment lists, relationships) with `gifUrl` as a base64 data URL |
-| `GET /exercises/image?exerciseId=` | Binary GIF. `resolution` is accepted for compatibility and ignored — only 360 is stored |
+| `GET /exercises/exercise/:id` | Full Pro record (taxonomy, equipment lists, relationships) with `gifUrl` as a base64 data URL. The ids inside `similarExercises`, `substitutions`, `progressions` and `regressions` are swapped for public ids too; a relation to an exercise not in the table is dropped |
+| `GET /exercises/image?exerciseId=` | Binary GIF, by public id. `resolution` is accepted for compatibility and ignored — only 360 is stored |
 | `GET /health` | |
 
 **`/bodyPart` filters** — all optional; without them the route behaves as before, so older app builds are unaffected. Unknown `difficulty` / `equipmentType` values return 400. `target` is **not** validated: an unknown target, or a real one that doesn't belong to the body part (`chest` + `biceps`), returns `[]` with 200 — checking it against the database would cost a query and still miss the second case. Clients should only send targets from `/filters`.
@@ -92,7 +102,7 @@ List items carry exactly the fields the old RapidAPI list returned (`bodyPart, e
 
 These terms shape the API — check them before changing a route:
 - **§12** — the raw JSON and GIFs must never be published. This repo is **public**: the package stays outside it (`.gitignore` also blocks `exerciseData_pro*.json` and `server/data/`).
-- **§13** — no endpoint may allow bulk download. That is why `/bodyPart` returns a random sample rather than the full list, why Pro fields are only served per exercise, and why `/exercises/*` is rate limited.
+- **§13** — no endpoint may allow bulk download. That is why `/bodyPart` returns a random sample rather than the full list, why Pro fields are only served per exercise, why only random `public_id`s are exposed, and why `/exercises/*` is rate limited.
 - **§29–30** — safety disclaimers in the app are our responsibility.
 
 ### Non-Obvious Details
