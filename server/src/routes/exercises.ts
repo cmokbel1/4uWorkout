@@ -20,6 +20,10 @@ const router = Router()
 // Filters only narrow this sample; never add paging or "show all".
 const BODY_PART_SAMPLE_SIZE = 11
 
+// Exercises are looked up by public id (a random UUID). Anything else can't
+// match, and Postgres would throw casting it to uuid, so it's a 404 up front.
+const PUBLIC_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 // Reads the optional ?difficulty=&target=&equipmentType= query params.
 // Returns an error message instead when a value is not a known option.
 function parseFilters(query: Request['query']): ExerciseFilters | string {
@@ -74,6 +78,10 @@ router.get('/targetList', async (_req: Request, res: Response) => {
 router.get('/exercise/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params
+    if (!PUBLIC_ID_PATTERN.test(id)) {
+      res.status(404).json({ error: 'Exercise not found' })
+      return
+    }
     const [exercise, image] = await Promise.all([getExercise(id), getExerciseImage(id)])
     if (!exercise || !image) {
       res.status(404).json({ error: 'Exercise not found' })
@@ -123,7 +131,7 @@ router.get('/image', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'exerciseId is required' })
       return
     }
-    const image = await getExerciseImage(exerciseId)
+    const image = PUBLIC_ID_PATTERN.test(exerciseId) ? await getExerciseImage(exerciseId) : undefined
     if (!image) {
       res.status(404).json({ error: 'Image not found' })
       return
