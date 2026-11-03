@@ -1,5 +1,6 @@
 import express from 'express'
 import rateLimit from 'express-rate-limit'
+import { appCheckMiddleware } from './lib/appCheck'
 import { getPool } from './lib/db'
 import exerciseRoutes from './routes/exercises'
 
@@ -21,7 +22,9 @@ const exerciseLimiter = rateLimit({
 })
 
 app.use(express.json())
-app.use('/exercises', exerciseLimiter, exerciseRoutes)
+// The limiter runs first, so a flood of bad tokens is cut off before each one
+// is verified.
+app.use('/exercises', exerciseLimiter, appCheckMiddleware, exerciseRoutes)
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' })

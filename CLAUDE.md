@@ -81,6 +81,9 @@ Each package has its own `package.json`, `node_modules`, and `CLAUDE.md`. There 
 | `DATABASE_URL` | DigitalOcean App Platform env / `server/.env` | Postgres connection (exercise catalogue only) — never goes to the client |
 | `DATABASE_CA_CERT` | DigitalOcean App Platform env / `server/.env` | DigitalOcean CA certificate (PEM) used to verify the database connection |
 | `PORT` | DigitalOcean App Platform env | Server listen port (defaults to 3000) |
+| `APP_CHECK_MODE` | DigitalOcean App Platform env | `monitor` (default) lets requests without a valid Firebase App Check token through and logs counts; `enforce` rejects them with 401 |
+| `FIREBASE_PROJECT_ID` | DigitalOcean App Platform env / `server/.env` | Firebase project whose App Check tokens the server accepts — not a secret |
+| `GoogleService-Info.plist` / `google-services.json` | `react-native-app/` (files, not env vars) | Firebase app config, referenced from `app.json`; required for every native build |
 
 `.env.local` in `react-native-app/` takes priority over `.env` for local development.
 

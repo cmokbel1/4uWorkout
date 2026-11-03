@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Server Is
 
-A thin Express/TypeScript API between the React Native client and a Postgres exercise catalogue on DigitalOcean. The catalogue is the licensed **ExerciseDB Pro** package (1,394 exercises plus GIFs), imported once and served from the database — there are no upstream API calls. There is no auth and no session, and **no user data is ever stored** — the database holds exercise data only. All product logic lives in the client.
+A thin Express/TypeScript API between the React Native client and a Postgres exercise catalogue on DigitalOcean. The catalogue is the licensed **ExerciseDB Pro** package (1,394 exercises plus GIFs), imported once and served from the database — there are no upstream API calls. There are no user accounts and no session, and **no user data is ever stored** — the database holds exercise data only. All product logic lives in the client.
 
 ## Commands
 
@@ -40,8 +40,10 @@ No linter, no tests. TypeScript strict mode is the only quality gate.
 | `DATABASE_URL` | Yes | Postgres connection string. `sslmode` in it is ignored — SSL is configured from `DATABASE_CA_CERT` |
 | `DATABASE_CA_CERT` | Yes | DigitalOcean CA certificate (PEM). On App Platform, bind `${<db-component>.CA_CERT}` |
 | `PORT` | No (default `3000`) | Listening port |
+| `APP_CHECK_MODE` | No (default `monitor`) | `monitor` or `enforce` — see App Check below. Any other value stops the server at startup |
+| `FIREBASE_PROJECT_ID` | Yes, once apps send tokens | Firebase project id the App Check tokens must be issued for. Not a secret; no service account is needed |
 
-Both database variables are validated on the first query, not at startup — a misconfigured deploy will appear healthy (`/health` does not touch the database) until the first real request fails.
+Both database variables are validated on the first query, not at startup — a misconfigured deploy will appear healthy (`/health` does not touch the database) until the first real request fails. `FIREBASE_PROJECT_ID` is likewise checked on the first request that carries a token.
 
 Locally, `server/.env` holds both (git-ignored). `node --env-file` needs Node ≥ 20.12 to read the multi-line certificate.
 
@@ -67,17 +69,23 @@ Schema: `src/db/schema.sql`, applied by the import script.
 - `src/index.ts` — Express app setup, `/health` endpoint, mounts `/exercises` router
 - `src/routes/exercises.ts` — all route handlers
 - `src/lib/db.ts` — shared `pg` pool
+- `src/lib/appCheck.ts` — Firebase App Check middleware
 - `src/lib/exerciseStore.ts` — every query the routes use
 - `src/scripts/importPro.ts` — Pro package import
 - `src/scripts/applySchema.ts` — applies `schema.sql` alone
 
 ### Routes
 
-All routes are prefixed `/exercises`. Errors return `{ error }` with 400/404/429/500.
+All routes are prefixed `/exercises`. Errors return `{ error }` with 400/401/404/429/500.
 
 **Ids** — every id in a response, and every id a route accepts, is a `public_id`. `/exercise/:id` and `/image` answer 404 to anything that isn't a UUID, including delivered ids.
 
 **Rate limit** — `/exercises/*` allows 100 requests per 15 minutes per client (`src/index.ts`), so the catalogue can't be scraped quickly (licence §13). Public ids can't be counted through, but they can still be collected from `/bodyPart` samples and from the relation lists in `/exercise/:id`, so the limit is still what slows a scrape down. Clients are keyed by App Platform's `do-connecting-ip` header, since `req.ip` is the load balancer; locally it falls back to `req.ip`. Counters are in memory per instance and reset on restart, so with N instances the effective limit is N × 100. The limiter is mounted on `/exercises` only — a new route prefix does not inherit it. `/health` is not limited.
+
+**App Check** — the API URL is public (it's in `eas.json` and the app bundle), so `/exercises/*` also checks that requests come from a genuine install of the app, using Firebase App Check (`src/lib/appCheck.ts`, mounted after the limiter). The app sends a token in `X-Firebase-AppCheck`, obtained via Play Integrity (Android) or App Attest with DeviceCheck fallback (iOS). The server checks it with `firebase-admin`'s `verifyToken`, a local JWT check against Firebase's public keys (no replay protection, so a token can be reused until it expires, about an hour). This attests the *app*, not a user: there are still no accounts or sessions.
+- `APP_CHECK_MODE=monitor` (default) lets requests with a missing or invalid token through. Each invalid token is logged with the reason (never the token), and every 15 minutes one line, `[appCheck] monitor, last 15 min: valid=… missing=… invalid=…`, shows how much traffic comes from builds without App Check.
+- `APP_CHECK_MODE=enforce` answers 401 `{ error }` for a missing or invalid token, and 500 if `FIREBASE_PROJECT_ID` is unset.
+- App builds released before App Check send no token. Switch to `enforce` only once `missing` has dropped to what you're willing to cut off.
 
 | Route | Notes |
 |-------|-------|
@@ -120,6 +128,6 @@ These terms shape the API — check them before changing a route:
 ## What Not To Do
 
 - Do not store user data in the database or add a session layer — the privacy model is explicit: no user data touches the server.
-- Do not add authentication middleware — the server is intended as a trusted internal proxy for the mobile client only.
+- Do not add user authentication (accounts, logins, per-user tokens). App Check is app attestation, not user auth, and the no-user-data/no-session rules above still stand.
 - Do not return whole body parts, the full catalogue, or Pro fields in list responses (licence §13).
 - Do not commit the Pro package, GIFs, `.env` or the CA certificate.

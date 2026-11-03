@@ -1,5 +1,6 @@
 import { ExerciseFilters, FilterOptionsByBodyPart } from '../types/filters';
 import { Workout } from '../types/workout';
+import { getAppCheckHeaders } from './appCheck';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL;
 
@@ -13,6 +14,7 @@ function getApiBase(): string {
 async function requestBuilder<T>(path: string): Promise<T> {
   const response = await fetch(`${getApiBase()}${path}`, {
     method: "GET",
+    headers: await getAppCheckHeaders(),
   })
 
   if (!response.ok) {
@@ -67,7 +69,7 @@ export async function getExerciseById(id: string): Promise<Workout> {
 export async function getExerciseImageById(id: string): Promise<string> {
   const url = `${getApiBase()}/exercises/image?exerciseId=${encodeURIComponent(id)}&resolution=720`;
 
-  const response = await fetch(url, { method: 'GET' });
+  const response = await fetch(url, { method: 'GET', headers: await getAppCheckHeaders() });
 
   if (!response.ok) {
     throw new Error(`Image request failed with status ${response.status}`);

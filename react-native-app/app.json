@@ -17,6 +17,10 @@
       "icon": "./assets/4uWorkout-icon.png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "entitlements": {
+        "com.apple.developer.devicecheck.appattest-environment": "production"
       }
     },
     "android": {
@@ -25,7 +29,8 @@
         "backgroundColor": "#0D1B2A"
       },
       "package": "com.claudemokbel.workout_trainer4u",
-      "versionCode": 12
+      "versionCode": 12,
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro"
@@ -38,7 +43,18 @@
     "plugins": [
       "expo-asset",
       "expo-fmt-consteval-fix",
-      "expo-font"
+      "expo-font",
+      "@react-native-firebase/app",
+      "@react-native-firebase/app-check",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static",
+            "buildReactNativeFromSource": true
+          }
+        }
+      ]
     ]
   }
 }

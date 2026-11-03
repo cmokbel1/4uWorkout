@@ -25,6 +25,8 @@ eas build --platform ios --profile production
 
 `EXPO_PUBLIC_API_BASE_URL` is required at runtime (set per build profile in `eas.json`); without it every API call throws. Don't rename the `EXPO_PUBLIC_` prefix — it's what exposes the var to JS.
 
+Firebase config files `GoogleService-Info.plist` (iOS) and `google-services.json` (Android) must sit in `react-native-app/`, where `app.json` (`ios.googleServicesFile` / `android.googleServicesFile`) points. They come from the Firebase console, and prebuild fails without them. They identify the Firebase project but aren't secrets, and EAS only uploads files that aren't git-ignored.
+
 ## Architecture
 
 ### Screens & Navigation
@@ -62,6 +64,8 @@ On mount, `TrainingScreen` fetches body parts and reads saved workouts. On searc
 ### API Layer
 `src/services/workoutApi.ts` — all requests go through `requestBuilder<T>()` (throws on non-2xx). Exercise images are fetched as blobs and converted to base64 data URLs via `FileReader` for offline display. `getExerciseById` hits `GET /exercises/exercise/:id`, returning full metadata with `gifUrl` already base64. `searchExercisesByBodyPart(bodyPart, filters)` returns **up to 11** random matches — filters can make it fewer, or none. `getFilterOptions` loads every body part's filter choices (`GET /exercises/filters`). The query string is built by hand because React Native's `URLSearchParams` doesn't implement `set()`.
 
+**App Check** — every request (`requestBuilder` and `getExerciseImageById`) carries a Firebase App Check token in `X-Firebase-AppCheck` (`src/services/appCheck.ts`), proving to the server that it comes from a genuine install. Release builds use Play Integrity (Android) and App Attest with DeviceCheck fallback (iOS; the `appattest-environment` entitlement is set in `app.json`). `__DEV__` builds use the **debug provider**: on first launch the native SDK logs a debug token (Xcode console / `adb logcat`), and that token must be registered in the Firebase console (App Check → Apps → Manage debug tokens) or the server, in enforce mode, rejects the requests. If a token can't be obtained, the request is sent without one rather than failing. The server accepts tokenless requests while it's in monitor mode, which keeps older builds working.
+
 ### Filters
 Types in `src/types/filters.ts`. `TrainingScreen` holds `filterOptions` (all body parts' choices) and `filters` (the user's choices), and sends `filters` with every search. Controls on the Training card:
 - **Difficulty** — `RangeSlider`; `filters.difficulties` is the contiguous range of exact levels (sent as `difficulty=intermediate,advanced`). The full range means "any" and is stored as `undefined`.
@@ -79,6 +83,8 @@ Types in `src/types/filters.ts`. `TrainingScreen` holds `filterOptions` (all bod
 **Safe area** — always use `SafeAreaView` from `react-native-safe-area-context`, never the `react-native` built-in (a no-op on Android, so content runs under the system nav bar — especially with the edge-to-edge layout Android enforces at `targetSdkVersion` 35 and above). `SafeAreaProvider` is in `App.tsx`.
 
 **Android SDK** — Expo SDK 54 compiles and targets API 36 by default, which Google Play requires. There is no pin in `app.json`; don't add one that lowers it.
+
+**React Native Firebase** (`@react-native-firebase/app`, `/app-check`) has native code, so it needs a dev-client or release build — **Expo Go can't run the app**. A build made before Firebase was added must be uninstalled and rebuilt (`npx expo prebuild --clean`). Both packages are pinned to **24.1.1**: v25+ needs Xcode 26.2+, and v27 is SPM-only with dynamic frameworks. iOS uses `expo-build-properties` `useFrameworks: "static"` (Firebase needs frameworks) and `buildReactNativeFromSource: true`, which avoids clashes between static frameworks and Expo 54's precompiled React Native at the cost of slower iOS builds.
 
 **Direct dependencies `expo-file-system` and `babel-preset-expo`** — both come with `expo`, but npm installs them under `expo/node_modules`, where Android autolinking and Babel don't look. Keep them in `package.json`. Without `expo-file-system`, Android release builds can't load any bundled font (Manrope falls back to Roboto and every icon is blank); without `babel-preset-expo`, bundling fails.
 
