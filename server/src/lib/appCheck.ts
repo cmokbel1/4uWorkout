@@ -61,7 +61,9 @@ export const appCheckMiddleware: RequestHandler = async (req, res, next) => {
     await verifier.verifyToken(token)
   } catch (err) {
     counts.invalid++
-    console.warn('[appCheck] invalid token:', err instanceof Error ? err.message : err)
+    // firebase-admin echoes an unsigned token's claims in its error messages,
+    // so the reason is JSON-escaped: a newline in it can't forge a log line.
+    console.warn('[appCheck] invalid token:', JSON.stringify(err instanceof Error ? err.message : String(err)))
     if (mode === 'monitor') return next()
     return res.status(401).json({ error: 'Invalid App Check token' })
   }

@@ -21,7 +21,6 @@ const exerciseLimiter = rateLimit({
   message: { error: 'Too many requests' },
 })
 
-app.use(express.json())
 // The limiter runs first, so a flood of bad tokens is cut off before each one
 // is verified.
 app.use('/exercises', exerciseLimiter, appCheckMiddleware, exerciseRoutes)

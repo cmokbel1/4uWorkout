@@ -117,6 +117,8 @@ These terms shape the API — check them before changing a route:
 
 **Image handling** — images are read from Postgres as a `Buffer` and sent with their stored `Content-Type`.
 
+**No body parsing** — every route is a GET, so there is no `express.json()`. A global parser would run on every request before the rate limiter, which is unthrottled denial-of-service surface (body-parser has had such bugs). A future route that needs a body should mount a parser on that route only. `npm audit` still flags `qs` because Express 4 pins `~6.14`, but every advisory left needs `qs.stringify` or the `comma` parse option, and Express uses neither on requests.
+
 **Connection timeout** — the pool gives up connecting after 5 s (`connectionTimeoutMillis` in `db.ts`). pg's default is no timeout, which made every request hang for minutes when the database was unreachable (e.g. a laptop's IP missing from trusted sources).
 
 **Graceful shutdown** — on SIGTERM (sent by App Platform on every deploy) the server stops accepting connections, lets in-flight requests finish, then ends the pool, and the process exits on its own. A handler that only ended the pool would block Node's default exit and leave the process running until force-killed.
