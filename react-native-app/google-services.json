@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1052276195961",
+    "project_id": "foruworkouttrainer",
+    "storage_bucket": "foruworkouttrainer.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1052276195961:android:3c53a62e7f5c59468e0aa8",
+        "android_client_info": {
+          "package_name": "com.claudemokbel.workout_trainer4u"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAb3MqWKcEOtWdaCZYxzlSvvqJ5kv3gVTk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
