@@ -21,6 +21,8 @@ const DOTS = [
   { ring: "outer", angle: 199, size: 6, tone: "muted" },
 ] as const
 
+const STEPS = ["Pick a body part", "Tap Find", "Save it to your day"]
+
 export function StartScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets()
   // Unknown until the saved preference is read. The app opens on this screen,
@@ -80,6 +82,22 @@ export function StartScreen({ navigation }: Props) {
           <Text style={styles.titleAccent}>Trainer</Text>
         </Text>
         <Text style={styles.subtitle}>Find a workout to add to your training routine</Text>
+      </View>
+
+      <View style={styles.howItWorks}>
+        <Text style={styles.howItWorksLabel}>HOW IT WORKS</Text>
+        <View style={styles.steps}>
+          {STEPS.map((step, index) => (
+            <View key={step} style={styles.step}>
+              <View style={[styles.stepNumber, index === 0 && styles.stepNumberFirst]}>
+                <Text style={[styles.stepNumberText, index === 0 && styles.stepNumberTextFirst]}>
+                  {index + 1}
+                </Text>
+              </View>
+              <Text style={styles.stepText}>{step}</Text>
+            </View>
+          ))}
+        </View>
       </View>
 
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>

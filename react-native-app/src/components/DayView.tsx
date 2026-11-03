@@ -1,4 +1,4 @@
-import { Feather, MaterialCommunityIcons } from "@expo/vector-icons"
+import { Feather } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import { StatusBar } from "expo-status-bar"
@@ -12,6 +12,7 @@ import type { RootStackParamList } from "../../App"
 import { formatDateLabel, formatShortDate, todayKey } from "../utils/date"
 import { AppMenu } from "./AppMenu"
 import { ScreenHeader } from "./ScreenHeader"
+import { NavCard } from "./NavCard"
 import { ThemedButton } from "./ThemedButton"
 
 export type SetField = "reps" | "weight"
@@ -82,19 +83,18 @@ export function DayView({
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.buttonRow}>
-          <ThemedButton
+          <NavCard
             palette={palette}
-            label="Training"
-            iconElement={
-              <MaterialCommunityIcons name="dumbbell" size={18} color={palette.onAccent} />
-            }
+            icon="shuffle"
+            title="Training"
+            subtitle="Find a workout"
             onPress={openTraining}
           />
-          <ThemedButton
+          <NavCard
             palette={palette}
-            label="View Calendar"
             icon="calendar"
-            variant="secondary"
+            title="Calendar"
+            subtitle="Schedule"
             onPress={onOpenCalendar}
           />
         </View>

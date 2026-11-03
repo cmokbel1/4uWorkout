@@ -11,6 +11,13 @@ export interface Palette {
   surfaceRaised: string
   border: string
   borderStrong: string
+  // NavCard. In dark mode, where shadows barely show, the card is lighter than
+  // other surfaces and its top edge is lit; in light mode it matches a plain
+  // surface card and the shadow does the lifting.
+  navCard: string
+  navCardIcon: string
+  navCardBorder: string
+  navCardTopEdge: string
   text: string
   textMuted: string
   textDisabled: string
@@ -35,6 +42,10 @@ const dark: Palette = {
   // Brighter than the mockup's #34536F so field outlines and the inactive
   // slider track reach 3:1 against the card (#0E1D30) and field fill.
   borderStrong: "#4F7299",
+  navCard: "#132539",
+  navCardIcon: "#1C3352",
+  navCardBorder: "#1C3352",
+  navCardTopEdge: "#2A4566",
   text: "#EAF2FB",
   textMuted: "#8FA6BF",
   textDisabled: "#5F7A96",
@@ -56,6 +67,10 @@ const light: Palette = {
   surfaceRaised: "#ECEEF2",
   border: "#E6E8EC",
   borderStrong: "#DBDEE3",
+  navCard: "#FFFFFF",
+  navCardIcon: "#ECEEF2",
+  navCardBorder: "#E6E8EC",
+  navCardTopEdge: "#E6E8EC",
   text: "#0F1115",
   textMuted: "#5B616E",
   textDisabled: "#8A909C",

@@ -215,6 +215,9 @@ export function TrainingScreen({ navigation }: Props) {
   const isImageLoading =
     Boolean(currentWorkout?.gifUrl) && loadedImageId !== currentWorkout?.id
   const isLoading = isSearching || isImageLoading
+  // Nothing is chosen by default: the filters and Find stay locked until the
+  // user picks a body part (target and equipment options depend on it).
+  const hasBodyPart = Boolean(selectedBodyPart)
   const hasActiveFilters = Boolean(
     filters.difficulties?.length || filters.target || filters.equipmentTypes?.length,
   )
@@ -295,11 +298,11 @@ export function TrainingScreen({ navigation }: Props) {
         if (allowedBodyParts.length) {
           setBodyPartOptions(allowedBodyParts)
           // Restore the body part from before a remount, so it still matches
-          // the restored filters.
+          // the restored filters. Otherwise none is chosen: the user picks one.
           setSelectedBodyPart(
             allowedBodyParts.includes(trainingSession.selectedBodyPart)
               ? trainingSession.selectedBodyPart
-              : allowedBodyParts[0],
+              : "",
           )
         }
       } catch {
@@ -366,10 +369,8 @@ export function TrainingScreen({ navigation }: Props) {
   )
 
   async function onSearchWorkout(): Promise<void> {
-    if (!selectedBodyPart) {
-      Alert.alert("Body part required", "Select a body part before searching.")
-      return
-    }
+    // Find is disabled until a body part is chosen.
+    if (!selectedBodyPart) return
 
     setIsSearching(true)
     setNoMatches(false)
@@ -630,35 +631,64 @@ export function TrainingScreen({ navigation }: Props) {
           }}
         >
           <View style={styles.card}>
-            <Text style={styles.sectionLabel}>SELECT A BODY PART</Text>
+            <View style={styles.stepHeader}>
+              <View style={styles.stepBadge}>
+                {hasBodyPart ? (
+                  <Feather name="check" size={13} color={palette.onAccent} />
+                ) : (
+                  <Text style={styles.stepBadgeText}>1</Text>
+                )}
+              </View>
+              <Text style={[styles.sectionLabel, styles.stepHeaderLabel]}>
+                SELECT A BODY PART
+              </Text>
+              {hasBodyPart ? null : (
+                <View style={styles.startTag}>
+                  <Text style={styles.startTagText}>START HERE</Text>
+                </View>
+              )}
+            </View>
             <SelectField
               palette={palette}
               title="Body part"
+              placeholder="Select body part"
+              highlighted={!hasBodyPart}
               options={bodyPartSelectOptions}
               value={selectedBodyPart}
               onChange={onChangeBodyPart}
             />
 
-            <View style={styles.difficultyHeader}>
-              <Text style={styles.difficultyTitle}>
-                Difficulty <Text style={styles.optional}>(optional)</Text>
+            {/* Locked (dimmed, untappable, hidden from screen readers) until a
+                body part is chosen. */}
+            <View
+              style={[styles.filterGroup, !hasBodyPart && styles.locked]}
+              pointerEvents={hasBodyPart ? "auto" : "none"}
+              accessibilityElementsHidden={!hasBodyPart}
+              importantForAccessibility={hasBodyPart ? "auto" : "no-hide-descendants"}
+            >
+              <View style={styles.difficultyHeader}>
+                <Text style={styles.difficultyTitle}>
+                  Difficulty <Text style={styles.optional}>(optional)</Text>
+                </Text>
+                <Text style={styles.rangeLabel}>{difficultyRangeLabel}</Text>
+              </View>
+              <Text style={styles.helperText}>
+                Drag the handles for a range, or tap a level for just that one.
               </Text>
-              <Text style={styles.rangeLabel}>{difficultyRangeLabel}</Text>
-            </View>
-            <Text style={styles.helperText}>
-              Drag the handles for a range, or tap a level for just that one.
-            </Text>
-            <RangeSlider
-              palette={palette}
-              levels={DIFFICULTY_LABELS}
-              value={difficultyRange}
-              onChange={onChangeDifficultyRange}
-            />
-            <View style={styles.filterHint}>
-              <Feather name="info" size={14} color={palette.accent} style={styles.filterHintIcon} />
-              <Text style={styles.filterHintText}>
-                Target and Equipment counts update to match your difficulty range.
-              </Text>
+              <RangeSlider
+                palette={palette}
+                levels={DIFFICULTY_LABELS}
+                value={difficultyRange}
+                onChange={onChangeDifficultyRange}
+              />
+              {hasBodyPart ? (
+                <View style={styles.filterHint}>
+                  <Feather name="info" size={14} color={palette.accent} style={styles.filterHintIcon} />
+                  <Text style={styles.filterHintText}>
+                    Target and Equipment counts update to match your difficulty range.
+                  </Text>
+                </View>
+              ) : null}
             </View>
 
             <View style={styles.selectRow}>
@@ -667,6 +697,7 @@ export function TrainingScreen({ navigation }: Props) {
                   palette={palette}
                   size="compact"
                   title="Target"
+                  disabled={!hasBodyPart}
                   options={targetSelectOptions}
                   value={filters.target ?? ""}
                   onChange={(value) =>
@@ -679,6 +710,7 @@ export function TrainingScreen({ navigation }: Props) {
                   palette={palette}
                   size="compact"
                   title="Equipment"
+                  disabled={!hasBodyPart}
                   options={equipmentSelectOptions}
                   value={filters.equipmentTypes?.[0] ?? ""}
                   onChange={(value) =>
@@ -690,6 +722,11 @@ export function TrainingScreen({ navigation }: Props) {
                 />
               </View>
             </View>
+            {hasBodyPart ? null : (
+              <Text style={styles.helperText}>
+                Pick a body part to unlock the filters and Find.
+              </Text>
+            )}
           </View>
 
           {currentWorkout ? (
@@ -745,8 +782,22 @@ export function TrainingScreen({ navigation }: Props) {
                 <Feather name="shuffle" size={20} color={palette.accent} />
               </View>
               <Text style={styles.emptyTitle}>Your workout appears here</Text>
+              <View style={styles.emptySteps}>
+                {["Select a body part", "Tap Find for a random pick"].map((step, index) => (
+                  <View key={step} style={styles.emptyStep}>
+                    <View style={styles.similarIndex}>
+                      {index === 0 && hasBodyPart ? (
+                        <Feather name="check" size={13} color={palette.accent} />
+                      ) : (
+                        <Text style={styles.similarIndexText}>{index + 1}</Text>
+                      )}
+                    </View>
+                    <Text style={styles.emptyStepText}>{step}</Text>
+                  </View>
+                ))}
+              </View>
               <Text style={styles.emptyText}>
-                Choose a body part and tap Find for a random workout.
+                Difficulty, target and equipment are optional.
               </Text>
             </View>
           )}
@@ -843,7 +894,6 @@ export function TrainingScreen({ navigation }: Props) {
           >
             <NavCard
               palette={palette}
-              highlighted
               icon="zap"
               title="Today's workouts"
               subtitle="Your plan"
@@ -867,7 +917,7 @@ export function TrainingScreen({ navigation }: Props) {
           icon="shuffle"
           onPress={onSearchWorkout}
           loading={isLoading}
-          disabled={isFindCoolingDown}
+          disabled={isFindCoolingDown || !hasBodyPart}
         />
         <ThemedButton
           palette={palette}

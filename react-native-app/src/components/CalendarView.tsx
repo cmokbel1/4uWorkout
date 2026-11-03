@@ -9,8 +9,11 @@ import { Calendar } from "react-native-calendars"
 
 import { fonts, getPalette, radius, type Palette } from "../theme"
 import type { RootStackParamList } from "../../App"
-import { todayKey } from "../utils/date"
+import type { SavedWorkoutsByDate } from "../storage/savedWorkouts"
+import { formatDateLabel, toDateKey, todayKey } from "../utils/date"
+import { toTitleCase } from "../utils/formatting"
 import { AppMenu } from "./AppMenu"
+import { NavCard } from "./NavCard"
 import { ScreenHeader } from "./ScreenHeader"
 
 interface CalendarViewProps {
@@ -18,6 +21,8 @@ interface CalendarViewProps {
   onToggleDark: (value: boolean) => void
   // Calendar markings (dotted days + selected day) built by the parent screen.
   markedDates: Record<string, object>
+  // All saved workouts by date, for the month summary and recent days.
+  savedWorkouts: SavedWorkoutsByDate
   // Opens the day view for the tapped date.
   onSelectDate: (date: string) => void
   // Opens the day view for today ("Today's workouts" in the menu).
@@ -31,6 +36,7 @@ export function CalendarView({
   isDark,
   onToggleDark,
   markedDates,
+  savedWorkouts,
   onSelectDate,
   onOpenToday,
 }: CalendarViewProps) {
@@ -47,6 +53,21 @@ export function CalendarView({
   const [visibleMonth, setVisibleMonth] = useState(currentMonth)
   const openTraining = () => navigation.navigate("Training")
 
+  const summary = useMemo(
+    () => summarizeMonth(savedWorkouts, visibleMonth, visibleMonth === currentMonth),
+    [savedWorkouts, visibleMonth, currentMonth],
+  )
+  // The latest days with saved workouts, newest first. Date keys sort as text.
+  const recentDays = useMemo(
+    () =>
+      Object.keys(savedWorkouts)
+        .filter((date) => savedWorkouts[date].length)
+        .sort()
+        .reverse()
+        .slice(0, RECENT_DAYS),
+    [savedWorkouts],
+  )
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <StatusBar style={isDark ? "light" : "dark"} />
@@ -61,14 +82,22 @@ export function CalendarView({
       />
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Pressable
-          onPress={openTraining}
-          style={({ pressed }) => [styles.pill, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel="Training"
-        >
-          <Text style={styles.pillText}>Training</Text>
-        </Pressable>
+        <View style={styles.navRow}>
+          <NavCard
+            palette={palette}
+            icon="shuffle"
+            title="Training"
+            subtitle="Find a workout"
+            onPress={openTraining}
+          />
+          <NavCard
+            palette={palette}
+            icon="zap"
+            title="Today's workouts"
+            subtitle="Your plan"
+            onPress={onOpenToday}
+          />
+        </View>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Select a date</Text>
@@ -101,6 +130,54 @@ export function CalendarView({
             )}
             theme={calendarTheme}
           />
+          <View style={styles.summary}>
+            <Text style={styles.summaryMonth}>{summary.month}</Text>
+            <Text style={styles.summaryText}>{summary.text}</Text>
+          </View>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Recent workouts</Text>
+          {recentDays.length ? (
+            <View style={styles.hint}>
+              <Feather name="info" size={14} color={palette.accent} style={styles.hintIcon} />
+              <Text style={styles.hintText}>
+                Your last {RECENT_DAYS} days with saved workouts. Tap one to see it.
+              </Text>
+            </View>
+          ) : null}
+          {recentDays.length ? (
+            <View>
+              {recentDays.map((date, index) => {
+                const workouts = savedWorkouts[date]
+                const bodyParts = [...new Set(workouts.map((w) => toTitleCase(w.bodyPart)))]
+                const detail = `${pluralize(workouts.length, "workout")} · ${bodyParts.join(", ")}`
+                return (
+                  <Pressable
+                    key={date}
+                    onPress={() => onSelectDate(date)}
+                    style={({ pressed }) => [
+                      styles.recentRow,
+                      index > 0 && styles.recentRowDivider,
+                      pressed && styles.pressed,
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${formatDateLabel(date)}, ${detail}`}
+                  >
+                    <View style={styles.recentText}>
+                      <Text style={styles.recentDate}>{formatDateLabel(date)}</Text>
+                      <Text style={styles.recentDetail} numberOfLines={1}>
+                        {detail}
+                      </Text>
+                    </View>
+                    <Feather name="chevron-right" size={18} color={palette.textMuted} />
+                  </Pressable>
+                )
+              })}
+            </View>
+          ) : (
+            <Text style={styles.hintText}>Workouts you save will show up here.</Text>
+          )}
         </View>
       </ScrollView>
 
@@ -117,6 +194,59 @@ export function CalendarView({
       />
     </SafeAreaView>
   )
+}
+
+// How many days the Recent workouts card lists.
+const RECENT_DAYS = 5
+
+function pluralize(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`
+}
+
+// The summary under the calendar for the month shown ("YYYY-MM"): days
+// trained and workouts saved that month, plus the current streak when the
+// current month is shown.
+function summarizeMonth(
+  saved: SavedWorkoutsByDate,
+  month: string,
+  isCurrentMonth: boolean,
+): { month: string; text: string } {
+  const [year, monthNumber] = month.split("-").map(Number)
+  const label = new Date(year, monthNumber - 1, 1).toLocaleDateString(undefined, {
+    month: "long",
+  })
+
+  let days = 0
+  let workouts = 0
+  for (const [date, list] of Object.entries(saved)) {
+    if (date.startsWith(month) && list.length) {
+      days += 1
+      workouts += list.length
+    }
+  }
+  if (!days) return { month: label, text: "No workouts saved" }
+
+  const parts = [pluralize(days, "day") + " trained", pluralize(workouts, "workout")]
+  if (isCurrentMonth) {
+    const streak = currentStreak(saved)
+    if (streak) parts.push(`${streak}-day streak`)
+  }
+  return { month: label, text: parts.join(" · ") }
+}
+
+// Consecutive days with saved workouts, counting back from today. If nothing
+// is saved today yet, it counts back from yesterday, so the streak doesn't
+// read 0 before today's workout.
+function currentStreak(saved: SavedWorkoutsByDate): number {
+  const hasWorkouts = (day: Date) => Boolean(saved[toDateKey(day)]?.length)
+  const day = new Date()
+  if (!hasWorkouts(day)) day.setDate(day.getDate() - 1)
+  let streak = 0
+  while (hasWorkouts(day)) {
+    streak += 1
+    day.setDate(day.getDate() - 1)
+  }
+  return streak
 }
 
 function makeCalendarTheme(c: Palette) {
@@ -157,18 +287,9 @@ function makeStyles(c: Palette) {
       paddingBottom: 32,
       gap: 16,
     },
-    pill: {
-      alignSelf: "flex-start",
-      minHeight: 44,
-      justifyContent: "center",
-      paddingHorizontal: 20,
-      borderRadius: radius.pill,
-      backgroundColor: c.accent,
-    },
-    pillText: {
-      color: c.onAccent,
-      fontFamily: fonts.bold,
-      fontSize: 15,
+    navRow: {
+      flexDirection: "row",
+      gap: 12,
     },
     card: {
       backgroundColor: c.surface,
@@ -198,6 +319,51 @@ function makeStyles(c: Palette) {
       fontFamily: fonts.medium,
       fontSize: 13,
       lineHeight: 18,
+    },
+    // The month summary under the calendar, set off by a divider.
+    summary: {
+      flexDirection: "row",
+      alignItems: "baseline",
+      flexWrap: "wrap",
+      columnGap: 8,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+    },
+    summaryMonth: {
+      color: c.text,
+      fontFamily: fonts.extrabold,
+      fontSize: 15,
+    },
+    summaryText: {
+      color: c.textMuted,
+      fontFamily: fonts.semibold,
+      fontSize: 13,
+    },
+    recentRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      minHeight: 56,
+      paddingVertical: 10,
+    },
+    recentRowDivider: {
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+    },
+    recentText: {
+      flex: 1,
+      gap: 2,
+    },
+    recentDate: {
+      color: c.text,
+      fontFamily: fonts.bold,
+      fontSize: 15,
+    },
+    recentDetail: {
+      color: c.textMuted,
+      fontFamily: fonts.medium,
+      fontSize: 13,
     },
     arrow: {
       width: 40,

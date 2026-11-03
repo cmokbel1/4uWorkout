@@ -160,6 +160,7 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
         isDark={isDark}
         onToggleDark={onToggleDark}
         markedDates={markedDates}
+        savedWorkouts={map}
         onSelectDate={(date) => {
           setSelectedDate(date)
           showView("day")

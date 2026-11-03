@@ -10,59 +10,38 @@ interface NavCardProps {
   subtitle: string
   icon: ComponentProps<typeof Feather>["name"]
   onPress: () => void
-  // The highlighted card is filled with the accent color.
-  highlighted?: boolean
 }
 
-// Large shortcut tile (icon in a circle, title, subtitle) used for top-level
-// navigation on the Training screen.
-export function NavCard({
-  palette,
-  title,
-  subtitle,
-  icon,
-  onPress,
-  highlighted = false,
-}: NavCardProps) {
+// Large shortcut tile (icon in a circle with an arrow opposite, then title and
+// subtitle) used for top-level navigation. Every card looks the same, so none
+// looks like the current screen.
+export function NavCard({ palette, title, subtitle, icon, onPress }: NavCardProps) {
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
-        highlighted
-          ? { backgroundColor: palette.accent, borderColor: palette.accent }
-          : { backgroundColor: palette.surface, borderColor: palette.border },
+        {
+          backgroundColor: palette.navCard,
+          borderColor: palette.navCardBorder,
+          borderTopColor: palette.navCardTopEdge,
+        },
         pressed && styles.pressed,
       ]}
       accessibilityRole="button"
       accessibilityLabel={`${title}, ${subtitle}`}
     >
-      <View
-        style={[
-          styles.iconCircle,
-          { backgroundColor: highlighted ? palette.onAccent : palette.surfaceRaised },
-        ]}
-      >
-        <Feather
-          name={icon}
-          size={17}
-          color={highlighted ? palette.accent : palette.text}
-        />
+      <View style={styles.topRow}>
+        <View style={[styles.iconCircle, { backgroundColor: palette.navCardIcon }]}>
+          <Feather name={icon} size={17} color={palette.text} />
+        </View>
+        <Feather name="arrow-up-right" size={16} color={palette.textMuted} />
       </View>
-      <View style={styles.text}>
-        <Text
-          style={[styles.title, { color: highlighted ? palette.onAccent : palette.text }]}
-          numberOfLines={2}
-        >
+      <View>
+        <Text style={[styles.title, { color: palette.text }]} numberOfLines={2}>
           {title}
         </Text>
-        <Text
-          style={[
-            styles.subtitle,
-            { color: highlighted ? palette.onAccentMuted : palette.textMuted },
-          ]}
-          numberOfLines={1}
-        >
+        <Text style={[styles.subtitle, { color: palette.textMuted }]} numberOfLines={1}>
           {subtitle}
         </Text>
       </View>
@@ -73,17 +52,29 @@ export function NavCard({
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    minHeight: 64,
+    gap: 14,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderRadius: radius.lg,
     borderWidth: 1,
+    // Lifts the card so it reads as tappable. shadow* is iOS, elevation is
+    // Android.
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 3,
   },
+  // The shadow drops while pressed, so the card looks pushed in.
   pressed: {
     opacity: 0.85,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  topRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
   },
   iconCircle: {
     width: 34,
@@ -91,9 +82,6 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     alignItems: "center",
     justifyContent: "center",
-  },
-  text: {
-    flex: 1,
   },
   title: {
     fontFamily: fonts.extrabold,

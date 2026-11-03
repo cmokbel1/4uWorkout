@@ -88,6 +88,55 @@ export function makeStyles(c: Palette, isDark: boolean) {
       lineHeight: 24,
       textAlign: 'center',
     },
+    // Three numbered steps above the Start button; the first is filled.
+    howItWorks: {
+      paddingHorizontal: 20,
+      gap: 14,
+    },
+    howItWorksLabel: {
+      color: c.textMuted,
+      fontFamily: fonts.bold,
+      fontSize: 12,
+      letterSpacing: 1.4,
+      textAlign: 'center',
+    },
+    steps: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    step: {
+      flex: 1,
+      alignItems: 'center',
+      gap: 8,
+    },
+    stepNumber: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      borderWidth: 1.5,
+      borderColor: c.borderStrong,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    stepNumberFirst: {
+      backgroundColor: c.accent,
+      borderColor: c.accent,
+    },
+    stepNumberText: {
+      color: c.text,
+      fontFamily: fonts.extrabold,
+      fontSize: 13,
+    },
+    stepNumberTextFirst: {
+      color: c.onAccent,
+    },
+    stepText: {
+      color: c.text,
+      fontFamily: fonts.bold,
+      fontSize: 13,
+      lineHeight: 18,
+      textAlign: 'center',
+    },
     footer: {
       flexDirection: 'row',
       paddingHorizontal: 20,

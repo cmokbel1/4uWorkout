@@ -114,6 +114,48 @@ export function makeStyles(c: Palette) {
       fontSize: 12,
       letterSpacing: 1,
     },
+    // Step 1 heading: number badge (a check once done), label, "Start here".
+    stepHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    stepHeaderLabel: {
+      flex: 1,
+    },
+    stepBadge: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: c.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    stepBadgeText: {
+      color: c.onAccent,
+      fontFamily: fonts.extrabold,
+      fontSize: 12,
+    },
+    startTag: {
+      backgroundColor: c.accent,
+      borderRadius: radius.pill,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    },
+    startTagText: {
+      color: c.onAccent,
+      fontFamily: fonts.extrabold,
+      fontSize: 11,
+      letterSpacing: 0.8,
+    },
+    // Difficulty controls; same spacing as the card's gap.
+    filterGroup: {
+      gap: 14,
+    },
+    // Filters before a body part is chosen. Matches SelectField's disabled look.
+    locked: {
+      opacity: 0.5,
+    },
     difficultyHeader: {
       flexDirection: 'row',
       alignItems: 'baseline',
@@ -197,6 +239,20 @@ export function makeStyles(c: Palette) {
       fontSize: 14,
       lineHeight: 20,
       textAlign: 'center',
+    },
+    emptySteps: {
+      gap: 8,
+      marginVertical: 2,
+    },
+    emptyStep: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    emptyStepText: {
+      color: c.text,
+      fontFamily: fonts.semibold,
+      fontSize: 14,
     },
     resultCard: {
       backgroundColor: c.surface,

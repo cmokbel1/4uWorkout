@@ -25,6 +25,10 @@ interface SelectFieldProps {
   // small caps label above the value (target, equipment).
   size?: "large" | "compact"
   disabled?: boolean
+  // Shown when no option matches `value`.
+  placeholder?: string
+  // Rings the field in the accent color to mark it as the next step.
+  highlighted?: boolean
 }
 
 // A dropdown-style field. Tapping it opens a bottom sheet listing the options;
@@ -37,6 +41,8 @@ export function SelectField({
   title,
   size = "large",
   disabled = false,
+  placeholder = "",
+  highlighted = false,
 }: SelectFieldProps) {
   const [open, setOpen] = useState(false)
   const styles = useMemo(() => makeStyles(palette), [palette])
@@ -50,6 +56,7 @@ export function SelectField({
         style={({ pressed }) => [
           styles.field,
           size === "large" ? styles.fieldLarge : styles.fieldCompact,
+          highlighted && styles.highlighted,
           pressed && styles.pressed,
           disabled && styles.disabled,
         ]}
@@ -66,7 +73,7 @@ export function SelectField({
             style={size === "large" ? styles.valueLarge : styles.valueCompact}
             numberOfLines={1}
           >
-            {selected?.label ?? ""}
+            {selected?.label ?? placeholder}
           </Text>
         </View>
         <Feather
@@ -166,6 +173,13 @@ function makeStyles(c: Palette) {
       color: c.text,
       fontFamily: fonts.semibold,
       fontSize: 15,
+    },
+    // The thicker border grows outward (negative margin), so the content
+    // doesn't shift when the ring goes away.
+    highlighted: {
+      borderWidth: 2,
+      borderColor: c.accent,
+      margin: -1,
     },
     pressed: {
       opacity: 0.75,
