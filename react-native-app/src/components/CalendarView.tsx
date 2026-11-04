@@ -98,6 +98,8 @@ export function CalendarView({
             onPress={onOpenToday}
           />
         </View>
+        {/* Sets the nav cards off from the content, like the header's divider. */}
+        <View style={styles.divider} />
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Select a date</Text>
@@ -290,6 +292,12 @@ function makeStyles(c: Palette) {
     navRow: {
       flexDirection: "row",
       gap: 12,
+    },
+    // Full width (past the content's padding), matching ScreenHeader's divider.
+    divider: {
+      height: 1,
+      marginHorizontal: -20,
+      backgroundColor: c.border,
     },
     card: {
       backgroundColor: c.surface,

@@ -98,6 +98,8 @@ export function DayView({
             onPress={onOpenCalendar}
           />
         </View>
+        {/* Sets the nav cards off from the content, as on the Calendar. */}
+        <View style={styles.divider} />
 
         <View>
           <View style={styles.dayHeader}>
@@ -302,6 +304,12 @@ function makeStyles(c: Palette) {
     buttonRow: {
       flexDirection: "row",
       gap: 12,
+    },
+    // Full width (past the content's padding), matching ScreenHeader's divider.
+    divider: {
+      height: 1,
+      marginHorizontal: -20,
+      backgroundColor: c.border,
     },
     dayHeader: {
       flexDirection: "row",

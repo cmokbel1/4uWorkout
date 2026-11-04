@@ -9,7 +9,10 @@ interface ThemedButtonProps {
   label: string
   onPress: () => void
   // "primary" is filled with the accent; "secondary" is a bordered surface.
-  variant?: "primary" | "secondary"
+  // "action" (filled) and "actionOutline" (accent outline) are for Find and
+  // Save workout on Training's bottom bar; disabled, they fade instead of turning grey, so they still
+  // read as those buttons.
+  variant?: "primary" | "secondary" | "action" | "actionOutline"
   icon?: ComponentProps<typeof Feather>["name"]
   // Used instead of `icon` for an icon from another set (e.g. a dumbbell);
   // the caller colours it to match the label.
@@ -35,14 +38,20 @@ export function ThemedButton({
   loading = false,
 }: ThemedButtonProps) {
   const isPrimary = variant === "primary"
+  const isAction = variant === "action" || variant === "actionOutline"
   // A loading button can't be pressed but keeps its normal look, so it reads
   // as "working" rather than "unavailable".
   const looksDisabled = disabled && !loading
-  const color = looksDisabled
-    ? palette.textDisabled
-    : isPrimary
+  const color =
+    variant === "action"
       ? palette.onAccent
-      : palette.text
+      : variant === "actionOutline"
+        ? palette.accent
+        : looksDisabled
+          ? palette.textDisabled
+          : isPrimary
+            ? palette.onAccent
+            : palette.text
   const iconNode = iconElement ?? (icon ? <Feather name={icon} size={18} color={color} /> : null)
 
   return (
@@ -51,13 +60,18 @@ export function ThemedButton({
       disabled={disabled || loading}
       style={({ pressed }) => [
         styles.button,
-        isPrimary
-          ? { backgroundColor: looksDisabled ? palette.surfaceRaised : palette.accent }
-          : {
-              backgroundColor: palette.surface,
-              borderWidth: 1,
-              borderColor: palette.border,
-            },
+        variant === "action"
+          ? { backgroundColor: palette.accent }
+          : variant === "actionOutline"
+            ? [styles.outline, { borderColor: palette.accent }]
+            : isPrimary
+              ? { backgroundColor: looksDisabled ? palette.surfaceRaised : palette.accent }
+              : {
+                  backgroundColor: palette.surface,
+                  borderWidth: 1,
+                  borderColor: palette.border,
+                },
+        isAction && looksDisabled && styles.faded,
         pressed && !disabled && !loading && styles.pressed,
       ]}
       accessibilityRole="button"
@@ -86,6 +100,13 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.8,
+  },
+  // Transparent, so it shows the surface it sits on.
+  outline: {
+    borderWidth: 1.5,
+  },
+  faded: {
+    opacity: 0.4,
   },
   label: {
     fontFamily: fonts.bold,

@@ -64,9 +64,10 @@ const RESULT_SCROLL_MARGIN = 12
 
 // Collapsing top bar. Its real size is measured; this is only the first-frame
 // guess (so the content doesn't start underneath it).
-const TOP_BAR_HEIGHT_ESTIMATE = 170
-// Must match styles.topBar's gap (the space above the nav cards).
-const TOP_BAR_GAP = 16
+const TOP_BAR_HEIGHT_ESTIMATE = 187
+// Must match styles.topBar's gap (the space above the nav cards): 16 either
+// side of the 1px header divider, as under the Calendar's header.
+const TOP_BAR_GAP = 33
 // Space between the expanded top bar and the first card.
 const CONTENT_TOP_GAP = 16
 // How small "Trainer" gets when the bar is collapsed.
@@ -886,6 +887,10 @@ export function TrainingScreen({ navigation }: Props) {
             >
               <Feather name="settings" size={20} color={palette.text} />
             </Pressable>
+            {/* Divider between the header and the nav cards, as on the
+                Calendar. Fades with the cards, leaving only the bar's own
+                bottom edge when collapsed. */}
+            <Animated.View style={[styles.headerDivider, { opacity: navOpacity }]} />
           </Animated.View>
 
           <Animated.View
@@ -915,6 +920,7 @@ export function TrainingScreen({ navigation }: Props) {
           palette={palette}
           label={isLoading ? "Loading…" : "Find"}
           icon="shuffle"
+          variant="action"
           onPress={onSearchWorkout}
           loading={isLoading}
           disabled={isFindCoolingDown || !hasBodyPart}
@@ -923,7 +929,7 @@ export function TrainingScreen({ navigation }: Props) {
           palette={palette}
           label={isCurrentSavedToday ? "Saved" : "Save workout"}
           icon={isCurrentSavedToday ? "check" : "bookmark"}
-          variant="secondary"
+          variant="actionOutline"
           onPress={openSaveModal}
           disabled={isLoading || !currentWorkout || isCurrentSavedToday}
         />

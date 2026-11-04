@@ -35,7 +35,7 @@ export function makeStyles(c: Palette) {
       paddingHorizontal: 20,
       paddingTop: 12,
       paddingBottom: 16,
-      gap: 16,
+      gap: 33,
       backgroundColor: c.bg,
       borderBottomWidth: 1,
       borderBottomColor: c.border,
@@ -58,6 +58,16 @@ export function makeStyles(c: Palette) {
       flexDirection: 'row',
       alignItems: 'flex-end',
       justifyContent: 'space-between',
+    },
+    // Full width (past the bar's padding), centred in the 33px gap under the
+    // header, matching ScreenHeader's divider.
+    headerDivider: {
+      position: 'absolute',
+      left: -20,
+      right: -20,
+      bottom: -17,
+      height: 1,
+      backgroundColor: c.border,
     },
     // Sits above the nav cards, which slide up behind it as the bar collapses.
     headerLayer: {
@@ -365,9 +375,15 @@ export function makeStyles(c: Palette) {
       gap: 12,
       paddingHorizontal: 20,
       paddingTop: 12,
-      backgroundColor: c.bg,
+      backgroundColor: c.dock,
       borderTopWidth: 1,
-      borderTopColor: c.border,
+      borderTopColor: c.dockEdge,
+      // Casts upward over the content. shadow* is iOS, elevation is Android.
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.12,
+      shadowRadius: 12,
+      elevation: 8,
     },
 
     // Modals (settings, save)

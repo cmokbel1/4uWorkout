@@ -18,6 +18,10 @@ export interface Palette {
   navCardIcon: string
   navCardBorder: string
   navCardTopEdge: string
+  // Training's bottom bar (Find / Save workout): its own surface with a lit
+  // top edge, so it reads as separate from the content scrolling under it.
+  dock: string
+  dockEdge: string
   text: string
   textMuted: string
   textDisabled: string
@@ -46,6 +50,8 @@ const dark: Palette = {
   navCardIcon: "#1C3352",
   navCardBorder: "#1C3352",
   navCardTopEdge: "#2A4566",
+  dock: "#162B45",
+  dockEdge: "#2E4B6E",
   text: "#EAF2FB",
   textMuted: "#8FA6BF",
   textDisabled: "#5F7A96",
@@ -71,6 +77,8 @@ const light: Palette = {
   navCardIcon: "#ECEEF2",
   navCardBorder: "#E6E8EC",
   navCardTopEdge: "#E6E8EC",
+  dock: "#FFFFFF",
+  dockEdge: "#DBDEE3",
   text: "#0F1115",
   textMuted: "#5B616E",
   textDisabled: "#8A909C",
