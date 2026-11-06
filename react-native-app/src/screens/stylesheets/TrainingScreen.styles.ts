@@ -29,84 +29,10 @@ export function makeStyles(c: Palette) {
       gap: 16,
     },
 
-    // Fixed top bar: header + nav cards stay put while the content scrolls.
-    // Mirrors the bottom bar (same background, divider facing the content).
-    topBar: {
-      paddingHorizontal: 20,
-      paddingTop: 12,
-      paddingBottom: 16,
-      gap: 33,
-      backgroundColor: c.bg,
-      borderBottomWidth: 1,
-      borderBottomColor: c.border,
-    },
     // Holds the scroll view and the floating top bar, so the bar's top: 0 is
     // the top of the safe area.
     body: {
       flex: 1,
-    },
-    // Collapsing version: the bar floats over the content (which is padded to
-    // start below it) so resizing it never moves the scroll view.
-    topBarOverlay: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 1,
-    },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'flex-end',
-      justifyContent: 'space-between',
-    },
-    // Full width (past the bar's padding), centred in the 33px gap under the
-    // header, matching ScreenHeader's divider.
-    headerDivider: {
-      position: 'absolute',
-      left: -20,
-      right: -20,
-      bottom: -17,
-      height: 1,
-      backgroundColor: c.border,
-    },
-    // Sits above the nav cards, which slide up behind it as the bar collapses.
-    headerLayer: {
-      zIndex: 1,
-      backgroundColor: c.bg,
-    },
-    // "Trainer" shrinks toward its bottom-left corner, staying in line with
-    // the settings button.
-    titleOrigin: {
-      transformOrigin: 'left bottom',
-    },
-    brand: {
-      color: c.accent,
-      fontFamily: fonts.extrabold,
-      fontSize: 13,
-      letterSpacing: 1.4,
-    },
-    title: {
-      color: c.text,
-      fontFamily: fonts.extrabold,
-      fontSize: 34,
-      lineHeight: 40,
-    },
-    iconButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 14,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.border,
-    },
-    pressed: {
-      opacity: 0.75,
-    },
-    navRow: {
-      flexDirection: 'row',
-      gap: 12,
     },
 
     // Result area

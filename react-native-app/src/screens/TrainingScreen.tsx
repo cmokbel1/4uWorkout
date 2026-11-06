@@ -5,7 +5,6 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  Pressable,
   ScrollView,
   Text,
   View,
@@ -16,6 +15,7 @@ import { useFocusEffect } from "@react-navigation/native"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
 import { AppMenu } from "../components/AppMenu"
+import { CollapsingTopBar, useCollapsingTopBar } from "../components/CollapsingTopBar"
 import { FilterCard } from "../components/FilterCard"
 import { NavCard } from "../components/NavCard"
 import { SaveWorkoutModal } from "../components/SaveWorkoutModal"
@@ -56,16 +56,8 @@ const MAX_SIMILAR_WORKOUTS = 10
 // Gap left above the result card when it's scrolled to just below the top bar.
 const RESULT_SCROLL_MARGIN = 12
 
-// Collapsing top bar. Its real size is measured; this is only the first-frame
-// guess (so the content doesn't start underneath it).
-const TOP_BAR_HEIGHT_ESTIMATE = 187
-// Must match styles.topBar's gap (the space above the nav cards): 16 either
-// side of the 1px header divider, as under the Calendar's header.
-const TOP_BAR_GAP = 33
 // Space between the expanded top bar and the first card.
 const CONTENT_TOP_GAP = 16
-// How small "Trainer" gets when the bar is collapsed.
-const COLLAPSED_TITLE_SCALE = 0.72
 
 // Fisher-Yates shuffle into a new array.
 function shuffled<T>(items: T[]): T[] {
@@ -93,37 +85,8 @@ export function TrainingScreen({ navigation }: Props) {
     new Animated.Value(trainingSession.currentWorkout ? 0 : 1),
   ).current
 
-  // Collapsing top bar, driven by the scroll position on the native thread. As
-  // the content scrolls up by `collapseDistance`, the nav cards slide up behind
-  // the title row and fade, and "Trainer" shrinks toward its bottom-left. The
-  // app name stays visible at full size: it slides down by the space the
-  // shrinking title gives up, so it stays right above it. The whole bar
-  // (background and divider) slides up by `collapseDistance` while the title
-  // row is shifted back down by `navCollapse`, so the row rises only by that
-  // freed space — leaving a slim bar that still reads "4UWORKOUT / Trainer".
-  // The bar floats over the content, so its size never changes the scroll
-  // view's layout.
-  const scrollY = useRef(new Animated.Value(0)).current
-  const [topBarHeight, setTopBarHeight] = useState<number>(TOP_BAR_HEIGHT_ESTIMATE)
-  const [navRowHeight, setNavRowHeight] = useState<number>(0)
-  const [titleHeight, setTitleHeight] = useState<number>(0)
-  const navCollapse = navRowHeight + TOP_BAR_GAP
-  // Height "Trainer" gives up when it shrinks.
-  const titleShrink = titleHeight * (1 - COLLAPSED_TITLE_SCALE)
-  // Clamped to 1 so the interpolations below stay valid before measuring.
-  const collapseDistance = Math.max(navCollapse + titleShrink, 1)
-  const collapsedTopBarHeight = topBarHeight - collapseDistance
-  const { barShift, headerShift, brandShift, navOpacity, titleScale } = useMemo(() => {
-    const range = (output: number[], end = collapseDistance) =>
-      scrollY.interpolate({ inputRange: [0, end], outputRange: output, extrapolate: "clamp" })
-    return {
-      barShift: range([0, -collapseDistance]),
-      headerShift: range([0, navCollapse]),
-      brandShift: range([0, titleShrink]),
-      navOpacity: range([1, 0], collapseDistance * 0.6),
-      titleScale: range([1, COLLAPSED_TITLE_SCALE]),
-    }
-  }, [scrollY, collapseDistance, navCollapse, titleShrink])
+  // Collapses as the content scrolls; see CollapsingTopBar.
+  const topBar = useCollapsingTopBar()
   const insets = useSafeAreaInsets()
 
   const [isDark, setIsDark] = useState<boolean>(false)
@@ -334,7 +297,7 @@ export function TrainingScreen({ navigation }: Props) {
   // it's the collapsed bar's height that the card has to clear.
   function resultScrollTarget(): number {
     return Math.max(
-      resultCardYRef.current - collapsedTopBarHeight - RESULT_SCROLL_MARGIN,
+      resultCardYRef.current - topBar.collapsedTopBarHeight - RESULT_SCROLL_MARGIN,
       0,
     )
   }
@@ -472,12 +435,13 @@ export function TrainingScreen({ navigation }: Props) {
       <View style={styles.body}>
         <Animated.ScrollView
           ref={scrollViewRef}
-          contentContainerStyle={[styles.content, { paddingTop: topBarHeight + CONTENT_TOP_GAP }]}
-          scrollIndicatorInsets={{ top: collapsedTopBarHeight }}
+          contentContainerStyle={[
+            styles.content,
+            { paddingTop: topBar.topBarHeight + CONTENT_TOP_GAP },
+          ]}
+          scrollIndicatorInsets={{ top: topBar.collapsedTopBarHeight }}
           scrollEventThrottle={16}
-          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
-            useNativeDriver: true,
-          })}
+          onScroll={topBar.onScroll}
           onLayout={(event) => {
             viewportHeightRef.current = event.nativeEvent.layout.height
           }}
@@ -588,61 +552,22 @@ export function TrainingScreen({ navigation }: Props) {
           )}
         </Animated.ScrollView>
 
-        <Animated.View
-          style={[styles.topBar, styles.topBarOverlay, { transform: [{ translateY: barShift }] }]}
-          onLayout={(event) => setTopBarHeight(event.nativeEvent.layout.height)}
-        >
-          <Animated.View
-            style={[styles.header, styles.headerLayer, { transform: [{ translateY: headerShift }] }]}
-          >
-            <View>
-              <Animated.Text
-                style={[styles.brand, { transform: [{ translateY: brandShift }] }]}
-              >
-                4UWORKOUT
-              </Animated.Text>
-              <Animated.Text
-                style={[styles.title, styles.titleOrigin, { transform: [{ scale: titleScale }] }]}
-                onLayout={(event) => setTitleHeight(event.nativeEvent.layout.height)}
-                accessibilityRole="header"
-              >
-                Trainer
-              </Animated.Text>
-            </View>
-            <Pressable
-              onPress={() => setMenuVisible(true)}
-              style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
-              accessibilityLabel="Open menu"
-              accessibilityRole="button"
-            >
-              <Feather name="settings" size={20} color={palette.text} />
-            </Pressable>
-            {/* Divider between the header and the nav cards, as on the
-                Calendar. Fades with the cards, leaving only the bar's own
-                bottom edge when collapsed. */}
-            <Animated.View style={[styles.headerDivider, { opacity: navOpacity }]} />
-          </Animated.View>
-
-          <Animated.View
-            style={[styles.navRow, { opacity: navOpacity }]}
-            onLayout={(event) => setNavRowHeight(event.nativeEvent.layout.height)}
-          >
-            <NavCard
-              palette={palette}
-              icon="zap"
-              title="Today's workouts"
-              subtitle="Your plan"
-              onPress={openTodaysWorkouts}
-            />
-            <NavCard
-              palette={palette}
-              icon="calendar"
-              title="Calendar"
-              subtitle="Schedule"
-              onPress={openCalendar}
-            />
-          </Animated.View>
-        </Animated.View>
+        <CollapsingTopBar palette={palette} bar={topBar.bar} onOpenMenu={() => setMenuVisible(true)}>
+          <NavCard
+            palette={palette}
+            icon="zap"
+            title="Today's workouts"
+            subtitle="Your plan"
+            onPress={openTodaysWorkouts}
+          />
+          <NavCard
+            palette={palette}
+            icon="calendar"
+            title="Calendar"
+            subtitle="Schedule"
+            onPress={openCalendar}
+          />
+        </CollapsingTopBar>
       </View>
 
       <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
