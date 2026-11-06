@@ -29,6 +29,8 @@ Takes ~13 minutes from a laptop (one round trip per row). `npm run import:pro --
 ```bash
 npx tsc && node --env-file=.env dist/scripts/applySchema.js
 ```
+For production, run `bash scripts/apply-prod-schema.sh` instead of pointing `.env` at it. It builds the connection from your `doctl` login as `trainer_prod_db_admin` (`ALTER TABLE` only works for the tables' owner; the `trainer-prod-db` user that comes with the app's database component can't even read them), shows the tables' owner and whether `public_id` exists, and asks before applying. The connection string goes in a temp file outside the repo, removed when the script exits.
+
 The server never applies `src/db/schema.sql` itself; this script and the import do. Apply a schema change to both databases **before** deploying server code that depends on it. The import applies the schema *before* its own transaction: `ALTER TABLE` holds a lock that blocks reads until its transaction ends, so inside the ~13-minute import it would stall the live server.
 
 No linter, no tests. TypeScript strict mode is the only quality gate.
