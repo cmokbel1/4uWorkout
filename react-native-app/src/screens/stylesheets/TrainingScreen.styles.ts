@@ -109,112 +109,11 @@ export function makeStyles(c: Palette) {
       gap: 12,
     },
 
-    // Filter card
-    card: {
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.border,
-      borderRadius: radius.lg,
-      padding: 16,
-      gap: 14,
-    },
-    sectionLabel: {
-      color: c.textMuted,
-      fontFamily: fonts.bold,
-      fontSize: 12,
-      letterSpacing: 1,
-    },
-    // Step 1 heading: number badge (a check once done), label, "Start here".
-    stepHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-    },
-    stepHeaderLabel: {
-      flex: 1,
-    },
-    stepBadge: {
-      width: 22,
-      height: 22,
-      borderRadius: 11,
-      backgroundColor: c.accent,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    stepBadgeText: {
-      color: c.onAccent,
-      fontFamily: fonts.extrabold,
-      fontSize: 12,
-    },
-    startTag: {
-      backgroundColor: c.accent,
-      borderRadius: radius.pill,
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-    },
-    startTagText: {
-      color: c.onAccent,
-      fontFamily: fonts.extrabold,
-      fontSize: 11,
-      letterSpacing: 0.8,
-    },
-    // Difficulty controls; same spacing as the card's gap.
-    filterGroup: {
-      gap: 14,
-    },
-    // Filters before a body part is chosen. Matches SelectField's disabled look.
-    locked: {
-      opacity: 0.5,
-    },
-    difficultyHeader: {
-      flexDirection: 'row',
-      alignItems: 'baseline',
-      justifyContent: 'space-between',
-      marginTop: 4,
-    },
-    difficultyTitle: {
-      color: c.text,
-      fontFamily: fonts.bold,
-      fontSize: 15,
-    },
-    optional: {
-      color: c.textMuted,
-      fontFamily: fonts.medium,
-    },
-    rangeLabel: {
-      color: c.accent,
-      fontFamily: fonts.bold,
-      fontSize: 13,
-    },
     helperText: {
       color: c.textMuted,
       fontFamily: fonts.medium,
       fontSize: 13,
       lineHeight: 18,
-    },
-    // Note between the slider and the Target / Equipment fields.
-    filterHint: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: 8,
-    },
-    // Lines the icon up with the first line of text.
-    filterHintIcon: {
-      marginTop: 2,
-    },
-    filterHintText: {
-      flex: 1,
-      color: c.textMuted,
-      fontFamily: fonts.medium,
-      fontSize: 13,
-      lineHeight: 18,
-    },
-    selectRow: {
-      flexDirection: 'row',
-      gap: 12,
-    },
-    selectCell: {
-      flex: 1,
     },
 
     // Result area

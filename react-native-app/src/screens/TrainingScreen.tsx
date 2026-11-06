@@ -16,10 +16,9 @@ import { useFocusEffect } from "@react-navigation/native"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
 import { AppMenu } from "../components/AppMenu"
+import { FilterCard } from "../components/FilterCard"
 import { NavCard } from "../components/NavCard"
-import { RangeSlider, type LevelRange } from "../components/RangeSlider"
 import { SaveWorkoutModal } from "../components/SaveWorkoutModal"
-import { SelectField, type SelectOption } from "../components/SelectField"
 import { ThemedButton } from "../components/ThemedButton"
 import { WorkoutPanel } from "../components/WorkoutPanel"
 import {
@@ -39,17 +38,12 @@ import {
 import { readDarkMode, writeDarkMode } from "../storage/theme"
 import { trainingSession } from "../state/trainingSession"
 import { getPalette } from "../theme"
-import {
-  DIFFICULTIES,
-  type EquipmentType,
-  type ExerciseFilters,
-  type FilterOption,
-  type FilterOptionsByBodyPart,
-} from "../types/filters"
+import type { ExerciseFilters, FilterOptionsByBodyPart } from "../types/filters"
 import type { Workout, WorkoutSet } from "../types/workout"
 import type { RootStackParamList } from "../../App"
 import { todayKey } from "../utils/date"
-import { getErrorMessage, toTitleCase } from "../utils/formatting"
+import { hasActiveFilters, keepFiltersOffered } from "../utils/filters"
+import { getErrorMessage } from "../utils/formatting"
 import { makeStyles } from "./stylesheets/TrainingScreen.styles"
 
 type Props = NativeStackScreenProps<RootStackParamList, "Training">
@@ -71,21 +65,6 @@ const TOP_BAR_GAP = 33
 const CONTENT_TOP_GAP = 16
 // How small "Trainer" gets when the bar is collapsed.
 const COLLAPSED_TITLE_SCALE = 0.72
-
-const DIFFICULTY_LABELS = DIFFICULTIES.map((level) => toTitleCase(level))
-const FULL_DIFFICULTY_RANGE: LevelRange = { min: 0, max: DIFFICULTIES.length - 1 }
-
-const EQUIPMENT_LABELS: Record<EquipmentType, string> = {
-  free_weight: "Free weights",
-  bodyweight: "Bodyweight",
-  cable: "Cable",
-  machine: "Machine",
-  accessory: "Accessory",
-  band: "Band",
-}
-
-// "" stands for "no filter" in the target and equipment fields.
-const ANY_OPTION: SelectOption = { value: "", label: "Any" }
 
 // Fisher-Yates shuffle into a new array.
 function shuffled<T>(items: T[]): T[] {
@@ -202,61 +181,13 @@ export function TrainingScreen({ navigation }: Props) {
   // Nothing is chosen by default: the filters and Find stay locked until the
   // user picks a body part (target and equipment options depend on it).
   const hasBodyPart = Boolean(selectedBodyPart)
-  const hasActiveFilters = Boolean(
-    filters.difficulties?.length || filters.target || filters.equipmentTypes?.length,
-  )
+  const filtersActive = hasActiveFilters(filters)
 
   // Today's bucket drives the dedup/disable logic.
   const todaysWorkouts = savedMap[todayKey()] ?? []
   const isCurrentSavedToday = Boolean(
     currentWorkout && todaysWorkouts.some((w) => w.id === currentWorkout.id),
   )
-
-  // The slider shows the selected difficulties as a range; no filter is the
-  // full range.
-  const difficultyRange: LevelRange = filters.difficulties?.length
-    ? {
-        min: DIFFICULTIES.indexOf(filters.difficulties[0]),
-        max: DIFFICULTIES.indexOf(filters.difficulties[filters.difficulties.length - 1]),
-      }
-    : FULL_DIFFICULTY_RANGE
-  const difficultyRangeLabel =
-    difficultyRange.min === difficultyRange.max
-      ? DIFFICULTY_LABELS[difficultyRange.min]
-      : `${DIFFICULTY_LABELS[difficultyRange.min]} – ${DIFFICULTY_LABELS[difficultyRange.max]}`
-
-  const bodyPartSelectOptions: SelectOption[] = bodyPartOptions.map((bodyPart) => ({
-    value: bodyPart,
-    label: toTitleCase(bodyPart),
-  }))
-  const currentFilterOptions = filterOptions[selectedBodyPart]
-  // How many exercises an option matches within the selected difficulty range:
-  // exercises outside the range don't count. Without a difficulty filter (or
-  // from a server that doesn't send byDifficulty) it's the plain total.
-  const countInDifficultyRange = (option: FilterOption): number =>
-    filters.difficulties?.length && option.byDifficulty
-      ? filters.difficulties.reduce((sum, level) => sum + (option.byDifficulty?.[level] ?? 0), 0)
-      : option.count
-  // An option with nothing in range is shown with its 0 but can't be picked.
-  const toSelectOption = (option: FilterOption, label: string): SelectOption => {
-    const count = countInDifficultyRange(option)
-    return { value: option.value, label, detail: String(count), disabled: count === 0 }
-  }
-  const targetSelectOptions: SelectOption[] = [
-    ANY_OPTION,
-    ...(currentFilterOptions?.targets ?? []).map((option) =>
-      toSelectOption(option, toTitleCase(option.value)),
-    ),
-  ]
-  const equipmentSelectOptions: SelectOption[] = [
-    ANY_OPTION,
-    ...(currentFilterOptions?.equipmentTypes ?? []).map((option) =>
-      toSelectOption(
-        option,
-        EQUIPMENT_LABELS[option.value as EquipmentType] ?? toTitleCase(option.value),
-      ),
-    ),
-  ]
 
   useEffect(() => {
     async function bootstrap(): Promise<void> {
@@ -384,36 +315,9 @@ export function TrainingScreen({ navigation }: Props) {
     }
   }
 
-  // Targets and equipment types differ per body part, so drop choices the new
-  // body part doesn't have. Difficulty applies to every body part and is kept.
   function onChangeBodyPart(bodyPart: string): void {
     setSelectedBodyPart(bodyPart)
-    const options = filterOptions[bodyPart]
-    const isOffered = (list: FilterOption[] | undefined, value: string) =>
-      Boolean(list?.some((option) => option.value === value))
-    setFilters((prev) => {
-      const equipmentTypes = prev.equipmentTypes?.filter((type) =>
-        isOffered(options?.equipmentTypes, type),
-      )
-      return {
-        difficulties: prev.difficulties,
-        target:
-          prev.target && isOffered(options?.targets, prev.target)
-            ? prev.target
-            : undefined,
-        equipmentTypes: equipmentTypes?.length ? equipmentTypes : undefined,
-      }
-    })
-  }
-
-  // The full range means "any difficulty", so it clears the filter.
-  function onChangeDifficultyRange(range: LevelRange): void {
-    const isFullRange =
-      range.min === FULL_DIFFICULTY_RANGE.min && range.max === FULL_DIFFICULTY_RANGE.max
-    setFilters((prev) => ({
-      ...prev,
-      difficulties: isFullRange ? undefined : DIFFICULTIES.slice(range.min, range.max + 1),
-    }))
+    setFilters((prev) => keepFiltersOffered(prev, filterOptions[bodyPart]))
   }
 
   function openTodaysWorkouts(): void {
@@ -580,104 +484,15 @@ export function TrainingScreen({ navigation }: Props) {
             contentHeightRef.current = height
           }}
         >
-          <View style={styles.card}>
-            <View style={styles.stepHeader}>
-              <View style={styles.stepBadge}>
-                {hasBodyPart ? (
-                  <Feather name="check" size={13} color={palette.onAccent} />
-                ) : (
-                  <Text style={styles.stepBadgeText}>1</Text>
-                )}
-              </View>
-              <Text style={[styles.sectionLabel, styles.stepHeaderLabel]}>
-                SELECT A BODY PART
-              </Text>
-              {hasBodyPart ? null : (
-                <View style={styles.startTag}>
-                  <Text style={styles.startTagText}>START HERE</Text>
-                </View>
-              )}
-            </View>
-            <SelectField
-              palette={palette}
-              title="Body part"
-              placeholder="Select body part"
-              highlighted={!hasBodyPart}
-              options={bodyPartSelectOptions}
-              value={selectedBodyPart}
-              onChange={onChangeBodyPart}
-            />
-
-            {/* Locked (dimmed, untappable, hidden from screen readers) until a
-                body part is chosen. */}
-            <View
-              style={[styles.filterGroup, !hasBodyPart && styles.locked]}
-              pointerEvents={hasBodyPart ? "auto" : "none"}
-              accessibilityElementsHidden={!hasBodyPart}
-              importantForAccessibility={hasBodyPart ? "auto" : "no-hide-descendants"}
-            >
-              <View style={styles.difficultyHeader}>
-                <Text style={styles.difficultyTitle}>
-                  Difficulty <Text style={styles.optional}>(optional)</Text>
-                </Text>
-                <Text style={styles.rangeLabel}>{difficultyRangeLabel}</Text>
-              </View>
-              <Text style={styles.helperText}>
-                Drag the handles for a range, or tap a level for just that one.
-              </Text>
-              <RangeSlider
-                palette={palette}
-                levels={DIFFICULTY_LABELS}
-                value={difficultyRange}
-                onChange={onChangeDifficultyRange}
-              />
-              {hasBodyPart ? (
-                <View style={styles.filterHint}>
-                  <Feather name="info" size={14} color={palette.accent} style={styles.filterHintIcon} />
-                  <Text style={styles.filterHintText}>
-                    Target and Equipment counts update to match your difficulty range.
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-
-            <View style={styles.selectRow}>
-              <View style={styles.selectCell}>
-                <SelectField
-                  palette={palette}
-                  size="compact"
-                  title="Target"
-                  disabled={!hasBodyPart}
-                  options={targetSelectOptions}
-                  value={filters.target ?? ""}
-                  onChange={(value) =>
-                    setFilters((prev) => ({ ...prev, target: value || undefined }))
-                  }
-                />
-              </View>
-              <View style={styles.selectCell}>
-                <SelectField
-                  palette={palette}
-                  size="compact"
-                  title="Equipment"
-                  disabled={!hasBodyPart}
-                  options={equipmentSelectOptions}
-                  value={filters.equipmentTypes?.[0] ?? ""}
-                  onChange={(value) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      equipmentTypes: value ? [value as EquipmentType] : undefined,
-                    }))
-                  }
-                />
-              </View>
-            </View>
-            {hasBodyPart ? null : (
-              <Text style={styles.helperText}>
-                Pick a body part to unlock the filters and Find.
-              </Text>
-            )}
-          </View>
+          <FilterCard
+            palette={palette}
+            bodyParts={bodyPartOptions}
+            selectedBodyPart={selectedBodyPart}
+            onChangeBodyPart={onChangeBodyPart}
+            filterOptions={filterOptions[selectedBodyPart]}
+            filters={filters}
+            onChangeFilters={setFilters}
+          />
 
           {currentWorkout ? (
             <View style={styles.resultCard} onLayout={onResultCardLayout}>
@@ -705,11 +520,11 @@ export function TrainingScreen({ navigation }: Props) {
               </View>
               <Text style={styles.emptyTitle}>No workouts match</Text>
               <Text style={styles.emptyText}>
-                {hasActiveFilters
+                {filtersActive
                   ? "Try a wider difficulty range, or set Target or Equipment back to Any."
                   : "Try a different body part."}
               </Text>
-              {hasActiveFilters ? (
+              {filtersActive ? (
                 <View style={styles.emptyAction}>
                   <ThemedButton
                     palette={palette}
@@ -794,7 +609,7 @@ export function TrainingScreen({ navigation }: Props) {
               ) : null}
               {/* The advice is about filters, so it only shows when one is
                   active (unfiltered, every body part fills the list anyway). */}
-              {hasActiveFilters && searchResults.length < MAX_SIMILAR_WORKOUTS ? (
+              {filtersActive && searchResults.length < MAX_SIMILAR_WORKOUTS ? (
                 <View style={styles.tip}>
                   <Feather name="info" size={16} color={palette.accent} />
                   <Text style={styles.tipText}>
