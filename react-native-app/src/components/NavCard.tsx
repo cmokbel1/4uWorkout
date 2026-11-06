@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons"
 import type { ComponentProps } from "react"
-import { Pressable, StyleSheet, Text, View } from "react-native"
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native"
 
 import { fonts, radius, type Palette } from "../theme"
 
@@ -57,19 +57,27 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: radius.lg,
     borderWidth: 1,
-    // Lifts the card so it reads as tappable. shadow* is iOS, elevation is
-    // Android.
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 3,
+    // Lifts the card so it reads as tappable. shadow* is iOS. Android uses
+    // boxShadow rather than elevation: an elevation shadow is also drawn
+    // under the card, so when Training's top bar fades the cards it showed
+    // through them as grey frames; a box shadow is only drawn outside.
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.12,
+        shadowRadius: 4,
+      },
+      android: {
+        boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.12)",
+      },
+    }),
   },
   // The shadow drops while pressed, so the card looks pushed in.
   pressed: {
     opacity: 0.85,
     shadowOpacity: 0,
-    elevation: 0,
+    boxShadow: [],
   },
   topRow: {
     flexDirection: "row",
