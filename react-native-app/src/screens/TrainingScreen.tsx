@@ -45,6 +45,7 @@ import type { RootStackParamList } from "../../App"
 import { todayKey } from "../utils/date"
 import { hasActiveFilters, keepFiltersOffered } from "../utils/filters"
 import { getErrorMessage } from "../utils/formatting"
+import { shuffled } from "../utils/random"
 import { makeStyles } from "./stylesheets/TrainingScreen.styles"
 
 type Props = NativeStackScreenProps<RootStackParamList, "Training">
@@ -58,16 +59,6 @@ const RESULT_SCROLL_MARGIN = 12
 
 // Space between the expanded top bar and the first card.
 const CONTENT_TOP_GAP = 16
-
-// Fisher-Yates shuffle into a new array.
-function shuffled<T>(items: T[]): T[] {
-  const result = [...items]
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[result[i], result[j]] = [result[j], result[i]]
-  }
-  return result
-}
 
 export function TrainingScreen({ navigation }: Props) {
   const scrollViewRef = useRef<ScrollView>(null)
