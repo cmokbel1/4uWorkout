@@ -109,13 +109,6 @@ export function makeStyles(c: Palette) {
       gap: 12,
     },
 
-    helperText: {
-      color: c.textMuted,
-      fontFamily: fonts.medium,
-      fontSize: 13,
-      lineHeight: 18,
-    },
-
     // Result area
     emptyCard: {
       borderWidth: 1.5,
@@ -163,6 +156,20 @@ export function makeStyles(c: Palette) {
       fontFamily: fonts.semibold,
       fontSize: 14,
     },
+    // Step number (a check once done) in the placeholder card.
+    emptyStepIndex: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: c.surfaceRaised,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emptyStepIndexText: {
+      color: c.accent,
+      fontFamily: fonts.bold,
+      fontSize: 12,
+    },
     resultCard: {
       backgroundColor: c.surface,
       borderWidth: 1,
@@ -179,82 +186,6 @@ export function makeStyles(c: Palette) {
       borderRadius: radius.lg,
       alignItems: 'center',
       justifyContent: 'center',
-    },
-
-    // Similar workouts
-    // Wraps the section so it can fade in with the result card; keeps the same
-    // spacing the content's gap gave its children before.
-    similarSection: {
-      gap: 16,
-    },
-    similarHeader: {
-      gap: 2,
-      marginTop: 4,
-    },
-    similarTitle: {
-      color: c.text,
-      fontFamily: fonts.extrabold,
-      fontSize: 18,
-    },
-    similarList: {
-      gap: 10,
-    },
-    similarItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.border,
-      borderRadius: radius.md,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-    },
-    similarIndex: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
-      backgroundColor: c.surfaceRaised,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    similarIndexText: {
-      color: c.accent,
-      fontFamily: fonts.bold,
-      fontSize: 12,
-    },
-    similarText: {
-      flex: 1,
-      gap: 2,
-    },
-    similarName: {
-      color: c.text,
-      fontFamily: fonts.bold,
-      fontSize: 15,
-      textTransform: 'capitalize',
-    },
-    similarSub: {
-      color: c.textMuted,
-      fontFamily: fonts.medium,
-      fontSize: 13,
-      textTransform: 'capitalize',
-    },
-    tip: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: 10,
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.border,
-      borderRadius: radius.md,
-      padding: 14,
-    },
-    tipText: {
-      flex: 1,
-      color: c.textMuted,
-      fontFamily: fonts.medium,
-      fontSize: 14,
-      lineHeight: 20,
     },
 
     // Inline "no matches" state: an empty-state card with an action under it.

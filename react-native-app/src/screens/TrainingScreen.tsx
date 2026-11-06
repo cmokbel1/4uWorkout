@@ -19,6 +19,7 @@ import { AppMenu } from "../components/AppMenu"
 import { FilterCard } from "../components/FilterCard"
 import { NavCard } from "../components/NavCard"
 import { SaveWorkoutModal } from "../components/SaveWorkoutModal"
+import { SimilarWorkoutsList } from "../components/SimilarWorkoutsList"
 import { ThemedButton } from "../components/ThemedButton"
 import { WorkoutPanel } from "../components/WorkoutPanel"
 import {
@@ -550,11 +551,11 @@ export function TrainingScreen({ navigation }: Props) {
               <View style={styles.emptySteps}>
                 {["Select a body part", "Tap Find for a random pick"].map((step, index) => (
                   <View key={step} style={styles.emptyStep}>
-                    <View style={styles.similarIndex}>
+                    <View style={styles.emptyStepIndex}>
                       {index === 0 && hasBodyPart ? (
                         <Feather name="check" size={13} color={palette.accent} />
                       ) : (
-                        <Text style={styles.similarIndexText}>{index + 1}</Text>
+                        <Text style={styles.emptyStepIndexText}>{index + 1}</Text>
                       )}
                     </View>
                     <Text style={styles.emptyStepText}>{step}</Text>
@@ -572,52 +573,17 @@ export function TrainingScreen({ navigation }: Props) {
             // length when the image draws and the scroll runs. Hidden and not
             // tappable until then, it fades in with the card.
             <Animated.View
-              style={[styles.similarSection, { opacity: resultOpacity }]}
+              style={{ opacity: resultOpacity }}
               pointerEvents={isImageLoading ? "none" : "auto"}
             >
-              <View style={styles.similarHeader}>
-                <Text style={styles.similarTitle}>Similar workouts</Text>
-                <Text style={styles.helperText}>
-                  {searchResults.length
-                    ? "Tap one for more information."
-                    : "No other workouts match these filters."}
-                </Text>
-              </View>
-              {searchResults.length ? (
-                <View style={styles.similarList}>
-                  {searchResults.map((item, idx) => (
-                    <Pressable
-                      key={item.id}
-                      onPress={() => onSelectSimilarWorkout(item)}
-                      style={({ pressed }) => [styles.similarItem, pressed && styles.pressed]}
-                      accessibilityLabel={`Select ${item.name}`}
-                      accessibilityRole="button"
-                    >
-                      <View style={styles.similarIndex}>
-                        <Text style={styles.similarIndexText}>{idx + 1}</Text>
-                      </View>
-                      <View style={styles.similarText}>
-                        <Text style={styles.similarName} numberOfLines={2}>
-                          {item.name}
-                        </Text>
-                        <Text style={styles.similarSub}>Target: {item.target}</Text>
-                      </View>
-                      <Feather name="chevron-right" size={18} color={palette.textMuted} />
-                    </Pressable>
-                  ))}
-                </View>
-              ) : null}
-              {/* The advice is about filters, so it only shows when one is
-                  active (unfiltered, every body part fills the list anyway). */}
-              {filtersActive && searchResults.length < MAX_SIMILAR_WORKOUTS ? (
-                <View style={styles.tip}>
-                  <Feather name="info" size={16} color={palette.accent} />
-                  <Text style={styles.tipText}>
-                    If you're stuck and the similar workouts list is too short,
-                    update your filters and try again, or change body part.
-                  </Text>
-                </View>
-              ) : null}
+              <SimilarWorkoutsList
+                palette={palette}
+                workouts={searchResults}
+                onSelect={onSelectSimilarWorkout}
+                // The advice is about filters, so it only shows when one is
+                // active (unfiltered, every body part fills the list anyway).
+                showFilterTip={filtersActive && searchResults.length < MAX_SIMILAR_WORKOUTS}
+              />
             </Animated.View>
           )}
         </Animated.ScrollView>
