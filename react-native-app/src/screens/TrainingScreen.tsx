@@ -5,11 +5,8 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  Modal,
-  Pressable,
   ScrollView,
   Text,
-  TextInput,
   View,
   type LayoutChangeEvent,
 } from "react-native"
@@ -18,9 +15,11 @@ import { useFocusEffect } from "@react-navigation/native"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
 import { AppMenu } from "../components/AppMenu"
+import { CollapsingTopBar, useCollapsingTopBar } from "../components/CollapsingTopBar"
+import { FilterCard } from "../components/FilterCard"
 import { NavCard } from "../components/NavCard"
-import { RangeSlider, type LevelRange } from "../components/RangeSlider"
-import { SelectField, type SelectOption } from "../components/SelectField"
+import { SaveWorkoutModal } from "../components/SaveWorkoutModal"
+import { SimilarWorkoutsList } from "../components/SimilarWorkoutsList"
 import { ThemedButton } from "../components/ThemedButton"
 import { WorkoutPanel } from "../components/WorkoutPanel"
 import {
@@ -40,17 +39,13 @@ import {
 import { readDarkMode, writeDarkMode } from "../storage/theme"
 import { trainingSession } from "../state/trainingSession"
 import { getPalette } from "../theme"
-import {
-  DIFFICULTIES,
-  type EquipmentType,
-  type ExerciseFilters,
-  type FilterOption,
-  type FilterOptionsByBodyPart,
-} from "../types/filters"
-import type { Workout } from "../types/workout"
+import type { ExerciseFilters, FilterOptionsByBodyPart } from "../types/filters"
+import type { Workout, WorkoutSet } from "../types/workout"
 import type { RootStackParamList } from "../../App"
 import { todayKey } from "../utils/date"
-import { getErrorMessage, toTitleCase } from "../utils/formatting"
+import { hasActiveFilters, keepFiltersOffered } from "../utils/filters"
+import { getErrorMessage } from "../utils/formatting"
+import { shuffled } from "../utils/random"
 import { makeStyles } from "./stylesheets/TrainingScreen.styles"
 
 type Props = NativeStackScreenProps<RootStackParamList, "Training">
@@ -62,52 +57,8 @@ const MAX_SIMILAR_WORKOUTS = 10
 // Gap left above the result card when it's scrolled to just below the top bar.
 const RESULT_SCROLL_MARGIN = 12
 
-// Collapsing top bar. Its real size is measured; this is only the first-frame
-// guess (so the content doesn't start underneath it).
-const TOP_BAR_HEIGHT_ESTIMATE = 187
-// Must match styles.topBar's gap (the space above the nav cards): 16 either
-// side of the 1px header divider, as under the Calendar's header.
-const TOP_BAR_GAP = 33
 // Space between the expanded top bar and the first card.
 const CONTENT_TOP_GAP = 16
-// How small "Trainer" gets when the bar is collapsed.
-const COLLAPSED_TITLE_SCALE = 0.72
-
-const DIFFICULTY_LABELS = DIFFICULTIES.map((level) => toTitleCase(level))
-const FULL_DIFFICULTY_RANGE: LevelRange = { min: 0, max: DIFFICULTIES.length - 1 }
-
-const EQUIPMENT_LABELS: Record<EquipmentType, string> = {
-  free_weight: "Free weights",
-  bodyweight: "Bodyweight",
-  cable: "Cable",
-  machine: "Machine",
-  accessory: "Accessory",
-  band: "Band",
-}
-
-// "" stands for "no filter" in the target and equipment fields.
-const ANY_OPTION: SelectOption = { value: "", label: "Any" }
-
-const SET_COUNT_OPTIONS: SelectOption[] = Array.from({ length: 10 }, (_, i) => ({
-  value: String(i + 1),
-  label: String(i + 1),
-}))
-
-// The two inputs on each set row of the save dialog.
-const SET_FIELDS = [
-  { field: "weight", label: "WEIGHT (LBS)", name: "Weight", maxLength: 4 },
-  { field: "reps", label: "REPS", name: "Reps", maxLength: 3 },
-] as const
-
-// Fisher-Yates shuffle into a new array.
-function shuffled<T>(items: T[]): T[] {
-  const result = [...items]
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[result[i], result[j]] = [result[j], result[i]]
-  }
-  return result
-}
 
 export function TrainingScreen({ navigation }: Props) {
   const scrollViewRef = useRef<ScrollView>(null)
@@ -125,37 +76,8 @@ export function TrainingScreen({ navigation }: Props) {
     new Animated.Value(trainingSession.currentWorkout ? 0 : 1),
   ).current
 
-  // Collapsing top bar, driven by the scroll position on the native thread. As
-  // the content scrolls up by `collapseDistance`, the nav cards slide up behind
-  // the title row and fade, and "Trainer" shrinks toward its bottom-left. The
-  // app name stays visible at full size: it slides down by the space the
-  // shrinking title gives up, so it stays right above it. The whole bar
-  // (background and divider) slides up by `collapseDistance` while the title
-  // row is shifted back down by `navCollapse`, so the row rises only by that
-  // freed space — leaving a slim bar that still reads "4UWORKOUT / Trainer".
-  // The bar floats over the content, so its size never changes the scroll
-  // view's layout.
-  const scrollY = useRef(new Animated.Value(0)).current
-  const [topBarHeight, setTopBarHeight] = useState<number>(TOP_BAR_HEIGHT_ESTIMATE)
-  const [navRowHeight, setNavRowHeight] = useState<number>(0)
-  const [titleHeight, setTitleHeight] = useState<number>(0)
-  const navCollapse = navRowHeight + TOP_BAR_GAP
-  // Height "Trainer" gives up when it shrinks.
-  const titleShrink = titleHeight * (1 - COLLAPSED_TITLE_SCALE)
-  // Clamped to 1 so the interpolations below stay valid before measuring.
-  const collapseDistance = Math.max(navCollapse + titleShrink, 1)
-  const collapsedTopBarHeight = topBarHeight - collapseDistance
-  const { barShift, headerShift, brandShift, navOpacity, titleScale } = useMemo(() => {
-    const range = (output: number[], end = collapseDistance) =>
-      scrollY.interpolate({ inputRange: [0, end], outputRange: output, extrapolate: "clamp" })
-    return {
-      barShift: range([0, -collapseDistance]),
-      headerShift: range([0, navCollapse]),
-      brandShift: range([0, titleShrink]),
-      navOpacity: range([1, 0], collapseDistance * 0.6),
-      titleScale: range([1, COLLAPSED_TITLE_SCALE]),
-    }
-  }, [scrollY, collapseDistance, navCollapse, titleShrink])
+  // Collapses as the content scrolls; see CollapsingTopBar.
+  const topBar = useCollapsingTopBar()
   const insets = useSafeAreaInsets()
 
   const [isDark, setIsDark] = useState<boolean>(false)
@@ -200,11 +122,6 @@ export function TrainingScreen({ navigation }: Props) {
   // so it can say "clean" from an earlier mount while this one still has {}.
   const savedMapLoadedRef = useRef<boolean>(false)
   const [saveModalVisible, setSaveModalVisible] = useState<boolean>(false)
-  const [setCount, setSetCount] = useState<number>(1)
-  // One {weight, reps} form per set, held as strings for controlled inputs.
-  const [setForms, setSetForms] = useState<{ weight: string; reps: string }[]>([
-    { weight: "", reps: "" },
-  ])
 
   const palette = getPalette(isDark)
   const styles = useMemo(() => makeStyles(palette), [palette])
@@ -219,61 +136,13 @@ export function TrainingScreen({ navigation }: Props) {
   // Nothing is chosen by default: the filters and Find stay locked until the
   // user picks a body part (target and equipment options depend on it).
   const hasBodyPart = Boolean(selectedBodyPart)
-  const hasActiveFilters = Boolean(
-    filters.difficulties?.length || filters.target || filters.equipmentTypes?.length,
-  )
+  const filtersActive = hasActiveFilters(filters)
 
   // Today's bucket drives the dedup/disable logic.
   const todaysWorkouts = savedMap[todayKey()] ?? []
   const isCurrentSavedToday = Boolean(
     currentWorkout && todaysWorkouts.some((w) => w.id === currentWorkout.id),
   )
-
-  // The slider shows the selected difficulties as a range; no filter is the
-  // full range.
-  const difficultyRange: LevelRange = filters.difficulties?.length
-    ? {
-        min: DIFFICULTIES.indexOf(filters.difficulties[0]),
-        max: DIFFICULTIES.indexOf(filters.difficulties[filters.difficulties.length - 1]),
-      }
-    : FULL_DIFFICULTY_RANGE
-  const difficultyRangeLabel =
-    difficultyRange.min === difficultyRange.max
-      ? DIFFICULTY_LABELS[difficultyRange.min]
-      : `${DIFFICULTY_LABELS[difficultyRange.min]} – ${DIFFICULTY_LABELS[difficultyRange.max]}`
-
-  const bodyPartSelectOptions: SelectOption[] = bodyPartOptions.map((bodyPart) => ({
-    value: bodyPart,
-    label: toTitleCase(bodyPart),
-  }))
-  const currentFilterOptions = filterOptions[selectedBodyPart]
-  // How many exercises an option matches within the selected difficulty range:
-  // exercises outside the range don't count. Without a difficulty filter (or
-  // from a server that doesn't send byDifficulty) it's the plain total.
-  const countInDifficultyRange = (option: FilterOption): number =>
-    filters.difficulties?.length && option.byDifficulty
-      ? filters.difficulties.reduce((sum, level) => sum + (option.byDifficulty?.[level] ?? 0), 0)
-      : option.count
-  // An option with nothing in range is shown with its 0 but can't be picked.
-  const toSelectOption = (option: FilterOption, label: string): SelectOption => {
-    const count = countInDifficultyRange(option)
-    return { value: option.value, label, detail: String(count), disabled: count === 0 }
-  }
-  const targetSelectOptions: SelectOption[] = [
-    ANY_OPTION,
-    ...(currentFilterOptions?.targets ?? []).map((option) =>
-      toSelectOption(option, toTitleCase(option.value)),
-    ),
-  ]
-  const equipmentSelectOptions: SelectOption[] = [
-    ANY_OPTION,
-    ...(currentFilterOptions?.equipmentTypes ?? []).map((option) =>
-      toSelectOption(
-        option,
-        EQUIPMENT_LABELS[option.value as EquipmentType] ?? toTitleCase(option.value),
-      ),
-    ),
-  ]
 
   useEffect(() => {
     async function bootstrap(): Promise<void> {
@@ -401,36 +270,9 @@ export function TrainingScreen({ navigation }: Props) {
     }
   }
 
-  // Targets and equipment types differ per body part, so drop choices the new
-  // body part doesn't have. Difficulty applies to every body part and is kept.
   function onChangeBodyPart(bodyPart: string): void {
     setSelectedBodyPart(bodyPart)
-    const options = filterOptions[bodyPart]
-    const isOffered = (list: FilterOption[] | undefined, value: string) =>
-      Boolean(list?.some((option) => option.value === value))
-    setFilters((prev) => {
-      const equipmentTypes = prev.equipmentTypes?.filter((type) =>
-        isOffered(options?.equipmentTypes, type),
-      )
-      return {
-        difficulties: prev.difficulties,
-        target:
-          prev.target && isOffered(options?.targets, prev.target)
-            ? prev.target
-            : undefined,
-        equipmentTypes: equipmentTypes?.length ? equipmentTypes : undefined,
-      }
-    })
-  }
-
-  // The full range means "any difficulty", so it clears the filter.
-  function onChangeDifficultyRange(range: LevelRange): void {
-    const isFullRange =
-      range.min === FULL_DIFFICULTY_RANGE.min && range.max === FULL_DIFFICULTY_RANGE.max
-    setFilters((prev) => ({
-      ...prev,
-      difficulties: isFullRange ? undefined : DIFFICULTIES.slice(range.min, range.max + 1),
-    }))
+    setFilters((prev) => keepFiltersOffered(prev, filterOptions[bodyPart]))
   }
 
   function openTodaysWorkouts(): void {
@@ -446,7 +288,7 @@ export function TrainingScreen({ navigation }: Props) {
   // it's the collapsed bar's height that the card has to clear.
   function resultScrollTarget(): number {
     return Math.max(
-      resultCardYRef.current - collapsedTopBarHeight - RESULT_SCROLL_MARGIN,
+      resultCardYRef.current - topBar.collapsedTopBarHeight - RESULT_SCROLL_MARGIN,
       0,
     )
   }
@@ -540,36 +382,6 @@ export function TrainingScreen({ navigation }: Props) {
     }
   }
 
-  // The Save button is disabled with no workout, or one already saved today.
-  function openSaveModal(): void {
-    setSetCount(1)
-    setSetForms([{ weight: "", reps: "" }])
-    setSaveModalVisible(true)
-  }
-
-  // Resize the per-set forms to match the chosen count, preserving any values
-  // already entered for sets that survive the resize.
-  function onChangeSetCount(count: number): void {
-    setSetCount(count)
-    setSetForms((prev) => {
-      if (count <= prev.length) return prev.slice(0, count)
-      const grown = [...prev]
-      while (grown.length < count) grown.push({ weight: "", reps: "" })
-      return grown
-    })
-  }
-
-  function onChangeSetField(
-    index: number,
-    field: "weight" | "reps",
-    text: string,
-  ): void {
-    const digits = text.replace(/[^0-9]/g, "")
-    setSetForms((prev) =>
-      prev.map((form, i) => (i === index ? { ...form, [field]: digits } : form)),
-    )
-  }
-
   function onToggleDark(value: boolean): void {
     setIsDark(value)
     writeDarkMode(value).catch(() => {
@@ -577,13 +389,9 @@ export function TrainingScreen({ navigation }: Props) {
     })
   }
 
-  async function onConfirmSave(): Promise<void> {
+  async function onConfirmSave(setDetails: WorkoutSet[]): Promise<void> {
     if (!currentWorkout) return
 
-    const setDetails = setForms.map((form) => ({
-      weight: form.weight === "" ? undefined : Number(form.weight),
-      reps: form.reps === "" ? undefined : Number(form.reps),
-    }))
     const toSave: Workout = { ...currentWorkout, setDetails }
 
     setSaveModalVisible(false)
@@ -618,12 +426,13 @@ export function TrainingScreen({ navigation }: Props) {
       <View style={styles.body}>
         <Animated.ScrollView
           ref={scrollViewRef}
-          contentContainerStyle={[styles.content, { paddingTop: topBarHeight + CONTENT_TOP_GAP }]}
-          scrollIndicatorInsets={{ top: collapsedTopBarHeight }}
+          contentContainerStyle={[
+            styles.content,
+            { paddingTop: topBar.topBarHeight + CONTENT_TOP_GAP },
+          ]}
+          scrollIndicatorInsets={{ top: topBar.collapsedTopBarHeight }}
           scrollEventThrottle={16}
-          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
-            useNativeDriver: true,
-          })}
+          onScroll={topBar.onScroll}
           onLayout={(event) => {
             viewportHeightRef.current = event.nativeEvent.layout.height
           }}
@@ -631,104 +440,15 @@ export function TrainingScreen({ navigation }: Props) {
             contentHeightRef.current = height
           }}
         >
-          <View style={styles.card}>
-            <View style={styles.stepHeader}>
-              <View style={styles.stepBadge}>
-                {hasBodyPart ? (
-                  <Feather name="check" size={13} color={palette.onAccent} />
-                ) : (
-                  <Text style={styles.stepBadgeText}>1</Text>
-                )}
-              </View>
-              <Text style={[styles.sectionLabel, styles.stepHeaderLabel]}>
-                SELECT A BODY PART
-              </Text>
-              {hasBodyPart ? null : (
-                <View style={styles.startTag}>
-                  <Text style={styles.startTagText}>START HERE</Text>
-                </View>
-              )}
-            </View>
-            <SelectField
-              palette={palette}
-              title="Body part"
-              placeholder="Select body part"
-              highlighted={!hasBodyPart}
-              options={bodyPartSelectOptions}
-              value={selectedBodyPart}
-              onChange={onChangeBodyPart}
-            />
-
-            {/* Locked (dimmed, untappable, hidden from screen readers) until a
-                body part is chosen. */}
-            <View
-              style={[styles.filterGroup, !hasBodyPart && styles.locked]}
-              pointerEvents={hasBodyPart ? "auto" : "none"}
-              accessibilityElementsHidden={!hasBodyPart}
-              importantForAccessibility={hasBodyPart ? "auto" : "no-hide-descendants"}
-            >
-              <View style={styles.difficultyHeader}>
-                <Text style={styles.difficultyTitle}>
-                  Difficulty <Text style={styles.optional}>(optional)</Text>
-                </Text>
-                <Text style={styles.rangeLabel}>{difficultyRangeLabel}</Text>
-              </View>
-              <Text style={styles.helperText}>
-                Drag the handles for a range, or tap a level for just that one.
-              </Text>
-              <RangeSlider
-                palette={palette}
-                levels={DIFFICULTY_LABELS}
-                value={difficultyRange}
-                onChange={onChangeDifficultyRange}
-              />
-              {hasBodyPart ? (
-                <View style={styles.filterHint}>
-                  <Feather name="info" size={14} color={palette.accent} style={styles.filterHintIcon} />
-                  <Text style={styles.filterHintText}>
-                    Target and Equipment counts update to match your difficulty range.
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-
-            <View style={styles.selectRow}>
-              <View style={styles.selectCell}>
-                <SelectField
-                  palette={palette}
-                  size="compact"
-                  title="Target"
-                  disabled={!hasBodyPart}
-                  options={targetSelectOptions}
-                  value={filters.target ?? ""}
-                  onChange={(value) =>
-                    setFilters((prev) => ({ ...prev, target: value || undefined }))
-                  }
-                />
-              </View>
-              <View style={styles.selectCell}>
-                <SelectField
-                  palette={palette}
-                  size="compact"
-                  title="Equipment"
-                  disabled={!hasBodyPart}
-                  options={equipmentSelectOptions}
-                  value={filters.equipmentTypes?.[0] ?? ""}
-                  onChange={(value) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      equipmentTypes: value ? [value as EquipmentType] : undefined,
-                    }))
-                  }
-                />
-              </View>
-            </View>
-            {hasBodyPart ? null : (
-              <Text style={styles.helperText}>
-                Pick a body part to unlock the filters and Find.
-              </Text>
-            )}
-          </View>
+          <FilterCard
+            palette={palette}
+            bodyParts={bodyPartOptions}
+            selectedBodyPart={selectedBodyPart}
+            onChangeBodyPart={onChangeBodyPart}
+            filterOptions={filterOptions[selectedBodyPart]}
+            filters={filters}
+            onChangeFilters={setFilters}
+          />
 
           {currentWorkout ? (
             <View style={styles.resultCard} onLayout={onResultCardLayout}>
@@ -756,11 +476,11 @@ export function TrainingScreen({ navigation }: Props) {
               </View>
               <Text style={styles.emptyTitle}>No workouts match</Text>
               <Text style={styles.emptyText}>
-                {hasActiveFilters
+                {filtersActive
                   ? "Try a wider difficulty range, or set Target or Equipment back to Any."
                   : "Try a different body part."}
               </Text>
-              {hasActiveFilters ? (
+              {filtersActive ? (
                 <View style={styles.emptyAction}>
                   <ThemedButton
                     palette={palette}
@@ -786,11 +506,11 @@ export function TrainingScreen({ navigation }: Props) {
               <View style={styles.emptySteps}>
                 {["Select a body part", "Tap Find for a random pick"].map((step, index) => (
                   <View key={step} style={styles.emptyStep}>
-                    <View style={styles.similarIndex}>
+                    <View style={styles.emptyStepIndex}>
                       {index === 0 && hasBodyPart ? (
                         <Feather name="check" size={13} color={palette.accent} />
                       ) : (
-                        <Text style={styles.similarIndexText}>{index + 1}</Text>
+                        <Text style={styles.emptyStepIndexText}>{index + 1}</Text>
                       )}
                     </View>
                     <Text style={styles.emptyStepText}>{step}</Text>
@@ -808,111 +528,37 @@ export function TrainingScreen({ navigation }: Props) {
             // length when the image draws and the scroll runs. Hidden and not
             // tappable until then, it fades in with the card.
             <Animated.View
-              style={[styles.similarSection, { opacity: resultOpacity }]}
+              style={{ opacity: resultOpacity }}
               pointerEvents={isImageLoading ? "none" : "auto"}
             >
-              <View style={styles.similarHeader}>
-                <Text style={styles.similarTitle}>Similar workouts</Text>
-                <Text style={styles.helperText}>
-                  {searchResults.length
-                    ? "Tap one for more information."
-                    : "No other workouts match these filters."}
-                </Text>
-              </View>
-              {searchResults.length ? (
-                <View style={styles.similarList}>
-                  {searchResults.map((item, idx) => (
-                    <Pressable
-                      key={item.id}
-                      onPress={() => onSelectSimilarWorkout(item)}
-                      style={({ pressed }) => [styles.similarItem, pressed && styles.pressed]}
-                      accessibilityLabel={`Select ${item.name}`}
-                      accessibilityRole="button"
-                    >
-                      <View style={styles.similarIndex}>
-                        <Text style={styles.similarIndexText}>{idx + 1}</Text>
-                      </View>
-                      <View style={styles.similarText}>
-                        <Text style={styles.similarName} numberOfLines={2}>
-                          {item.name}
-                        </Text>
-                        <Text style={styles.similarSub}>Target: {item.target}</Text>
-                      </View>
-                      <Feather name="chevron-right" size={18} color={palette.textMuted} />
-                    </Pressable>
-                  ))}
-                </View>
-              ) : null}
-              {/* The advice is about filters, so it only shows when one is
-                  active (unfiltered, every body part fills the list anyway). */}
-              {hasActiveFilters && searchResults.length < MAX_SIMILAR_WORKOUTS ? (
-                <View style={styles.tip}>
-                  <Feather name="info" size={16} color={palette.accent} />
-                  <Text style={styles.tipText}>
-                    If you're stuck and the similar workouts list is too short,
-                    update your filters and try again, or change body part.
-                  </Text>
-                </View>
-              ) : null}
+              <SimilarWorkoutsList
+                palette={palette}
+                workouts={searchResults}
+                onSelect={onSelectSimilarWorkout}
+                // The advice is about filters, so it only shows when one is
+                // active (unfiltered, every body part fills the list anyway).
+                showFilterTip={filtersActive && searchResults.length < MAX_SIMILAR_WORKOUTS}
+              />
             </Animated.View>
           )}
         </Animated.ScrollView>
 
-        <Animated.View
-          style={[styles.topBar, styles.topBarOverlay, { transform: [{ translateY: barShift }] }]}
-          onLayout={(event) => setTopBarHeight(event.nativeEvent.layout.height)}
-        >
-          <Animated.View
-            style={[styles.header, styles.headerLayer, { transform: [{ translateY: headerShift }] }]}
-          >
-            <View>
-              <Animated.Text
-                style={[styles.brand, { transform: [{ translateY: brandShift }] }]}
-              >
-                4UWORKOUT
-              </Animated.Text>
-              <Animated.Text
-                style={[styles.title, styles.titleOrigin, { transform: [{ scale: titleScale }] }]}
-                onLayout={(event) => setTitleHeight(event.nativeEvent.layout.height)}
-                accessibilityRole="header"
-              >
-                Trainer
-              </Animated.Text>
-            </View>
-            <Pressable
-              onPress={() => setMenuVisible(true)}
-              style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
-              accessibilityLabel="Open menu"
-              accessibilityRole="button"
-            >
-              <Feather name="settings" size={20} color={palette.text} />
-            </Pressable>
-            {/* Divider between the header and the nav cards, as on the
-                Calendar. Fades with the cards, leaving only the bar's own
-                bottom edge when collapsed. */}
-            <Animated.View style={[styles.headerDivider, { opacity: navOpacity }]} />
-          </Animated.View>
-
-          <Animated.View
-            style={[styles.navRow, { opacity: navOpacity }]}
-            onLayout={(event) => setNavRowHeight(event.nativeEvent.layout.height)}
-          >
-            <NavCard
-              palette={palette}
-              icon="zap"
-              title="Today's workouts"
-              subtitle="Your plan"
-              onPress={openTodaysWorkouts}
-            />
-            <NavCard
-              palette={palette}
-              icon="calendar"
-              title="Calendar"
-              subtitle="Schedule"
-              onPress={openCalendar}
-            />
-          </Animated.View>
-        </Animated.View>
+        <CollapsingTopBar palette={palette} bar={topBar.bar} onOpenMenu={() => setMenuVisible(true)}>
+          <NavCard
+            palette={palette}
+            icon="zap"
+            title="Today's workouts"
+            subtitle="Your plan"
+            onPress={openTodaysWorkouts}
+          />
+          <NavCard
+            palette={palette}
+            icon="calendar"
+            title="Calendar"
+            subtitle="Schedule"
+            onPress={openCalendar}
+          />
+        </CollapsingTopBar>
       </View>
 
       <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
@@ -930,7 +576,8 @@ export function TrainingScreen({ navigation }: Props) {
           label={isCurrentSavedToday ? "Saved" : "Save workout"}
           icon={isCurrentSavedToday ? "check" : "bookmark"}
           variant="actionOutline"
-          onPress={openSaveModal}
+          // Disabled with no workout, or one already saved today.
+          onPress={() => setSaveModalVisible(true)}
           disabled={isLoading || !currentWorkout || isCurrentSavedToday}
         />
       </View>
@@ -947,70 +594,13 @@ export function TrainingScreen({ navigation }: Props) {
         onToggleDark={onToggleDark}
       />
 
-      <Modal
+      <SaveWorkoutModal
+        palette={palette}
         visible={saveModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSaveModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Save workout</Text>
-            {currentWorkout ? (
-              <Text style={styles.modalSubtitle}>{currentWorkout.name}</Text>
-            ) : null}
-            <Text style={styles.helperText}>
-              Weight and reps are optional — you can edit them later.
-            </Text>
-            <SelectField
-              palette={palette}
-              size="compact"
-              title="Sets"
-              options={SET_COUNT_OPTIONS}
-              value={String(setCount)}
-              onChange={(value) => onChangeSetCount(Number(value))}
-            />
-            <ScrollView style={styles.modalBody}>
-              {setForms.map((form, index) => (
-                <View key={index} style={styles.setRow}>
-                  <Text style={styles.setRowLabel}>Set {index + 1}</Text>
-                  <View style={styles.inputRow}>
-                    {SET_FIELDS.map((input) => (
-                      <View key={input.field} style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>{input.label}</Text>
-                        <TextInput
-                          style={styles.numberInput}
-                          value={form[input.field]}
-                          onChangeText={(text) => onChangeSetField(index, input.field, text)}
-                          keyboardType="number-pad"
-                          placeholder="0"
-                          placeholderTextColor={palette.textDisabled}
-                          maxLength={input.maxLength}
-                          accessibilityLabel={`${input.name} for set ${index + 1}`}
-                        />
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
-            <View style={styles.modalActions}>
-              <ThemedButton
-                palette={palette}
-                label="Cancel"
-                variant="secondary"
-                onPress={() => setSaveModalVisible(false)}
-              />
-              <ThemedButton
-                palette={palette}
-                label="Save"
-                icon="check"
-                onPress={onConfirmSave}
-              />
-            </View>
-          </View>
-        </View>
-      </Modal>
+        workoutName={currentWorkout?.name}
+        onCancel={() => setSaveModalVisible(false)}
+        onConfirm={onConfirmSave}
+      />
     </SafeAreaView>
   )
 }

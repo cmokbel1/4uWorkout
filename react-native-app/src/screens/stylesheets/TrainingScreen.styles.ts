@@ -29,191 +29,9 @@ export function makeStyles(c: Palette) {
       gap: 16,
     },
 
-    // Fixed top bar: header + nav cards stay put while the content scrolls.
-    // Mirrors the bottom bar (same background, divider facing the content).
-    topBar: {
-      paddingHorizontal: 20,
-      paddingTop: 12,
-      paddingBottom: 16,
-      gap: 33,
-      backgroundColor: c.bg,
-      borderBottomWidth: 1,
-      borderBottomColor: c.border,
-    },
     // Holds the scroll view and the floating top bar, so the bar's top: 0 is
     // the top of the safe area.
     body: {
-      flex: 1,
-    },
-    // Collapsing version: the bar floats over the content (which is padded to
-    // start below it) so resizing it never moves the scroll view.
-    topBarOverlay: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 1,
-    },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'flex-end',
-      justifyContent: 'space-between',
-    },
-    // Full width (past the bar's padding), centred in the 33px gap under the
-    // header, matching ScreenHeader's divider.
-    headerDivider: {
-      position: 'absolute',
-      left: -20,
-      right: -20,
-      bottom: -17,
-      height: 1,
-      backgroundColor: c.border,
-    },
-    // Sits above the nav cards, which slide up behind it as the bar collapses.
-    headerLayer: {
-      zIndex: 1,
-      backgroundColor: c.bg,
-    },
-    // "Trainer" shrinks toward its bottom-left corner, staying in line with
-    // the settings button.
-    titleOrigin: {
-      transformOrigin: 'left bottom',
-    },
-    brand: {
-      color: c.accent,
-      fontFamily: fonts.extrabold,
-      fontSize: 13,
-      letterSpacing: 1.4,
-    },
-    title: {
-      color: c.text,
-      fontFamily: fonts.extrabold,
-      fontSize: 34,
-      lineHeight: 40,
-    },
-    iconButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 14,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.border,
-    },
-    pressed: {
-      opacity: 0.75,
-    },
-    navRow: {
-      flexDirection: 'row',
-      gap: 12,
-    },
-
-    // Filter card
-    card: {
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.border,
-      borderRadius: radius.lg,
-      padding: 16,
-      gap: 14,
-    },
-    sectionLabel: {
-      color: c.textMuted,
-      fontFamily: fonts.bold,
-      fontSize: 12,
-      letterSpacing: 1,
-    },
-    // Step 1 heading: number badge (a check once done), label, "Start here".
-    stepHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-    },
-    stepHeaderLabel: {
-      flex: 1,
-    },
-    stepBadge: {
-      width: 22,
-      height: 22,
-      borderRadius: 11,
-      backgroundColor: c.accent,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    stepBadgeText: {
-      color: c.onAccent,
-      fontFamily: fonts.extrabold,
-      fontSize: 12,
-    },
-    startTag: {
-      backgroundColor: c.accent,
-      borderRadius: radius.pill,
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-    },
-    startTagText: {
-      color: c.onAccent,
-      fontFamily: fonts.extrabold,
-      fontSize: 11,
-      letterSpacing: 0.8,
-    },
-    // Difficulty controls; same spacing as the card's gap.
-    filterGroup: {
-      gap: 14,
-    },
-    // Filters before a body part is chosen. Matches SelectField's disabled look.
-    locked: {
-      opacity: 0.5,
-    },
-    difficultyHeader: {
-      flexDirection: 'row',
-      alignItems: 'baseline',
-      justifyContent: 'space-between',
-      marginTop: 4,
-    },
-    difficultyTitle: {
-      color: c.text,
-      fontFamily: fonts.bold,
-      fontSize: 15,
-    },
-    optional: {
-      color: c.textMuted,
-      fontFamily: fonts.medium,
-    },
-    rangeLabel: {
-      color: c.accent,
-      fontFamily: fonts.bold,
-      fontSize: 13,
-    },
-    helperText: {
-      color: c.textMuted,
-      fontFamily: fonts.medium,
-      fontSize: 13,
-      lineHeight: 18,
-    },
-    // Note between the slider and the Target / Equipment fields.
-    filterHint: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: 8,
-    },
-    // Lines the icon up with the first line of text.
-    filterHintIcon: {
-      marginTop: 2,
-    },
-    filterHintText: {
-      flex: 1,
-      color: c.textMuted,
-      fontFamily: fonts.medium,
-      fontSize: 13,
-      lineHeight: 18,
-    },
-    selectRow: {
-      flexDirection: 'row',
-      gap: 12,
-    },
-    selectCell: {
       flex: 1,
     },
 
@@ -264,6 +82,20 @@ export function makeStyles(c: Palette) {
       fontFamily: fonts.semibold,
       fontSize: 14,
     },
+    // Step number (a check once done) in the placeholder card.
+    emptyStepIndex: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: c.surfaceRaised,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emptyStepIndexText: {
+      color: c.accent,
+      fontFamily: fonts.bold,
+      fontSize: 12,
+    },
     resultCard: {
       backgroundColor: c.surface,
       borderWidth: 1,
@@ -280,82 +112,6 @@ export function makeStyles(c: Palette) {
       borderRadius: radius.lg,
       alignItems: 'center',
       justifyContent: 'center',
-    },
-
-    // Similar workouts
-    // Wraps the section so it can fade in with the result card; keeps the same
-    // spacing the content's gap gave its children before.
-    similarSection: {
-      gap: 16,
-    },
-    similarHeader: {
-      gap: 2,
-      marginTop: 4,
-    },
-    similarTitle: {
-      color: c.text,
-      fontFamily: fonts.extrabold,
-      fontSize: 18,
-    },
-    similarList: {
-      gap: 10,
-    },
-    similarItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.border,
-      borderRadius: radius.md,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-    },
-    similarIndex: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
-      backgroundColor: c.surfaceRaised,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    similarIndexText: {
-      color: c.accent,
-      fontFamily: fonts.bold,
-      fontSize: 12,
-    },
-    similarText: {
-      flex: 1,
-      gap: 2,
-    },
-    similarName: {
-      color: c.text,
-      fontFamily: fonts.bold,
-      fontSize: 15,
-      textTransform: 'capitalize',
-    },
-    similarSub: {
-      color: c.textMuted,
-      fontFamily: fonts.medium,
-      fontSize: 13,
-      textTransform: 'capitalize',
-    },
-    tip: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: 10,
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.border,
-      borderRadius: radius.md,
-      padding: 14,
-    },
-    tipText: {
-      flex: 1,
-      color: c.textMuted,
-      fontFamily: fonts.medium,
-      fontSize: 14,
-      lineHeight: 20,
     },
 
     // Inline "no matches" state: an empty-state card with an action under it.
@@ -384,77 +140,6 @@ export function makeStyles(c: Palette) {
       shadowOpacity: 0.12,
       shadowRadius: 12,
       elevation: 8,
-    },
-
-    // Modals (settings, save)
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: c.scrim,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 20,
-    },
-    modalContent: {
-      width: '100%',
-      maxHeight: '80%',
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.border,
-      borderRadius: radius.lg,
-      padding: 20,
-      gap: 14,
-    },
-    modalTitle: {
-      color: c.text,
-      fontFamily: fonts.extrabold,
-      fontSize: 20,
-    },
-    modalSubtitle: {
-      color: c.textMuted,
-      fontFamily: fonts.semibold,
-      fontSize: 15,
-      textTransform: 'capitalize',
-    },
-    modalBody: {
-      flexShrink: 1,
-    },
-    modalActions: {
-      flexDirection: 'row',
-      gap: 12,
-    },
-    setRow: {
-      gap: 8,
-      marginBottom: 14,
-    },
-    setRowLabel: {
-      color: c.text,
-      fontFamily: fonts.bold,
-      fontSize: 14,
-    },
-    inputRow: {
-      flexDirection: 'row',
-      gap: 12,
-    },
-    inputGroup: {
-      flex: 1,
-      gap: 6,
-    },
-    inputLabel: {
-      color: c.textMuted,
-      fontFamily: fonts.bold,
-      fontSize: 11,
-      letterSpacing: 0.8,
-    },
-    numberInput: {
-      borderWidth: 1,
-      borderColor: c.borderStrong,
-      backgroundColor: c.surfaceSunken,
-      borderRadius: radius.sm,
-      paddingHorizontal: 12,
-      paddingVertical: 12,
-      color: c.text,
-      fontFamily: fonts.semibold,
-      fontSize: 16,
     },
   })
 }
