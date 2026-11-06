@@ -5,11 +5,9 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  Modal,
   Pressable,
   ScrollView,
   Text,
-  TextInput,
   View,
   type LayoutChangeEvent,
 } from "react-native"
@@ -20,6 +18,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 import { AppMenu } from "../components/AppMenu"
 import { NavCard } from "../components/NavCard"
 import { RangeSlider, type LevelRange } from "../components/RangeSlider"
+import { SaveWorkoutModal } from "../components/SaveWorkoutModal"
 import { SelectField, type SelectOption } from "../components/SelectField"
 import { ThemedButton } from "../components/ThemedButton"
 import { WorkoutPanel } from "../components/WorkoutPanel"
@@ -47,7 +46,7 @@ import {
   type FilterOption,
   type FilterOptionsByBodyPart,
 } from "../types/filters"
-import type { Workout } from "../types/workout"
+import type { Workout, WorkoutSet } from "../types/workout"
 import type { RootStackParamList } from "../../App"
 import { todayKey } from "../utils/date"
 import { getErrorMessage, toTitleCase } from "../utils/formatting"
@@ -87,17 +86,6 @@ const EQUIPMENT_LABELS: Record<EquipmentType, string> = {
 
 // "" stands for "no filter" in the target and equipment fields.
 const ANY_OPTION: SelectOption = { value: "", label: "Any" }
-
-const SET_COUNT_OPTIONS: SelectOption[] = Array.from({ length: 10 }, (_, i) => ({
-  value: String(i + 1),
-  label: String(i + 1),
-}))
-
-// The two inputs on each set row of the save dialog.
-const SET_FIELDS = [
-  { field: "weight", label: "WEIGHT (LBS)", name: "Weight", maxLength: 4 },
-  { field: "reps", label: "REPS", name: "Reps", maxLength: 3 },
-] as const
 
 // Fisher-Yates shuffle into a new array.
 function shuffled<T>(items: T[]): T[] {
@@ -200,11 +188,6 @@ export function TrainingScreen({ navigation }: Props) {
   // so it can say "clean" from an earlier mount while this one still has {}.
   const savedMapLoadedRef = useRef<boolean>(false)
   const [saveModalVisible, setSaveModalVisible] = useState<boolean>(false)
-  const [setCount, setSetCount] = useState<number>(1)
-  // One {weight, reps} form per set, held as strings for controlled inputs.
-  const [setForms, setSetForms] = useState<{ weight: string; reps: string }[]>([
-    { weight: "", reps: "" },
-  ])
 
   const palette = getPalette(isDark)
   const styles = useMemo(() => makeStyles(palette), [palette])
@@ -540,36 +523,6 @@ export function TrainingScreen({ navigation }: Props) {
     }
   }
 
-  // The Save button is disabled with no workout, or one already saved today.
-  function openSaveModal(): void {
-    setSetCount(1)
-    setSetForms([{ weight: "", reps: "" }])
-    setSaveModalVisible(true)
-  }
-
-  // Resize the per-set forms to match the chosen count, preserving any values
-  // already entered for sets that survive the resize.
-  function onChangeSetCount(count: number): void {
-    setSetCount(count)
-    setSetForms((prev) => {
-      if (count <= prev.length) return prev.slice(0, count)
-      const grown = [...prev]
-      while (grown.length < count) grown.push({ weight: "", reps: "" })
-      return grown
-    })
-  }
-
-  function onChangeSetField(
-    index: number,
-    field: "weight" | "reps",
-    text: string,
-  ): void {
-    const digits = text.replace(/[^0-9]/g, "")
-    setSetForms((prev) =>
-      prev.map((form, i) => (i === index ? { ...form, [field]: digits } : form)),
-    )
-  }
-
   function onToggleDark(value: boolean): void {
     setIsDark(value)
     writeDarkMode(value).catch(() => {
@@ -577,13 +530,9 @@ export function TrainingScreen({ navigation }: Props) {
     })
   }
 
-  async function onConfirmSave(): Promise<void> {
+  async function onConfirmSave(setDetails: WorkoutSet[]): Promise<void> {
     if (!currentWorkout) return
 
-    const setDetails = setForms.map((form) => ({
-      weight: form.weight === "" ? undefined : Number(form.weight),
-      reps: form.reps === "" ? undefined : Number(form.reps),
-    }))
     const toSave: Workout = { ...currentWorkout, setDetails }
 
     setSaveModalVisible(false)
@@ -930,7 +879,8 @@ export function TrainingScreen({ navigation }: Props) {
           label={isCurrentSavedToday ? "Saved" : "Save workout"}
           icon={isCurrentSavedToday ? "check" : "bookmark"}
           variant="actionOutline"
-          onPress={openSaveModal}
+          // Disabled with no workout, or one already saved today.
+          onPress={() => setSaveModalVisible(true)}
           disabled={isLoading || !currentWorkout || isCurrentSavedToday}
         />
       </View>
@@ -947,70 +897,13 @@ export function TrainingScreen({ navigation }: Props) {
         onToggleDark={onToggleDark}
       />
 
-      <Modal
+      <SaveWorkoutModal
+        palette={palette}
         visible={saveModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSaveModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Save workout</Text>
-            {currentWorkout ? (
-              <Text style={styles.modalSubtitle}>{currentWorkout.name}</Text>
-            ) : null}
-            <Text style={styles.helperText}>
-              Weight and reps are optional — you can edit them later.
-            </Text>
-            <SelectField
-              palette={palette}
-              size="compact"
-              title="Sets"
-              options={SET_COUNT_OPTIONS}
-              value={String(setCount)}
-              onChange={(value) => onChangeSetCount(Number(value))}
-            />
-            <ScrollView style={styles.modalBody}>
-              {setForms.map((form, index) => (
-                <View key={index} style={styles.setRow}>
-                  <Text style={styles.setRowLabel}>Set {index + 1}</Text>
-                  <View style={styles.inputRow}>
-                    {SET_FIELDS.map((input) => (
-                      <View key={input.field} style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>{input.label}</Text>
-                        <TextInput
-                          style={styles.numberInput}
-                          value={form[input.field]}
-                          onChangeText={(text) => onChangeSetField(index, input.field, text)}
-                          keyboardType="number-pad"
-                          placeholder="0"
-                          placeholderTextColor={palette.textDisabled}
-                          maxLength={input.maxLength}
-                          accessibilityLabel={`${input.name} for set ${index + 1}`}
-                        />
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
-            <View style={styles.modalActions}>
-              <ThemedButton
-                palette={palette}
-                label="Cancel"
-                variant="secondary"
-                onPress={() => setSaveModalVisible(false)}
-              />
-              <ThemedButton
-                palette={palette}
-                label="Save"
-                icon="check"
-                onPress={onConfirmSave}
-              />
-            </View>
-          </View>
-        </View>
-      </Modal>
+        workoutName={currentWorkout?.name}
+        onCancel={() => setSaveModalVisible(false)}
+        onConfirm={onConfirmSave}
+      />
     </SafeAreaView>
   )
 }
