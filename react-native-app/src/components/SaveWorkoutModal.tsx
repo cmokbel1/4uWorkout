@@ -1,7 +1,9 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons"
 import { useMemo, useRef, useState } from "react"
 import {
   KeyboardAvoidingView,
   Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -103,7 +105,20 @@ export function SaveWorkoutModal({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <KeyboardAvoidingView behavior="padding" style={styles.modalOverlay}>
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Save workout</Text>
+          <View style={styles.header}>
+            <Text style={styles.modalTitle}>Save workout</Text>
+            {/* Always reachable, even when the keyboard covers Cancel. */}
+            <Pressable
+              style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
+              onPress={onCancel}
+              hitSlop={8}
+              accessibilityLabel="Close without saving"
+              accessibilityRole="button"
+            >
+              {/* Feather only has a thin X; this one is bold. */}
+              <MaterialCommunityIcons name="close-thick" size={20} color={palette.text} />
+            </Pressable>
+          </View>
           {workoutName ? <Text style={styles.modalSubtitle}>{workoutName}</Text> : null}
           <Text style={styles.helperText}>
             Weight and reps are optional — you can edit them later.
@@ -187,10 +202,27 @@ function makeStyles(c: Palette) {
       padding: 20,
       gap: 14,
     },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
     modalTitle: {
       color: c.text,
       fontFamily: fonts.extrabold,
       fontSize: 20,
+    },
+    // Same round button as the Instructions dialog's speaker.
+    closeButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: c.surfaceRaised,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    pressed: {
+      opacity: 0.75,
     },
     modalSubtitle: {
       color: c.textMuted,
