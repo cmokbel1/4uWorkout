@@ -47,7 +47,7 @@ No linter, no tests. TypeScript strict mode is the only quality gate.
 
 Both database variables are validated on the first query, not at startup — a misconfigured deploy will appear healthy (`/health` does not touch the database) until the first real request fails. `FIREBASE_PROJECT_ID` is likewise checked on the first request that carries a token.
 
-Locally, `server/.env` holds both (git-ignored). `node --env-file` needs Node ≥ 20.12 to read the multi-line certificate.
+Locally, `server/.env` holds both (git-ignored). `npm run dev` loads it with `dotenv` (`-r dotenv/config`), which works on any Node version. `node --env-file` needs Node ≥ 20.12 to read the multi-line certificate.
 
 ## Database
 
