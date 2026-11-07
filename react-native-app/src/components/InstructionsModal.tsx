@@ -2,7 +2,6 @@ import { Feather } from "@expo/vector-icons"
 import { useMemo } from "react"
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 
-import { useSpokenSteps } from "../hooks/useSpokenSteps"
 import { fonts, radius, type Palette } from "../theme"
 
 interface InstructionsModalProps {
@@ -10,6 +9,11 @@ interface InstructionsModalProps {
   visible: boolean
   onClose: () => void
   instructions: string[]
+  // Reading aloud is owned by the screen (useSpokenSteps), so it carries on
+  // after the dialog closes; the dialog shows it and can toggle it.
+  currentStep: number | null
+  isSpeaking: boolean
+  onToggleSpeech: () => void
 }
 
 // A workout's instructions as numbered steps, in a centred dialog.
@@ -18,11 +22,11 @@ export function InstructionsModal({
   visible,
   onClose,
   instructions,
+  currentStep,
+  isSpeaking,
+  onToggleSpeech,
 }: InstructionsModalProps) {
   const styles = useMemo(() => makeStyles(palette), [palette])
-  // The modal stays mounted while hidden, so `visible` is what ends reading,
-  // however it gets closed (Close, Android back, the parent hiding it).
-  const { currentStep, isSpeaking, start, stop } = useSpokenSteps(instructions, visible)
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -32,7 +36,7 @@ export function InstructionsModal({
             <Text style={styles.modalTitle}>Instructions</Text>
             <Pressable
               style={({ pressed }) => [styles.speakButton, pressed && styles.pressed]}
-              onPress={isSpeaking ? stop : start}
+              onPress={onToggleSpeech}
               hitSlop={8}
               accessibilityLabel={isSpeaking ? "Stop reading instructions" : "Read instructions aloud"}
               accessibilityRole="button"

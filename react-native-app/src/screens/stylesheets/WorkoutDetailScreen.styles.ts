@@ -108,7 +108,12 @@ export function makeStyles(c: Palette) {
       fontSize: 15,
       lineHeight: 22,
     },
+    instructionsActions: {
+      flexDirection: 'row',
+      gap: 10,
+    },
     instructionsRow: {
+      flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       gap: 14,
@@ -131,6 +136,23 @@ export function makeStyles(c: Palette) {
     },
     instructionsText: {
       flex: 1,
+      color: c.text,
+      fontFamily: fonts.bold,
+      fontSize: 16,
+    },
+    // Matches the Instructions row beside it.
+    listenButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      minHeight: 60,
+      paddingHorizontal: 16,
+      borderRadius: radius.md,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    listenText: {
       color: c.text,
       fontFamily: fonts.bold,
       fontSize: 16,

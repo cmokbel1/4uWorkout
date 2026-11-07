@@ -6,8 +6,9 @@ const STEP_PAUSE_MS = 600
 
 // Reads a list of steps aloud one at a time ("Step 1. …"), pausing between
 // them, and reports which step is being read so the caller can highlight it.
-// `active` is whether the steps are on screen: reading stops when it turns
-// false.
+// `active` is whether reading may go on (e.g. the screen is focused): reading
+// stops when it turns false. It also stops when `steps` changes (a different
+// workout) or the caller unmounts.
 //
 // Each run gets an id; stopping (or starting again) bumps it, so callbacks
 // and timers from a cancelled run see a stale id and do nothing. That covers
@@ -53,8 +54,8 @@ export function useSpokenSteps(steps: string[], active: boolean) {
 
   // Android starts its speech engine on first use, and a step asked for before
   // it's ready waits in a native queue that Speech.stop() doesn't clear, so a
-  // quick play-then-close would still read it. Any call wakes the engine, so
-  // do that as soon as the steps are shown.
+  // quick play-then-stop would still read it. Any call wakes the engine, so
+  // do that as soon as reading becomes possible.
   useEffect(() => {
     if (active) {
       Speech.isSpeakingAsync().catch(() => {
@@ -65,8 +66,11 @@ export function useSpokenSteps(steps: string[], active: boolean) {
     }
   }, [active, stop])
 
-  // Leaving the screen mid-read must not leave the phone talking.
-  useEffect(() => stop, [stop])
+  // A new workout, or leaving the screen, must not leave the old steps playing.
+  useEffect(() => stop, [steps, stop])
 
-  return { currentStep, isSpeaking: currentStep !== null, start, stop }
+  const isSpeaking = currentStep !== null
+  const toggle = isSpeaking ? stop : start
+
+  return { currentStep, isSpeaking, toggle }
 }

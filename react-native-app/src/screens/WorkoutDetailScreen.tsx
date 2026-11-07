@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons"
 import { StatusBar } from "expo-status-bar"
+import { useIsFocused } from "@react-navigation/native"
 import { useMemo, useState } from "react"
 import { Image, Pressable, ScrollView, Text, View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
@@ -8,6 +9,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 import { AppMenu } from "../components/AppMenu"
 import { InstructionsModal } from "../components/InstructionsModal"
 import { ScreenHeader } from "../components/ScreenHeader"
+import { useSpokenSteps } from "../hooks/useSpokenSteps"
 import { writeDarkMode } from "../storage/theme"
 import { getPalette } from "../theme"
 import { DIFFICULTIES, type Difficulty } from "../types/filters"
@@ -27,6 +29,10 @@ export function WorkoutDetailScreen({ route, navigation }: Props) {
   const palette = getPalette(isDark)
   const styles = useMemo(() => makeStyles(palette), [palette])
   const [instructionsVisible, setInstructionsVisible] = useState(false)
+  // Read aloud here, beside the image; the Instructions dialog shows the same
+  // reading. Stops if the menu navigates on and leaves this screen underneath.
+  const isFocused = useIsFocused()
+  const speech = useSpokenSteps(workout.instructions, isFocused)
 
   const sets = workout.setDetails ?? []
   // 0-based position of the level, for the bar icon (-1 if unknown).
@@ -101,18 +107,33 @@ export function WorkoutDetailScreen({ route, navigation }: Props) {
 
         <Text style={styles.description}>{workout.description}</Text>
 
-        <Pressable
-          onPress={() => setInstructionsVisible(true)}
-          style={({ pressed }) => [styles.instructionsRow, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel="View instructions"
-        >
-          <View style={styles.playIcon}>
-            <Feather name="play" size={14} color={palette.onAccent} />
-          </View>
-          <Text style={styles.instructionsText}>Instructions</Text>
-          <Feather name="chevron-right" size={18} color={palette.textMuted} />
-        </Pressable>
+        <View style={styles.instructionsActions}>
+          <Pressable
+            onPress={() => setInstructionsVisible(true)}
+            style={({ pressed }) => [styles.instructionsRow, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel="View instructions"
+          >
+            <View style={styles.playIcon}>
+              <Feather name="play" size={14} color={palette.onAccent} />
+            </View>
+            <Text style={styles.instructionsText}>Instructions</Text>
+            <Feather name="chevron-right" size={18} color={palette.textMuted} />
+          </Pressable>
+          <Pressable
+            onPress={speech.toggle}
+            style={({ pressed }) => [styles.listenButton, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={speech.isSpeaking ? "Stop reading instructions" : "Read instructions aloud"}
+          >
+            <Feather
+              name={speech.isSpeaking ? "square" : "volume-2"}
+              size={18}
+              color={palette.accent}
+            />
+            <Text style={styles.listenText}>{speech.isSpeaking ? "Stop" : "Listen"}</Text>
+          </Pressable>
+        </View>
 
         {sets.length ? (
           <View style={styles.sets}>
@@ -168,6 +189,9 @@ export function WorkoutDetailScreen({ route, navigation }: Props) {
         visible={instructionsVisible}
         onClose={() => setInstructionsVisible(false)}
         instructions={workout.instructions}
+        currentStep={speech.currentStep}
+        isSpeaking={speech.isSpeaking}
+        onToggleSpeech={speech.toggle}
       />
     </SafeAreaView>
   )

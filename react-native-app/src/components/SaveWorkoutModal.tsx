@@ -1,5 +1,13 @@
-import { useMemo, useState } from "react"
-import { Modal, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
+import { useMemo, useRef, useState } from "react"
+import {
+  KeyboardAvoidingView,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native"
 
 import { fonts, radius, type Palette } from "../theme"
 import type { WorkoutSet } from "../types/workout"
@@ -43,6 +51,19 @@ export function SaveWorkoutModal({
   const styles = useMemo(() => makeStyles(palette), [palette])
   const [setForms, setSetForms] = useState<SetForm[]>([EMPTY_SET])
 
+  // The set being typed in is scrolled to the top of the list, so the
+  // keyboard can't cover it: when its input is focused, and again when the
+  // list shrinks as the keyboard opens (the dialog sits in a
+  // KeyboardAvoidingView, so it resizes to the space above the keyboard).
+  const scrollRef = useRef<ScrollView>(null)
+  const rowY = useRef<number[]>([])
+  const focusedRow = useRef<number | null>(null)
+
+  function scrollToFocusedRow(): void {
+    if (focusedRow.current === null) return
+    scrollRef.current?.scrollTo({ y: rowY.current[focusedRow.current] ?? 0, animated: true })
+  }
+
   // Start from one blank set each time the dialog opens. Done while rendering
   // (not in an effect) so the old values never show for a frame.
   const [wasVisible, setWasVisible] = useState(visible)
@@ -80,7 +101,7 @@ export function SaveWorkoutModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <View style={styles.modalOverlay}>
+      <KeyboardAvoidingView behavior="padding" style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Save workout</Text>
           {workoutName ? <Text style={styles.modalSubtitle}>{workoutName}</Text> : null}
@@ -95,9 +116,20 @@ export function SaveWorkoutModal({
             value={String(setForms.length)}
             onChange={(value) => onChangeSetCount(Number(value))}
           />
-          <ScrollView style={styles.modalBody}>
+          <ScrollView
+            ref={scrollRef}
+            style={styles.modalBody}
+            keyboardShouldPersistTaps="handled"
+            onLayout={scrollToFocusedRow}
+          >
             {setForms.map((form, index) => (
-              <View key={index} style={styles.setRow}>
+              <View
+                key={index}
+                style={styles.setRow}
+                onLayout={(event) => {
+                  rowY.current[index] = event.nativeEvent.layout.y
+                }}
+              >
                 <Text style={styles.setRowLabel}>Set {index + 1}</Text>
                 <View style={styles.inputRow}>
                   {SET_FIELDS.map((input) => (
@@ -107,6 +139,13 @@ export function SaveWorkoutModal({
                         style={styles.numberInput}
                         value={form[input.field]}
                         onChangeText={(text) => onChangeSetField(index, input.field, text)}
+                        onFocus={() => {
+                          focusedRow.current = index
+                          scrollToFocusedRow()
+                        }}
+                        onBlur={() => {
+                          if (focusedRow.current === index) focusedRow.current = null
+                        }}
                         keyboardType="number-pad"
                         placeholder="0"
                         placeholderTextColor={palette.textDisabled}
@@ -124,7 +163,7 @@ export function SaveWorkoutModal({
             <ThemedButton palette={palette} label="Save" icon="check" onPress={onSave} />
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   )
 }

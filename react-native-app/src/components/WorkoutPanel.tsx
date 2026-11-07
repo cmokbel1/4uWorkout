@@ -1,7 +1,9 @@
 import { Feather } from "@expo/vector-icons"
+import { useIsFocused } from "@react-navigation/native"
 import { useMemo, useState } from "react"
 import { Image, Pressable, StyleSheet, Text, View } from "react-native"
 
+import { useSpokenSteps } from "../hooks/useSpokenSteps"
 import { fonts, radius, type Palette } from "../theme"
 import type { Workout } from "../types/workout"
 import { InstructionsModal } from "./InstructionsModal"
@@ -15,7 +17,9 @@ interface WorkoutPanelProps {
 }
 
 // The Training screen's workout block: name, detail chips, image, description,
-// and an Instructions button. (Workout Detail has its own layout.)
+// and Instructions / Listen buttons. Listen reads the steps aloud here, so the
+// image stays in view; the Instructions dialog shows the same reading.
+// (Workout Detail has its own layout.)
 export function WorkoutPanel({
   workout,
   palette,
@@ -23,6 +27,9 @@ export function WorkoutPanel({
 }: WorkoutPanelProps) {
   const styles = useMemo(() => makeStyles(palette), [palette])
   const [instructionsVisible, setInstructionsVisible] = useState<boolean>(false)
+  // Training stays mounted under the screens it opens, so stop on blur.
+  const isFocused = useIsFocused()
+  const speech = useSpokenSteps(workout.instructions, isFocused)
   const difficultyColor =
     palette[workout.difficulty as "beginner" | "intermediate" | "advanced"] ??
     palette.textMuted
@@ -55,21 +62,41 @@ export function WorkoutPanel({
 
       <Text style={styles.description}>{workout.description}</Text>
 
-      <Pressable
-        style={({ pressed }) => [styles.instructionsButton, pressed && styles.pressed]}
-        onPress={() => setInstructionsVisible(true)}
-        accessibilityLabel="View instructions"
-        accessibilityRole="button"
-      >
-        <Feather name="list" size={16} color={palette.accent} />
-        <Text style={styles.instructionsButtonText}>Instructions</Text>
-      </Pressable>
+      <View style={styles.instructionsActions}>
+        <Pressable
+          style={({ pressed }) => [styles.instructionsButton, pressed && styles.pressed]}
+          onPress={() => setInstructionsVisible(true)}
+          accessibilityLabel="View instructions"
+          accessibilityRole="button"
+        >
+          <Feather name="list" size={16} color={palette.accent} />
+          <Text style={styles.instructionsButtonText}>Instructions</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.instructionsButton, pressed && styles.pressed]}
+          onPress={speech.toggle}
+          accessibilityLabel={speech.isSpeaking ? "Stop reading instructions" : "Read instructions aloud"}
+          accessibilityRole="button"
+        >
+          <Feather
+            name={speech.isSpeaking ? "square" : "volume-2"}
+            size={16}
+            color={palette.accent}
+          />
+          <Text style={styles.instructionsButtonText}>
+            {speech.isSpeaking ? "Stop" : "Listen"}
+          </Text>
+        </Pressable>
+      </View>
 
       <InstructionsModal
         palette={palette}
         visible={instructionsVisible}
         onClose={() => setInstructionsVisible(false)}
         instructions={workout.instructions}
+        currentStep={speech.currentStep}
+        isSpeaking={speech.isSpeaking}
+        onToggleSpeech={speech.toggle}
       />
     </View>
   )
@@ -127,6 +154,10 @@ function makeStyles(c: Palette) {
       fontFamily: fonts.medium,
       fontSize: 15,
       lineHeight: 22,
+    },
+    instructionsActions: {
+      flexDirection: "row",
+      gap: 10,
     },
     instructionsButton: {
       alignSelf: "flex-start",
