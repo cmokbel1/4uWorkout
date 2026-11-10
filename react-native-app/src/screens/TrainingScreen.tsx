@@ -1,15 +1,7 @@
 import { Feather } from "@expo/vector-icons"
 import { StatusBar } from "expo-status-bar"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  ScrollView,
-  Text,
-  View,
-  type LayoutChangeEvent,
-} from "react-native"
+import { ActivityIndicator, Alert, Animated, Text, View } from "react-native"
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useFocusEffect } from "@react-navigation/native"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
@@ -22,21 +14,14 @@ import { SaveWorkoutModal } from "../components/SaveWorkoutModal"
 import { SimilarWorkoutsList } from "../components/SimilarWorkoutsList"
 import { ThemedButton } from "../components/ThemedButton"
 import { WorkoutPanel } from "../components/WorkoutPanel"
+import { useSavedWorkouts } from "../hooks/useSavedWorkouts"
+import { useWorkoutViewer } from "../hooks/useWorkoutViewer"
 import {
   getAllowedBodyParts,
-  getExerciseById,
-  getExerciseImageById,
   getFilterOptions,
   searchExercisesByBodyPart,
 } from "../services/workoutApi"
-import {
-  addWorkoutForToday,
-  isSavedWorkoutsDirty,
-  markSavedWorkoutsClean,
-  notesForExercise,
-  readSavedWorkouts,
-  type SavedWorkoutsByDate,
-} from "../storage/savedWorkouts"
+import { notesForExercise } from "../storage/savedWorkouts"
 import { readDarkMode, writeDarkMode } from "../storage/theme"
 import { trainingSession } from "../state/trainingSession"
 import { getPalette } from "../theme"
@@ -55,31 +40,17 @@ type Props = NativeStackScreenProps<RootStackParamList, "Training">
 // list shows however many there are (possibly none).
 const MAX_SIMILAR_WORKOUTS = 10
 
-// Gap left above the result card when it's scrolled to just below the top bar.
-const RESULT_SCROLL_MARGIN = 12
-
 // Space between the expanded top bar and the first card.
 const CONTENT_TOP_GAP = 16
 
 export function TrainingScreen({ navigation }: Props) {
-  const scrollViewRef = useRef<ScrollView>(null)
-  // Where the result card sits in the scroll content (from its onLayout).
-  const resultCardYRef = useRef<number>(0)
-  // Set when a workout is being loaded; cleared once it has been scrolled to.
-  const scrollToResultPendingRef = useRef<boolean>(false)
-  // Used to keep scroll targets within the content: scrollTo doesn't stop at
-  // the end of the content on iOS.
-  const contentHeightRef = useRef<number>(0)
-  const viewportHeightRef = useRef<number>(0)
-  // Each newly shown workout starts hidden and fades in once its image has
-  // drawn (onResultImageLoad). A workout restored from the session does too.
-  const resultOpacity = useRef(
-    new Animated.Value(trainingSession.currentWorkout ? 0 : 1),
-  ).current
-
   // Collapses as the content scrolls; see CollapsingTopBar.
   const topBar = useCollapsingTopBar()
   const insets = useSafeAreaInsets()
+  // The workout on show, hydrated from the session so it survives a remount.
+  const viewer = useWorkoutViewer(trainingSession.currentWorkout, topBar.collapsedTopBarHeight)
+  const { currentWorkout } = viewer
+  const { savedMap, saveForToday } = useSavedWorkouts()
 
   const [isDark, setIsDark] = useState<boolean>(false)
   // The cog's menu: Today's workouts, Calendar and the dark mode switch.
@@ -111,28 +82,17 @@ export function TrainingScreen({ navigation }: Props) {
   const [searchResults, setSearchResults] = useState<Workout[]>(
     () => trainingSession.searchResults,
   )
-  const [currentWorkout, setCurrentWorkout] = useState<Workout | null>(
-    () => trainingSession.currentWorkout,
-  )
-  // Id of the workout whose image has finished drawing (see isLoading below).
-  const [loadedImageId, setLoadedImageId] = useState<string | null>(null)
   // The last search matched nothing: shown inline instead of in an alert.
   const [noMatches, setNoMatches] = useState<boolean>(false)
-  const [savedMap, setSavedMap] = useState<SavedWorkoutsByDate>({})
-  // Whether this mount has loaded savedMap yet. The dirty flag is module-level,
-  // so it can say "clean" from an earlier mount while this one still has {}.
-  const savedMapLoadedRef = useRef<boolean>(false)
   const [saveModalVisible, setSaveModalVisible] = useState<boolean>(false)
 
   const palette = getPalette(isDark)
   const styles = useMemo(() => makeStyles(palette), [palette])
 
   // A workout is only "loaded" once every request has finished (isSearching)
-  // AND its GIF has been decoded and drawn — the base64 image arrives with the
-  // request but takes a moment to render. Until then the card shows a spinner;
-  // onResultImageLoad then fades it in and scrolls to it.
-  const isImageLoading =
-    Boolean(currentWorkout?.gifUrl) && loadedImageId !== currentWorkout?.id
+  // AND its image has drawn (see useWorkoutViewer). Until then the card shows
+  // a spinner.
+  const { isImageLoading } = viewer
   const isLoading = isSearching || isImageLoading
   // Nothing is chosen by default: the filters and Find stay locked until the
   // user picks a body part (target and equipment options depend on it).
@@ -203,32 +163,6 @@ export function TrainingScreen({ navigation }: Props) {
     trainingSession.selectedBodyPart = selectedBodyPart
   }, [allResults, searchResults, currentWorkout, filters, selectedBodyPart])
 
-  // Load saved workouts on this mount's first focus, then re-sync only when a
-  // mutation happened elsewhere (e.g. sets/reps edited on the Saved Workouts
-  // screen). Without the first load, a remount (navigating back can remount
-  // this screen) kept an empty savedMap, so Save stayed enabled for a workout
-  // already saved today.
-  useFocusEffect(
-    useCallback(() => {
-      if (savedMapLoadedRef.current && !isSavedWorkoutsDirty()) return
-      let active = true
-      readSavedWorkouts()
-        .then((map) => {
-          if (active) {
-            setSavedMap(map)
-            savedMapLoadedRef.current = true
-            markSavedWorkoutsClean()
-          }
-        })
-        .catch(() => {
-          // Keep current list if storage is unavailable.
-        })
-      return () => {
-        active = false
-      }
-    }, []),
-  )
-
   // Dark mode can also be changed from the Calendar's menu, while this screen
   // stays mounted underneath — so re-read it whenever it comes back into focus.
   useFocusEffect(
@@ -251,7 +185,7 @@ export function TrainingScreen({ navigation }: Props) {
       const results = await searchExercisesByBodyPart(selectedBodyPart, filters)
       if (!results.length) {
         // Clear the old result: it no longer matches what was asked for.
-        setCurrentWorkout(null)
+        viewer.setCurrentWorkout(null)
         setAllResults([])
         setSearchResults([])
         setNoMatches(true)
@@ -263,7 +197,7 @@ export function TrainingScreen({ navigation }: Props) {
       const [selected, ...others] = shuffledResults
       setAllResults(shuffledResults)
       setSearchResults(others.slice(0, MAX_SIMILAR_WORKOUTS))
-      await getImageAndUpdateWorkoutState(selected)
+      await viewer.loadListWorkout(selected)
     } catch (error: unknown) {
       Alert.alert("Search failed", getErrorMessage(error))
     } finally {
@@ -286,102 +220,15 @@ export function TrainingScreen({ navigation }: Props) {
     navigation.navigate("SavedWorkouts", { isDark, initialView: "calendar" })
   }
 
-  // Scroll position that puts the result card's top just below the top bar.
-  // The card sits far enough down that the bar is fully collapsed by then, so
-  // it's the collapsed bar's height that the card has to clear.
-  function resultScrollTarget(): number {
-    return Math.max(
-      resultCardYRef.current - topBar.collapsedTopBarHeight - RESULT_SCROLL_MARGIN,
-      0,
-    )
-  }
-
-  // Scrolls the result card to just below the top bar, or as far as the content
-  // allows when the page is too short.
-  function scrollResultCardIntoPlace(): void {
-    const maxY = Math.max(contentHeightRef.current - viewportHeightRef.current, 0)
-    scrollViewRef.current?.scrollTo({ y: Math.min(resultScrollTarget(), maxY), animated: true })
-  }
-
-  // Shows a newly loaded workout, hidden until its image has drawn.
-  function showWorkout(workout: Workout): void {
-    // Same image as the one already on screen (e.g. a search picks the workout
-    // already shown): React Native's Image only reloads when its source
-    // changes, so no onImageLoad would come and the card would stay hidden.
-    // Keep it visible and finish loading now. (`currentWorkout` is the one on
-    // screen when loading began; Find and the similar list are disabled until
-    // loading ends, so it can't have changed since.)
-    if (workout.gifUrl && workout.gifUrl === currentWorkout?.gifUrl) {
-      setCurrentWorkout(workout)
-      onResultImageLoad(workout.id)
-      return
-    }
-    if (workout.gifUrl) resultOpacity.setValue(0)
-    setCurrentWorkout(workout)
-  }
-
-  // The one trigger for the end of loading: the workout's image has drawn (or
-  // failed to). The requests finished before the image was rendered, and the
-  // similar list was laid out with them, so the page is at full length: fade
-  // the card in, then scroll to it.
-  function onResultImageLoad(workoutId: string): void {
-    setLoadedImageId(workoutId)
-    Animated.timing(resultOpacity, {
-      toValue: 1,
-      duration: 250,
-      useNativeDriver: true,
-    }).start()
-    if (scrollToResultPendingRef.current) {
-      scrollToResultPendingRef.current = false
-      scrollResultCardIntoPlace()
-    }
-  }
-
-  // The card is a direct child of the scroll content, so its layout y is its
-  // position within the content.
-  function onResultCardLayout(event: LayoutChangeEvent): void {
-    resultCardYRef.current = event.nativeEvent.layout.y
-  }
-
-  // Marks that the workout being loaded should be scrolled to once shown. When
-  // one is already showing (picking a similar workout) the page is long enough
-  // to scroll now, which brings its loading spinner into view. On the first
-  // Find it isn't, so it waits for a single smooth scroll at the end.
-  function beginLoadingWorkout(): void {
-    scrollToResultPendingRef.current = true
-    if (currentWorkout) scrollResultCardIntoPlace()
-  }
-
   async function onSelectSimilarWorkout(item: Workout): Promise<void> {
     setSearchResults(
       shuffled(allResults).filter((w) => w.id !== item.id).slice(0, MAX_SIMILAR_WORKOUTS),
     )
     setIsSearching(true)
-    beginLoadingWorkout()
     try {
-      const workout = await getExerciseById(item.id)
-      showWorkout(workout)
-    } catch {
-      try {
-        const imageUrl = await getExerciseImageById(item.id)
-        showWorkout({ ...item, gifUrl: imageUrl })
-      } catch (imgError) {
-        console.error("Failed to fetch exercise:", item.id, imgError)
-      }
+      await viewer.loadFullWorkout(item)
     } finally {
       setIsSearching(false)
-    }
-  }
-
-  // Loads the image for the workout a search picked and shows it. Runs inside
-  // onSearchWorkout, which sets and clears isSearching around it.
-  async function getImageAndUpdateWorkoutState(workout: Workout): Promise<void> {
-    beginLoadingWorkout()
-    try {
-      const imageUrl = await getExerciseImageById(workout.id)
-      showWorkout({ ...workout, gifUrl: imageUrl })
-    } catch (error) {
-      console.error("Failed to fetch image for workout:", workout.id, error)
     }
   }
 
@@ -394,23 +241,8 @@ export function TrainingScreen({ navigation }: Props) {
 
   async function onConfirmSave(setDetails: WorkoutSet[]): Promise<void> {
     if (!currentWorkout) return
-
-    // A workout picked from the saved list still carries that day's note; a
-    // new save starts without one.
-    const toSave: Workout = { ...currentWorkout, setDetails, note: undefined }
-
     setSaveModalVisible(false)
-
-    try {
-      const next = await addWorkoutForToday(toSave)
-      setSavedMap(next)
-      // This screen's state already reflects the write — stay clean so we
-      // don't re-read storage on the next focus.
-      markSavedWorkoutsClean()
-      // No alert: the Save button now reads "Saved".
-    } catch {
-      Alert.alert("Save failed", "Could not write to local storage.")
-    }
+    await saveForToday(currentWorkout, setDetails)
   }
 
   if (isBootstrapping) {
@@ -430,7 +262,7 @@ export function TrainingScreen({ navigation }: Props) {
       <StatusBar style={isDark ? "light" : "dark"} />
       <View style={styles.body}>
         <Animated.ScrollView
-          ref={scrollViewRef}
+          ref={viewer.scrollViewRef}
           contentContainerStyle={[
             styles.content,
             { paddingTop: topBar.topBarHeight + CONTENT_TOP_GAP },
@@ -438,12 +270,8 @@ export function TrainingScreen({ navigation }: Props) {
           scrollIndicatorInsets={{ top: topBar.collapsedTopBarHeight }}
           scrollEventThrottle={16}
           onScroll={topBar.onScroll}
-          onLayout={(event) => {
-            viewportHeightRef.current = event.nativeEvent.layout.height
-          }}
-          onContentSizeChange={(_width, height) => {
-            contentHeightRef.current = height
-          }}
+          onLayout={viewer.onScrollViewLayout}
+          onContentSizeChange={viewer.onContentSizeChange}
         >
           <FilterCard
             palette={palette}
@@ -456,12 +284,12 @@ export function TrainingScreen({ navigation }: Props) {
           />
 
           {currentWorkout ? (
-            <View style={styles.resultCard} onLayout={onResultCardLayout}>
-              <Animated.View style={{ opacity: resultOpacity }}>
+            <View style={styles.resultCard} onLayout={viewer.onResultCardLayout}>
+              <Animated.View style={{ opacity: viewer.resultOpacity }}>
                 <WorkoutPanel
                   workout={currentWorkout}
                   palette={palette}
-                  onImageLoad={() => onResultImageLoad(currentWorkout.id)}
+                  onImageLoad={() => viewer.onResultImageLoad(currentWorkout.id)}
                   previousNotes={previousNotes}
                 />
               </Animated.View>
@@ -472,11 +300,11 @@ export function TrainingScreen({ navigation }: Props) {
               )}
             </View>
           ) : isSearching ? (
-            <View style={styles.resultCard} onLayout={onResultCardLayout}>
+            <View style={styles.resultCard} onLayout={viewer.onResultCardLayout}>
               <ActivityIndicator size="large" color={palette.accent} />
             </View>
           ) : noMatches ? (
-            <View style={styles.emptyCard} onLayout={onResultCardLayout}>
+            <View style={styles.emptyCard} onLayout={viewer.onResultCardLayout}>
               <View style={styles.emptyIcon}>
                 <Feather name="filter" size={20} color={palette.accent} />
               </View>
@@ -504,7 +332,7 @@ export function TrainingScreen({ navigation }: Props) {
           ) : (
             // Same slot as the result card, so its position is known before the
             // first search.
-            <View style={styles.emptyCard} onLayout={onResultCardLayout}>
+            <View style={styles.emptyCard} onLayout={viewer.onResultCardLayout}>
               <View style={styles.emptyIcon}>
                 <Feather name="shuffle" size={20} color={palette.accent} />
               </View>
@@ -534,7 +362,7 @@ export function TrainingScreen({ navigation }: Props) {
             // length when the image draws and the scroll runs. Hidden and not
             // tappable until then, it fades in with the card.
             <Animated.View
-              style={{ opacity: resultOpacity }}
+              style={{ opacity: viewer.resultOpacity }}
               pointerEvents={isImageLoading ? "none" : "auto"}
             >
               <SimilarWorkoutsList

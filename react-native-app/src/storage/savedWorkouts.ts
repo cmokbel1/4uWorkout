@@ -10,17 +10,15 @@ const SAVED_WORKOUTS_KEY = 'saved_workouts_v3';
 
 export type SavedWorkoutsByDate = Record<string, Workout[]>;
 
-// One-way "dirty" signal so the Training screen avoids re-parsing storage on
-// focus when nothing changed. Every mutation flips it true; the Training
-// screen reads then marks it clean. Starts true so the first focus loads once.
-let savedWorkoutsDirty = true;
+// Bumped by every write, so a screen that keeps its own copy of the saved
+// workouts (useSavedWorkouts) can skip re-parsing storage on focus when
+// nothing changed since it loaded. A counter, not a flag: several screens
+// each compare it with the version they loaded, so one screen catching up
+// doesn't hide the change from another.
+let savedWorkoutsVersion = 0;
 
-export function isSavedWorkoutsDirty(): boolean {
-  return savedWorkoutsDirty;
-}
-
-export function markSavedWorkoutsClean(): void {
-  savedWorkoutsDirty = false;
+export function getSavedWorkoutsVersion(): number {
+  return savedWorkoutsVersion;
 }
 
 // Keeps the first (newest) copy of each workout per day. The same workout
@@ -58,12 +56,12 @@ export async function writeSavedWorkouts(
   map: SavedWorkoutsByDate,
 ): Promise<void> {
   await AsyncStorage.setItem(SAVED_WORKOUTS_KEY, JSON.stringify(map));
-  savedWorkoutsDirty = true;
+  savedWorkoutsVersion += 1;
 }
 
 export async function clearSavedWorkouts(): Promise<void> {
   await AsyncStorage.removeItem(SAVED_WORKOUTS_KEY);
-  savedWorkoutsDirty = true;
+  savedWorkoutsVersion += 1;
 }
 
 // Saves a workout under today's date (newest first). Returns the updated map.
