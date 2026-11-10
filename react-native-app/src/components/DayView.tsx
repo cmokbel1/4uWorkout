@@ -139,7 +139,11 @@ export function DayView({
                     }
                     style={styles.cardTitlePress}
                     accessibilityRole="button"
-                    accessibilityLabel={`${isExpanded ? "Collapse" : "Expand"} ${workout.name}`}
+                    // The note icon below sits inside this button, so the
+                    // label carries it for screen readers.
+                    accessibilityLabel={`${isExpanded ? "Collapse" : "Expand"} ${workout.name}${
+                      workout.note ? ", has a note" : ""
+                    }`}
                     accessibilityState={{ expanded: isExpanded }}
                   >
                     <Feather
@@ -156,12 +160,7 @@ export function DayView({
                           {sets.length} {sets.length === 1 ? "set" : "sets"}
                         </Text>
                         {workout.note ? (
-                          <Feather
-                            name="file-text"
-                            size={13}
-                            color={palette.textMuted}
-                            accessibilityLabel="Has a note"
-                          />
+                          <Feather name="file-text" size={13} color={palette.textMuted} />
                         ) : null}
                       </View>
                     </View>
