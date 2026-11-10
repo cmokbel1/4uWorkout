@@ -392,7 +392,9 @@ export function TrainingScreen({ navigation }: Props) {
   async function onConfirmSave(setDetails: WorkoutSet[]): Promise<void> {
     if (!currentWorkout) return
 
-    const toSave: Workout = { ...currentWorkout, setDetails }
+    // A workout picked from the saved list still carries that day's note; a
+    // new save starts without one.
+    const toSave: Workout = { ...currentWorkout, setDetails, note: undefined }
 
     setSaveModalVisible(false)
 
