@@ -197,5 +197,19 @@ export function makeStyles(c: Palette) {
       fontFamily: fonts.semibold,
       fontSize: 15,
     },
+    noteCard: {
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      borderRadius: radius.md,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    noteText: {
+      color: c.text,
+      fontFamily: fonts.medium,
+      fontSize: 15,
+      lineHeight: 22,
+    },
   })
 }

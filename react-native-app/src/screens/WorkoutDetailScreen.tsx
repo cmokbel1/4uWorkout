@@ -155,6 +155,15 @@ export function WorkoutDetailScreen({ route, navigation }: Props) {
             ))}
           </View>
         ) : null}
+
+        {workout.note ? (
+          <View style={styles.sets}>
+            <Text style={styles.setsTitle}>Note</Text>
+            <View style={styles.noteCard}>
+              <Text style={styles.noteText}>{workout.note}</Text>
+            </View>
+          </View>
+        ) : null}
       </ScrollView>
 
       <AppMenu
