@@ -33,6 +33,7 @@ import {
   addWorkoutForToday,
   isSavedWorkoutsDirty,
   markSavedWorkoutsClean,
+  notesForExercise,
   readSavedWorkouts,
   type SavedWorkoutsByDate,
 } from "../storage/savedWorkouts"
@@ -143,6 +144,8 @@ export function TrainingScreen({ navigation }: Props) {
   const isCurrentSavedToday = Boolean(
     currentWorkout && todaysWorkouts.some((w) => w.id === currentWorkout.id),
   )
+  // Shown as "Last time" on the workout panel.
+  const previousNotes = currentWorkout ? notesForExercise(savedMap, currentWorkout.id) : []
 
   useEffect(() => {
     async function bootstrap(): Promise<void> {
@@ -459,6 +462,7 @@ export function TrainingScreen({ navigation }: Props) {
                   workout={currentWorkout}
                   palette={palette}
                   onImageLoad={() => onResultImageLoad(currentWorkout.id)}
+                  previousNotes={previousNotes}
                 />
               </Animated.View>
               {isLoading && (

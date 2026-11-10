@@ -9,9 +9,11 @@ import { SafeAreaView } from "react-native-safe-area-context"
 import { fonts, getPalette, radius, type Palette } from "../theme"
 import type { Workout } from "../types/workout"
 import type { RootStackParamList } from "../../App"
+import { notesForExercise, type SavedWorkoutsByDate } from "../storage/savedWorkouts"
 import { formatDateLabel, formatShortDate, todayKey } from "../utils/date"
 import { AppMenu } from "./AppMenu"
 import { NoteModal } from "./NoteModal"
+import { PreviousNotes } from "./PreviousNotes"
 import { ScreenHeader } from "./ScreenHeader"
 import { NavCard } from "./NavCard"
 import { ThemedButton } from "./ThemedButton"
@@ -24,6 +26,8 @@ interface DayViewProps {
   // The date shown (YYYY-MM-DD) and the workouts saved on it.
   date: string
   workouts: Workout[]
+  // Every saved day, for the notes left on earlier days.
+  savedWorkouts: SavedWorkoutsByDate
   onBack: () => void
   onOpenCalendar: () => void
   onOpenWorkout: (workout: Workout) => void
@@ -56,6 +60,7 @@ export function DayView({
   onToggleDark,
   date,
   workouts,
+  savedWorkouts,
   onBack,
   onOpenCalendar,
   onOpenWorkout,
@@ -275,6 +280,13 @@ export function DayView({
                       </Text>
                       <Feather name="edit-2" size={15} color={palette.textMuted} />
                     </Pressable>
+                    {/* Until this day has its own note, show the last one. */}
+                    {workout.note ? null : (
+                      <PreviousNotes
+                        palette={palette}
+                        notes={notesForExercise(savedWorkouts, workout.id, date)}
+                      />
+                    )}
                   </View>
                 ) : null}
               </View>

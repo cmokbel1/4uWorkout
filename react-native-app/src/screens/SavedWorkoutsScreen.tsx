@@ -191,6 +191,7 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
       onToggleDark={onToggleDark}
       date={selectedDate}
       workouts={dayWorkouts}
+      savedWorkouts={map}
       onBack={() => navigation.goBack()}
       onOpenCalendar={() => showView("calendar")}
       onOpenWorkout={(workout) => navigation.navigate("WorkoutDetail", { workout, isDark })}

@@ -4,9 +4,11 @@ import { useMemo, useState } from "react"
 import { Image, Pressable, StyleSheet, Text, View } from "react-native"
 
 import { useSpokenSteps } from "../hooks/useSpokenSteps"
+import type { DatedNote } from "../storage/savedWorkouts"
 import { fonts, radius, type Palette } from "../theme"
 import type { Workout } from "../types/workout"
 import { InstructionsModal } from "./InstructionsModal"
+import { PreviousNotes } from "./PreviousNotes"
 
 interface WorkoutPanelProps {
   workout: Workout
@@ -14,16 +16,20 @@ interface WorkoutPanelProps {
   // Called when the image has finished loading, or failed to, so a caller can
   // hold back other UI until the panel is fully drawn.
   onImageLoad?: () => void
+  // The user's notes on this exercise from saved days, newest first.
+  previousNotes: DatedNote[]
 }
 
 // The Training screen's workout block: name, detail chips, image, description,
-// and Instructions / Listen buttons. Listen reads the steps aloud here, so the
-// image stays in view; the Instructions dialog shows the same reading.
+// the newest note from a past session ("Last time"), and Instructions / Listen
+// buttons. Listen reads the steps aloud here, so the image stays in view; the
+// Instructions dialog shows the same reading.
 // (Workout Detail has its own layout.)
 export function WorkoutPanel({
   workout,
   palette,
   onImageLoad,
+  previousNotes,
 }: WorkoutPanelProps) {
   const styles = useMemo(() => makeStyles(palette), [palette])
   const [instructionsVisible, setInstructionsVisible] = useState<boolean>(false)
@@ -61,6 +67,8 @@ export function WorkoutPanel({
       />
 
       <Text style={styles.description}>{workout.description}</Text>
+
+      <PreviousNotes palette={palette} notes={previousNotes} />
 
       <View style={styles.instructionsActions}>
         <Pressable
