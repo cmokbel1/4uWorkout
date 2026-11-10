@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons"
-import { useMemo } from "react"
+import { useMemo, type ReactNode } from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 
 import { fonts, radius, type Palette } from "../theme"
@@ -11,27 +11,36 @@ interface SimilarWorkoutsListProps {
   onSelect: (workout: Workout) => void
   // Shows advice about widening the filters under the list.
   showFilterTip: boolean
+  // Search's wording; Training uses the defaults.
+  title?: string
+  helperText?: string
+  emptyText?: string
+  // Shown at the right of the heading (Search's Shuffle button).
+  headerAction?: ReactNode
 }
 
-// The Training screen's "Similar workouts" section: a numbered list of other
-// matches from the last search.
+// The "Similar workouts" section on Training (and "More matches" on Search):
+// a numbered list of the other matches from the last search.
 export function SimilarWorkoutsList({
   palette,
   workouts,
   onSelect,
   showFilterTip,
+  title = "Similar workouts",
+  helperText = "Tap one for more information.",
+  emptyText = "No other workouts match these filters.",
+  headerAction,
 }: SimilarWorkoutsListProps) {
   const styles = useMemo(() => makeStyles(palette), [palette])
 
   return (
     <View style={styles.section}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Similar workouts</Text>
-        <Text style={styles.helperText}>
-          {workouts.length
-            ? "Tap one for more information."
-            : "No other workouts match these filters."}
-        </Text>
+      <View style={styles.headerRow}>
+        <View style={styles.header}>
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.helperText}>{workouts.length ? helperText : emptyText}</Text>
+        </View>
+        {headerAction}
       </View>
       {workouts.length ? (
         <View style={styles.list}>
@@ -76,9 +85,15 @@ function makeStyles(c: Palette) {
     section: {
       gap: 16,
     },
-    header: {
-      gap: 2,
+    headerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
       marginTop: 4,
+    },
+    header: {
+      flex: 1,
+      gap: 2,
     },
     title: {
       color: c.text,

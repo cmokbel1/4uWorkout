@@ -11,6 +11,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { SavedWorkoutsScreen } from './src/screens/SavedWorkoutsScreen';
+import { SearchScreen } from './src/screens/SearchScreen';
 import { StartScreen } from './src/screens/StartScreen';
 import { TrainingScreen } from './src/screens/TrainingScreen';
 import { WorkoutDetailScreen } from './src/screens/WorkoutDetailScreen';
@@ -19,6 +20,7 @@ import type { Workout } from './src/types/workout';
 export type RootStackParamList = {
   Start: undefined;
   Training: undefined;
+  Search: { isDark: boolean };
   SavedWorkouts: { isDark: boolean; initialView?: 'day' | 'calendar' };
   WorkoutDetail: { workout: Workout; isDark: boolean };
 };
@@ -46,6 +48,7 @@ export default function App() {
         >
           <Stack.Screen name="Start" component={StartScreen} />
           <Stack.Screen name="Training" component={TrainingScreen} />
+          <Stack.Screen name="Search" component={SearchScreen} />
           <Stack.Screen name="SavedWorkouts" component={SavedWorkoutsScreen} />
           <Stack.Screen name="WorkoutDetail" component={WorkoutDetailScreen} />
         </Stack.Navigator>

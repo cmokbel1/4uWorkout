@@ -212,6 +212,10 @@ export function TrainingScreen({ navigation }: Props) {
     setFilters((prev) => keepFiltersOffered(prev, filterOptions[bodyPart]))
   }
 
+  function openSearch(): void {
+    navigation.navigate("Search", { isDark })
+  }
+
   function openTodaysWorkouts(): void {
     navigation.navigate("SavedWorkouts", { isDark })
   }
@@ -421,6 +425,7 @@ export function TrainingScreen({ navigation }: Props) {
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
         links={[
+          { title: "Search", subtitle: "Find by keyword", icon: "search", onPress: openSearch },
           { title: "Today's workouts", subtitle: "Your plan", icon: "zap", onPress: openTodaysWorkouts },
           { title: "Calendar", subtitle: "Schedule", icon: "calendar", onPress: openCalendar },
         ]}
