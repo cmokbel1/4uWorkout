@@ -11,6 +11,8 @@ import {
   listBodyParts,
   listTargets,
   randomExercisesByBodyPart,
+  randomExercisesByKeywords,
+  searchSuggestions,
 } from '../lib/exerciseStore'
 
 const router = Router()
@@ -118,6 +120,40 @@ router.get('/bodyPart/:bodyPart', async (req: Request, res: Response) => {
     res.json(await randomExercisesByBodyPart(bodyPart, filters, BODY_PART_SAMPLE_SIZE))
   } catch (err) {
     console.error('[bodyPart] error:', err instanceof Error ? err.message : err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// Search queries: letters, digits and spaces only, 3–40 characters once
+// trimmed. Short queries would match most of the catalogue.
+const SEARCH_PATTERN = /^[A-Za-z0-9 ]{3,40}$/
+
+// GET /exercises/search/suggestions — common equipment, body parts and
+// targets, for the app's suggestion pills. The client loads it once a session.
+router.get('/search/suggestions', async (_req: Request, res: Response) => {
+  try {
+    res.json(await searchSuggestions())
+  } catch (err) {
+    console.error('[searchSuggestions] error:', err instanceof Error ? err.message : err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// GET /exercises/search?q= — a random sample of up to BODY_PART_SAMPLE_SIZE
+// matches, list fields only. Same licence limits as /bodyPart: never page
+// through matches or let a request exclude ones already seen.
+router.get('/search', async (req: Request, res: Response) => {
+  try {
+    const { q } = req.query
+    const query = typeof q === 'string' ? q.trim().replace(/ +/g, ' ') : ''
+    if (!SEARCH_PATTERN.test(query)) {
+      res.status(400).json({ error: 'q must be 3–40 letters, digits or spaces' })
+      return
+    }
+    const words = query.toLowerCase().split(' ')
+    res.json(await randomExercisesByKeywords(words, BODY_PART_SAMPLE_SIZE))
+  } catch (err) {
+    console.error('[search] error:', err instanceof Error ? err.message : err)
     res.status(500).json({ error: 'Internal server error' })
   }
 })

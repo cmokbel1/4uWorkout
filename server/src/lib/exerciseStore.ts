@@ -66,6 +66,57 @@ export async function randomExercisesByBodyPart(
   return rows.map((row) => ({ ...toListItem(row.data), id: row.public_id }))
 }
 
+// Exercises where every word appears somewhere in the name, aliases, target,
+// body part or equipment, ignoring case. Words must be lower-case letters and
+// digits only (the route checks), so they can't carry LIKE wildcards. Random
+// order, like the body part sample, so repeating a search can bring a new set.
+export async function randomExercisesByKeywords(words: string[], limit: number): Promise<ExerciseData[]> {
+  const { rows } = await getPool().query<{ public_id: string; data: ExerciseData }>(
+    `SELECT public_id, data FROM exercises
+     WHERE lower(concat_ws(' ', name, target, body_part, equipment, data->>'aliases')) LIKE ALL ($1::text[])
+     ORDER BY random() LIMIT $2`,
+    [words.map((word) => `%${word}%`), limit],
+  )
+  return rows.map((row) => ({ ...toListItem(row.data), id: row.public_id }))
+}
+
+type Suggestion = { value: string; count: number }
+
+type SearchSuggestions = {
+  equipment: Suggestion[]
+  bodyParts: Suggestion[]
+  targets: Suggestion[]
+}
+
+const SUGGESTIONS_PER_GROUP = 10
+
+// The most common equipment, body parts and targets, as words a search
+// accepts: anything but letters and digits becomes a space ("pull-up" →
+// "pull up"), and values shorter than a search (3 characters) are left out.
+export async function searchSuggestions(): Promise<SearchSuggestions> {
+  const { rows } = await getPool().query<{ grp: keyof SearchSuggestions; value: string; count: number }>(
+    `SELECT 'equipment' AS grp, equipment AS value, count(*)::int AS count FROM exercises GROUP BY equipment
+     UNION ALL
+     SELECT 'bodyParts', body_part, count(*)::int FROM exercises GROUP BY body_part
+     UNION ALL
+     SELECT 'targets', target, count(*)::int FROM exercises GROUP BY target`,
+  )
+  const suggestions: SearchSuggestions = { equipment: [], bodyParts: [], targets: [] }
+  for (const { grp, value, count } of rows) {
+    const word = value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+    if (word.length < 3) continue
+    const list = suggestions[grp]
+    const existing = list.find((suggestion) => suggestion.value === word)
+    if (existing) existing.count += count
+    else list.push({ value: word, count })
+  }
+  for (const list of Object.values(suggestions)) {
+    list.sort((a, b) => b.count - a.count)
+    list.splice(SUGGESTIONS_PER_GROUP)
+  }
+  return suggestions
+}
+
 type FilterOption = {
   value: string
   count: number
