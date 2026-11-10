@@ -9,8 +9,11 @@ import { SafeAreaView } from "react-native-safe-area-context"
 import { fonts, getPalette, radius, type Palette } from "../theme"
 import type { Workout } from "../types/workout"
 import type { RootStackParamList } from "../../App"
+import { notesForExercise, type SavedWorkoutsByDate } from "../storage/savedWorkouts"
 import { formatDateLabel, formatShortDate, todayKey } from "../utils/date"
 import { AppMenu } from "./AppMenu"
+import { NoteModal } from "./NoteModal"
+import { PreviousNotes } from "./PreviousNotes"
 import { ScreenHeader } from "./ScreenHeader"
 import { NavCard } from "./NavCard"
 import { ThemedButton } from "./ThemedButton"
@@ -23,6 +26,8 @@ interface DayViewProps {
   // The date shown (YYYY-MM-DD) and the workouts saved on it.
   date: string
   workouts: Workout[]
+  // Every saved day, for the notes left on earlier days.
+  savedWorkouts: SavedWorkoutsByDate
   onBack: () => void
   onOpenCalendar: () => void
   onOpenWorkout: (workout: Workout) => void
@@ -37,6 +42,8 @@ interface DayViewProps {
     save: boolean,
   ) => void
   onSaveSets: () => void
+  // Sets or clears (undefined) a workout's note, saving it straight away.
+  onChangeNote: (workoutId: string, note: string | undefined) => void
 }
 
 // The two stepper columns of each set row. Reps step by 1, weight by 5 lb;
@@ -53,12 +60,14 @@ export function DayView({
   onToggleDark,
   date,
   workouts,
+  savedWorkouts,
   onBack,
   onOpenCalendar,
   onOpenWorkout,
   onDelete,
   onChangeSet,
   onSaveSets,
+  onChangeNote,
 }: DayViewProps) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
   const palette = getPalette(isDark)
@@ -66,6 +75,8 @@ export function DayView({
   const [menuVisible, setMenuVisible] = useState(false)
   // Which workout cards are expanded to show their sets. Collapsed by default.
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  // The workout whose note is open in the note dialog.
+  const [noteWorkout, setNoteWorkout] = useState<Workout | null>(null)
 
   const isToday = date === todayKey()
   const count = `${workouts.length} ${workouts.length === 1 ? "workout" : "workouts"}`
@@ -111,7 +122,7 @@ export function DayView({
             </Text>
           </View>
           {workouts.length ? (
-            <Text style={styles.helper}>Tap a workout to view and edit its sets.</Text>
+            <Text style={styles.helper}>Tap a workout to edit its sets and note.</Text>
           ) : null}
         </View>
 
@@ -128,7 +139,11 @@ export function DayView({
                     }
                     style={styles.cardTitlePress}
                     accessibilityRole="button"
-                    accessibilityLabel={`${isExpanded ? "Collapse" : "Expand"} ${workout.name}`}
+                    // The note icon below sits inside this button, so the
+                    // label carries it for screen readers.
+                    accessibilityLabel={`${isExpanded ? "Collapse" : "Expand"} ${workout.name}${
+                      workout.note ? ", has a note" : ""
+                    }`}
                     accessibilityState={{ expanded: isExpanded }}
                   >
                     <Feather
@@ -140,9 +155,14 @@ export function DayView({
                       <Text style={styles.cardTitle} numberOfLines={2}>
                         {workout.name}
                       </Text>
-                      <Text style={styles.cardSub}>
-                        {sets.length} {sets.length === 1 ? "set" : "sets"}
-                      </Text>
+                      <View style={styles.cardSubRow}>
+                        <Text style={styles.cardSub}>
+                          {sets.length} {sets.length === 1 ? "set" : "sets"}
+                        </Text>
+                        {workout.note ? (
+                          <Feather name="file-text" size={13} color={palette.textMuted} />
+                        ) : null}
+                      </View>
                     </View>
                   </Pressable>
                   <Pressable
@@ -242,6 +262,30 @@ export function DayView({
                         })}
                       </View>
                     ))}
+                    <Pressable
+                      onPress={() => setNoteWorkout(workout)}
+                      style={({ pressed }) => [styles.noteRow, pressed && styles.pressed]}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        workout.note
+                          ? `Edit note for ${workout.name}: ${workout.note}`
+                          : `Add a note for ${workout.name}`
+                      }
+                    >
+                      <Text
+                        style={workout.note ? styles.noteText : styles.notePlaceholder}
+                      >
+                        {workout.note ?? "Add a note"}
+                      </Text>
+                      <Feather name="edit-2" size={15} color={palette.textMuted} />
+                    </Pressable>
+                    {/* Until this day has its own note, show the last one. */}
+                    {workout.note ? null : (
+                      <PreviousNotes
+                        palette={palette}
+                        notes={notesForExercise(savedWorkouts, workout.id, date)}
+                      />
+                    )}
                   </View>
                 ) : null}
               </View>
@@ -270,6 +314,18 @@ export function DayView({
           </View>
         )}
       </ScrollView>
+
+      <NoteModal
+        palette={palette}
+        visible={noteWorkout !== null}
+        workoutName={noteWorkout?.name ?? ""}
+        initialNote={noteWorkout?.note}
+        onCancel={() => setNoteWorkout(null)}
+        onSave={(note) => {
+          if (noteWorkout) onChangeNote(noteWorkout.id, note)
+          setNoteWorkout(null)
+        }}
+      />
 
       <AppMenu
         palette={palette}
@@ -365,6 +421,11 @@ function makeStyles(c: Palette) {
       fontSize: 16,
       textTransform: "capitalize",
     },
+    cardSubRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
     cardSub: {
       color: c.textMuted,
       fontFamily: fonts.medium,
@@ -447,6 +508,30 @@ function makeStyles(c: Palette) {
       fontFamily: fonts.bold,
       fontSize: 16,
       textAlign: "center",
+    },
+    noteRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      minHeight: 44,
+      marginTop: 4,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      borderRadius: radius.sm,
+      backgroundColor: c.surfaceSunken,
+    },
+    noteText: {
+      flex: 1,
+      color: c.text,
+      fontFamily: fonts.medium,
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    notePlaceholder: {
+      flex: 1,
+      color: c.textMuted,
+      fontFamily: fonts.medium,
+      fontSize: 14,
     },
     emptyCard: {
       borderWidth: 1.5,

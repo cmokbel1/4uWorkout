@@ -81,6 +81,28 @@ export async function addWorkoutForToday(
   return next;
 }
 
+export interface DatedNote {
+  date: string;
+  note: string;
+}
+
+// Every note saved for an exercise, newest first. With `beforeDate`, only
+// notes from earlier days are included (so a day doesn't list its own note).
+export function notesForExercise(
+  map: SavedWorkoutsByDate,
+  exerciseId: string,
+  beforeDate?: string,
+): DatedNote[] {
+  const notes: DatedNote[] = [];
+  for (const [date, workouts] of Object.entries(map)) {
+    if (beforeDate && date >= beforeDate) continue;
+    const note = workouts.find((workout) => workout.id === exerciseId)?.note;
+    if (note) notes.push({ date, note });
+  }
+  // Date keys are YYYY-MM-DD, so they sort as strings.
+  return notes.sort((a, b) => b.date.localeCompare(a.date));
+}
+
 // Removes one workout from a date bucket; drops the date entirely when it
 // becomes empty so it stops being marked on the calendar. Returns the new map.
 export async function removeSavedWorkout(

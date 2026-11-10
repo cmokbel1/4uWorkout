@@ -66,4 +66,9 @@ export interface Workout {
   regressions?: ExerciseRelation[];
   // Per-set weight/reps. The set count is this array's length.
   setDetails?: WorkoutSet[];
+  // The user's short note on this day's workout (client-only, never sent to
+  // the server). At most NOTE_MAX_LENGTH characters; absent when empty.
+  note?: string;
 }
+
+export const NOTE_MAX_LENGTH = 140;

@@ -125,6 +125,18 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
     if (save) persist(next)
   }
 
+  // Sets or clears one workout's note on the selected day and saves it.
+  function onChangeNote(workoutId: string, note: string | undefined): void {
+    const next: SavedWorkoutsByDate = {
+      ...map,
+      [selectedDate]: (map[selectedDate] ?? []).map((w) =>
+        w.id === workoutId ? { ...w, note } : w,
+      ),
+    }
+    setMap(next)
+    persist(next)
+  }
+
   function onToggleDark(value: boolean): void {
     setIsDark(value)
     writeDarkMode(value).catch(() => {
@@ -179,12 +191,14 @@ export function SavedWorkoutsScreen({ route, navigation }: Props) {
       onToggleDark={onToggleDark}
       date={selectedDate}
       workouts={dayWorkouts}
+      savedWorkouts={map}
       onBack={() => navigation.goBack()}
       onOpenCalendar={() => showView("calendar")}
       onOpenWorkout={(workout) => navigation.navigate("WorkoutDetail", { workout, isDark })}
       onDelete={onDelete}
       onChangeSet={onChangeSet}
       onSaveSets={() => persist(map)}
+      onChangeNote={onChangeNote}
     />
   )
 }
