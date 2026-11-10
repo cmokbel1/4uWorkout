@@ -86,8 +86,8 @@ export function CalendarView({
           <NavCard
             palette={palette}
             icon="shuffle"
-            title="Training"
-            subtitle="Find a workout"
+            title="Randomize"
+            subtitle="Generate a workout"
             onPress={openTraining}
           />
           <NavCard
@@ -188,7 +188,7 @@ export function CalendarView({
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
         links={[
-          { title: "Training", subtitle: "Find a workout", icon: "shuffle", onPress: openTraining },
+          { title: "Randomize", subtitle: "Generate a workout", icon: "shuffle", onPress: openTraining },
           { title: "Today's workouts", subtitle: "Your plan", icon: "zap", onPress: onOpenToday },
         ]}
         isDark={isDark}

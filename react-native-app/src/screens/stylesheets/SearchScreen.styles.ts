@@ -9,19 +9,10 @@ export function makeStyles(c: Palette) {
   return {
     ...makeTrainingStyles(c),
     ...StyleSheet.create({
-      searchSection: {
-        gap: 8,
-      },
       labelRow: {
         flexDirection: 'row',
         alignItems: 'baseline',
         justifyContent: 'space-between',
-      },
-      sectionLabel: {
-        color: c.textMuted,
-        fontFamily: fonts.bold,
-        fontSize: 12,
-        letterSpacing: 1,
       },
       counter: {
         color: c.textMuted,

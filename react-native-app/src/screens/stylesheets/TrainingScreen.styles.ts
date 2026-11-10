@@ -35,6 +35,18 @@ export function makeStyles(c: Palette) {
       flex: 1,
     },
 
+    // A small caps heading over the screen's main control ("FIND A WORKOUT
+    // FOR ME" here, "SEARCH EXERCISES" on Search), and its wrapper.
+    controlSection: {
+      gap: 8,
+    },
+    sectionLabel: {
+      color: c.textMuted,
+      fontFamily: fonts.bold,
+      fontSize: 12,
+      letterSpacing: 1,
+    },
+
     // Result area
     emptyCard: {
       borderWidth: 1.5,

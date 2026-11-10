@@ -277,15 +277,20 @@ export function TrainingScreen({ navigation }: Props) {
           onLayout={viewer.onScrollViewLayout}
           onContentSizeChange={viewer.onContentSizeChange}
         >
-          <FilterCard
-            palette={palette}
-            bodyParts={bodyPartOptions}
-            selectedBodyPart={selectedBodyPart}
-            onChangeBodyPart={onChangeBodyPart}
-            filterOptions={filterOptions[selectedBodyPart]}
-            filters={filters}
-            onChangeFilters={setFilters}
-          />
+          <View style={styles.controlSection}>
+            <Text style={styles.sectionLabel} accessibilityRole="header">
+              FIND A WORKOUT FOR ME
+            </Text>
+            <FilterCard
+              palette={palette}
+              bodyParts={bodyPartOptions}
+              selectedBodyPart={selectedBodyPart}
+              onChangeBodyPart={onChangeBodyPart}
+              filterOptions={filterOptions[selectedBodyPart]}
+              filters={filters}
+              onChangeFilters={setFilters}
+            />
+          </View>
 
           {currentWorkout ? (
             <View style={styles.resultCard} onLayout={viewer.onResultCardLayout}>

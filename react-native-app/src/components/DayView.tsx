@@ -97,8 +97,8 @@ export function DayView({
           <NavCard
             palette={palette}
             icon="shuffle"
-            title="Training"
-            subtitle="Find a workout"
+            title="Randomize"
+            subtitle="Generate a workout"
             onPress={openTraining}
           />
           <NavCard
@@ -296,7 +296,7 @@ export function DayView({
             <Text style={styles.emptyTitle}>No workouts saved for this day</Text>
             <Text style={styles.emptyText}>
               {isToday
-                ? "Find a workout on Training and save it to see it here."
+                ? "Generate a workout on Randomize and save it to see it here."
                 : "Pick another day on the calendar."}
             </Text>
             {/* Workouts are always saved for today, so finding one only helps
@@ -332,7 +332,7 @@ export function DayView({
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
         links={[
-          { title: "Training", subtitle: "Find a workout", icon: "shuffle", onPress: openTraining },
+          { title: "Randomize", subtitle: "Generate a workout", icon: "shuffle", onPress: openTraining },
           { title: "Calendar", subtitle: "Schedule", icon: "calendar", onPress: onOpenCalendar },
         ]}
         isDark={isDark}

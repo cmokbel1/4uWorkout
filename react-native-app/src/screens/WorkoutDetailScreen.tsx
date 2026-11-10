@@ -172,8 +172,8 @@ export function WorkoutDetailScreen({ route, navigation }: Props) {
         onClose={() => setMenuVisible(false)}
         links={[
           {
-            title: "Training",
-            subtitle: "Find a workout",
+            title: "Randomize",
+            subtitle: "Generate a workout",
             icon: "shuffle",
             onPress: () => navigation.navigate("Training"),
           },

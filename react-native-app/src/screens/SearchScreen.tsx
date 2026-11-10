@@ -220,9 +220,9 @@ export function SearchScreen({ navigation, route }: Props) {
           // Suggestion and clear taps work while the keyboard is up.
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.searchSection}>
+          <View style={styles.controlSection}>
             <View style={styles.labelRow}>
-              <Text style={styles.sectionLabel} nativeID="searchLabel">
+              <Text style={styles.sectionLabel} nativeID="searchLabel" accessibilityRole="header">
                 SEARCH EXERCISES
               </Text>
               <Text style={styles.counter}>
@@ -295,7 +295,7 @@ export function SearchScreen({ navigation, route }: Props) {
               </View>
               <Text style={styles.emptyTitle}>Search isn't available yet</Text>
               <Text style={styles.emptyText}>
-                It's on its way. Until then, Training can find you a workout.
+                It's on its way. Until then, Randomize can generate a workout for you.
               </Text>
             </View>
           ) : currentWorkout ? (
@@ -400,8 +400,8 @@ export function SearchScreen({ navigation, route }: Props) {
           <NavCard
             palette={palette}
             icon="shuffle"
-            title="Training"
-            subtitle="Find a workout"
+            title="Randomize"
+            subtitle="Generate a workout"
             onPress={openTraining}
           />
           <NavCard
@@ -431,7 +431,7 @@ export function SearchScreen({ navigation, route }: Props) {
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
         links={[
-          { title: "Training", subtitle: "Find a workout", icon: "shuffle", onPress: openTraining },
+          { title: "Randomize", subtitle: "Generate a workout", icon: "shuffle", onPress: openTraining },
           { title: "Today's workouts", subtitle: "Your plan", icon: "zap", onPress: openTodaysWorkouts },
           { title: "Calendar", subtitle: "Schedule", icon: "calendar", onPress: openCalendar },
         ]}
