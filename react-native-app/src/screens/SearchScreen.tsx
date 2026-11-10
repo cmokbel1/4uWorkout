@@ -17,6 +17,7 @@ import { WorkoutPanel } from "../components/WorkoutPanel"
 import { useSavedWorkouts } from "../hooks/useSavedWorkouts"
 import { useWorkoutViewer } from "../hooks/useWorkoutViewer"
 import { ApiError, getSearchSuggestions, searchExercises } from "../services/workoutApi"
+import { searchSession } from "../state/searchSession"
 import { notesForExercise } from "../storage/savedWorkouts"
 import { readDarkMode, writeDarkMode } from "../storage/theme"
 import { getPalette } from "../theme"
@@ -46,22 +47,24 @@ const CONTENT_TOP_GAP = 16
 export function SearchScreen({ navigation, route }: Props) {
   const topBar = useCollapsingTopBar()
   const insets = useSafeAreaInsets()
-  const viewer = useWorkoutViewer(null, topBar.collapsedTopBarHeight)
+  // The workout on show, hydrated from the session so it survives a remount.
+  const viewer = useWorkoutViewer(searchSession.currentWorkout, topBar.collapsedTopBarHeight)
   const { currentWorkout, isImageLoading } = viewer
   const { savedMap, saveForToday } = useSavedWorkouts()
   const inputRef = useRef<TextInput>(null)
 
   const [isDark, setIsDark] = useState<boolean>(route.params.isDark)
   const [menuVisible, setMenuVisible] = useState<boolean>(false)
-  const [query, setQuery] = useState<string>("")
+  // Hydrated from the session, like the results below.
+  const [query, setQuery] = useState<string>(() => searchSession.query)
   const [isInputFocused, setIsInputFocused] = useState<boolean>(false)
   // The query the results are for. Shuffle repeats it, even if the field has
   // been edited since.
-  const [resultsQuery, setResultsQuery] = useState<string>("")
+  const [resultsQuery, setResultsQuery] = useState<string>(() => searchSession.resultsQuery)
   // Every result of the last search, the one on show included.
-  const [results, setResults] = useState<Workout[]>([])
+  const [results, setResults] = useState<Workout[]>(() => searchSession.results)
   // Empty until loaded, or when they can't be: the row is then just hidden.
-  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [suggestions, setSuggestions] = useState<string[]>(() => searchSession.suggestions ?? [])
   const [isSearching, setIsSearching] = useState<boolean>(false)
   const [noMatches, setNoMatches] = useState<boolean>(false)
   // The server doesn't have /search yet (it answers 404): say so in place of
@@ -84,13 +87,26 @@ export function SearchScreen({ navigation, route }: Props) {
   )
   const previousNotes = currentWorkout ? notesForExercise(savedMap, currentWorkout.id) : []
 
+  // Fetched once per session. A failure leaves session.suggestions null, so
+  // the next mount retries; until then there's no row, and typing still works.
   useEffect(() => {
+    if (searchSession.suggestions) return
     getSearchSuggestions()
-      .then((loaded) => setSuggestions(suggestionValues(loaded)))
-      .catch(() => {
-        // No suggestions row; typing still works.
+      .then((loaded) => {
+        const values = suggestionValues(loaded)
+        searchSession.suggestions = values
+        setSuggestions(values)
       })
+      .catch(() => {})
   }, [])
+
+  // Keep the session snapshot in sync so a later remount can restore it.
+  useEffect(() => {
+    searchSession.query = query
+    searchSession.resultsQuery = resultsQuery
+    searchSession.results = results
+    searchSession.currentWorkout = currentWorkout
+  }, [query, resultsQuery, results, currentWorkout])
 
   // Dark mode can be changed from another screen's menu while this one stays
   // mounted underneath, so re-read it whenever it comes back into focus.
