@@ -71,13 +71,12 @@ function toSelectOptions(
 ): SelectOption[] {
   return [
     ANY_OPTION,
-    ...(options ?? []).map((option) => {
-      return {
-        value: option.value,
-        label: label(option.value),
-        disabled: countInDifficultyRange(option, difficulties) === 0,
-      }
-    }),
+    ...(options ?? []).map((option) => ({
+      value: option.value,
+      label: label(option.value),
+      disabled: countInDifficultyRange(option, difficulties) === 0,
+      disabledReason: "none in your difficulty range",
+    })),
   ]
 }
 

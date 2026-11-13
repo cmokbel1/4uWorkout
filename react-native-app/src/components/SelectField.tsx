@@ -8,10 +8,11 @@ import { BottomSheet } from "./BottomSheet"
 export interface SelectOption {
   value: string
   label: string
-  // Secondary text on the right of the option row, e.g. a count.
-  detail?: string
   // Shown greyed out and can't be picked (e.g. a choice with 0 matches).
   disabled?: boolean
+  // Why a disabled option can't be picked, read after its label by screen
+  // readers (sighted users get the reason from the screen around it).
+  disabledReason?: string
 }
 
 interface SelectFieldProps {
@@ -108,7 +109,9 @@ export function SelectField({
                 ]}
                 accessibilityRole="button"
                 accessibilityLabel={
-                  option.detail ? `${option.label}, ${option.detail}` : option.label
+                  option.disabled && option.disabledReason
+                    ? `${option.label}, ${option.disabledReason}`
+                    : option.label
                 }
                 accessibilityState={{ selected: isSelected, disabled: option.disabled }}
               >
@@ -116,9 +119,6 @@ export function SelectField({
                   {option.label}
                 </Text>
                 <View style={styles.optionEnd}>
-                  {option.detail ? (
-                    <Text style={styles.optionDetail}>{option.detail}</Text>
-                  ) : null}
                   {isSelected ? (
                     <Feather name="check" size={18} color={palette.accent} />
                   ) : null}
@@ -217,11 +217,6 @@ function makeStyles(c: Palette) {
       flexDirection: "row",
       alignItems: "center",
       gap: 10,
-    },
-    optionDetail: {
-      color: c.textMuted,
-      fontFamily: fonts.semibold,
-      fontSize: 14,
     },
   })
 }
