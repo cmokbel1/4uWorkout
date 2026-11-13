@@ -36,9 +36,9 @@ import { makeStyles } from "./stylesheets/SearchScreen.styles"
 // Space between the expanded top bar and the first card.
 const CONTENT_TOP_GAP = 16
 
-// Keyword search: type (or tap suggestions), then browse a random sample of
-// the matches in Training's workout panel and list, with Shuffle for another
-// sample. Searches only run on Search or return, never as the user types or
+// Keyword search: type (or tap suggestions), then browse the matches (closest
+// names first) in Training's workout panel and list, with Shuffle for another
+// mix. Searches only run on Search or return, never as the user types or
 // taps suggestions, so the rate limit isn't spent on half-built queries.
 export function SearchScreen() {
   const topBar = useCollapsingTopBar()
@@ -125,21 +125,30 @@ export function SearchScreen() {
     setIsSearching(true)
     setNoMatches(false)
     setNotice(null)
+    // Set once the search itself has answered, so a 404 for the image (a
+    // missing GIF) isn't taken for a server without /search.
+    let searched = false
     try {
       const found = await searchExercises(searchQuery)
-      setResultsQuery(searchQuery)
-      setResults(found)
+      searched = true
       if (!found.length) {
         // Clear the old result: it no longer matches what was asked for.
+        setResultsQuery(searchQuery)
+        setResults(found)
         viewer.setCurrentWorkout(null)
         setNoMatches(true)
         return
       }
-      // The server's order is already random: show the first.
+      // The server puts the closest match first: show it. The new list only
+      // replaces the old one once its image is in, so a failed image (often
+      // the rate limit, as it's the search's second request) leaves the
+      // previous search on screen, consistent, with the notice explaining.
       await viewer.loadListWorkout(found[0])
+      setResultsQuery(searchQuery)
+      setResults(found)
     } catch (error: unknown) {
       // Earlier results stay on screen; only the notice changes.
-      if (error instanceof ApiError && error.status === 404) {
+      if (!searched && error instanceof ApiError && error.status === 404) {
         setUnavailable(true)
       } else if (error instanceof ApiError && error.status === 429) {
         setNotice("That's a lot of searches in a short time. Try again in a few minutes.")
@@ -369,7 +378,7 @@ export function SearchScreen() {
                 helperText={
                   results.length < SEARCH_SAMPLE_SIZE
                     ? `All ${results.length} matches. Tap one to view it.`
-                    : "A random set of the matches. Tap one to view it."
+                    : "The closest matches, then a mix. Tap one to view it."
                 }
                 emptyText="That's the only match."
                 headerAction={

@@ -5,8 +5,8 @@
 export const SEARCH_MIN_LENGTH = 3;
 export const SEARCH_MAX_LENGTH = 40;
 
-// Most search results the server returns at once (a random sample of the
-// matches). A full sample means Shuffle can bring different ones.
+// Most search results the server returns at once (closest names first, random
+// within each rank). A full sample means Shuffle can bring different ones.
 export const SEARCH_SAMPLE_SIZE = 11;
 
 export interface SearchSuggestion {

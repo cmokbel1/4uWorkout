@@ -108,15 +108,12 @@ export function useWorkoutViewer(initialWorkout: Workout | null, collapsedTopBar
   }
 
   // Shows a list item (from a search) by fetching only its image: list items
-  // already carry the fields the card needs.
+  // already carry the fields the card needs. Throws if the image can't be
+  // fetched (an ApiError for an HTTP failure, e.g. 429), so the search can say so.
   async function loadListWorkout(workout: Workout): Promise<void> {
     beginLoadingWorkout()
-    try {
-      const imageUrl = await getExerciseImageById(workout.id)
-      showWorkout({ ...workout, gifUrl: imageUrl })
-    } catch (error) {
-      console.error("Failed to fetch image for workout:", workout.id, error)
-    }
+    const imageUrl = await getExerciseImageById(workout.id)
+    showWorkout({ ...workout, gifUrl: imageUrl })
   }
 
   // Shows a list item with its full record (falling back to just its image).

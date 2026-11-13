@@ -79,19 +79,16 @@ const normalised = (column: string) => `btrim(regexp_replace(lower(${column}), '
 // contains it as whole words, then holds every word, then name and aliases
 // do; the rest only match through target, body part or equipment. Random
 // within each rank, so repeating a search (Shuffle) can bring a new set below
-// the best matches. A query that is a whole target, body part or equipment
-// (a suggestion pill, e.g. "chest") is browsing a category, so it isn't
-// ranked by name — "chest-supported row" isn't a better "chest" match.
+// the best matches. An exercise whose target, body part or equipment is the
+// whole query (a suggestion pill, e.g. "chest") ranks first too, so browsing a
+// category shows that category: "chest-supported row" isn't a "chest" match.
 export async function randomExercisesByKeywords(words: string[], limit: number): Promise<ExerciseData[]> {
   const { rows } = await getPool().query<{ public_id: string; data: ExerciseData }>(
     `SELECT public_id, data FROM exercises
      WHERE lower(concat_ws(' ', name, target, body_part, equipment, data->>'aliases')) LIKE ALL ($1::text[])
      ORDER BY
        CASE
-         WHEN EXISTS (
-           SELECT 1 FROM exercises
-           WHERE $2::text IN (${normalised('target')}, ${normalised('body_part')}, ${normalised('equipment')})
-         ) THEN 0
+         WHEN $2::text IN (${normalised('target')}, ${normalised('body_part')}, ${normalised('equipment')}) THEN 0
          WHEN ${normalised('name')} = $2 THEN 0
          WHEN ${normalised('name')} || ' ' LIKE $2 || ' %' THEN 1
          WHEN ' ' || ${normalised('name')} || ' ' LIKE '% ' || $2 || ' %' THEN 2

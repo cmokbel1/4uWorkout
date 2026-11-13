@@ -36,8 +36,8 @@ async function requestBuilder<T>(path: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-// A random sample of up to SEARCH_SAMPLE_SIZE exercises matching every word,
-// or none. `query` must already be clean (see utils/search): the server
+// Up to SEARCH_SAMPLE_SIZE exercises matching every word, closest names first
+// (random within each rank), or none. `query` must already be clean (see utils/search): the server
 // answers 400 to anything else.
 export async function searchExercises(query: string): Promise<Workout[]> {
   return requestBuilder<Workout[]>(`/exercises/search?q=${encodeURIComponent(query)}`);
@@ -95,7 +95,7 @@ export async function getExerciseImageById(id: string): Promise<string> {
   const response = await fetch(url, { method: 'GET', headers: await getAppCheckHeaders() });
 
   if (!response.ok) {
-    throw new Error(`Image request failed with status ${response.status}`);
+    throw new ApiError(response.status);
   }
 
   const blob = await response.blob();
