@@ -11,8 +11,14 @@ export function makeStyles(c: Palette) {
     ...StyleSheet.create({
       labelRow: {
         flexDirection: 'row',
-        alignItems: 'baseline',
+        alignItems: 'center',
         justifyContent: 'space-between',
+      },
+      // The heading and its info button.
+      labelGroup: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
       },
       counter: {
         color: c.textMuted,
@@ -66,6 +72,38 @@ export function makeStyles(c: Palette) {
         color: c.onAccent,
         fontFamily: fonts.extrabold,
         fontSize: 15,
+      },
+      // The info button by the heading (hitSlop makes up its touch area), and
+      // the tip it opens under the field.
+      tipButton: {
+        width: 20,
+        height: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+      },
+      tip: {
+        flexDirection: 'row',
+        gap: 10,
+        padding: 12,
+        backgroundColor: c.surfaceRaised,
+        borderRadius: radius.md,
+      },
+      tipIcon: {
+        marginTop: 2,
+      },
+      tipText: {
+        flex: 1,
+        color: c.text,
+        fontFamily: fonts.medium,
+        fontSize: 13,
+        lineHeight: 18,
+      },
+      // Top-aligned with the first line of the tip.
+      tipClose: {
+        width: 20,
+        height: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
       },
       // A short line under the field: the 3-letter hint, the length limit,
       // or why the last search failed.

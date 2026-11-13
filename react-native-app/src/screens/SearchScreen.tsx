@@ -68,6 +68,12 @@ export function SearchScreen() {
   const [unavailable, setUnavailable] = useState<boolean>(false)
   // Why the last search or suggestion tap didn't go through.
   const [notice, setNotice] = useState<string | null>(null)
+  // A short pause after each search (as on Randomize's Find), so repeated
+  // taps don't spend the rate limit.
+  const [isSearchCoolingDown, setIsSearchCoolingDown] = useState<boolean>(false)
+  const searchCooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // The info button's tip: why Search is off for the same words, and Shuffle.
+  const [showSearchTip, setShowSearchTip] = useState<boolean>(false)
   const [saveModalVisible, setSaveModalVisible] = useState<boolean>(false)
 
   const palette = getPalette(isDark)
@@ -75,7 +81,10 @@ export function SearchScreen() {
   useTabBarTheme(palette)
 
   const isLoading = isSearching || isImageLoading
-  const canSearch = isSearchable(query) && !isLoading
+  // The field still holds the search on screen (the server ignores case), so
+  // searching again would only reshuffle: that's Shuffle's job.
+  const isSameSearch = normalizeQuery(query).toLowerCase() === resultsQuery.toLowerCase()
+  const canSearch = isSearchable(query) && !isLoading && !isSearchCoolingDown && !isSameSearch
   const typedLength = normalizeQuery(query).length
   const otherResults = results.filter((workout) => workout.id !== currentWorkout?.id)
 
@@ -95,6 +104,12 @@ export function SearchScreen() {
         setSuggestions(values)
       })
       .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (searchCooldownRef.current) clearTimeout(searchCooldownRef.current)
+    }
   }, [])
 
   // Keep the session snapshot in sync so a later remount can restore it.
@@ -119,9 +134,10 @@ export function SearchScreen() {
 
   async function runSearch(text: string): Promise<void> {
     const searchQuery = normalizeQuery(text)
-    if (searchQuery.length < SEARCH_MIN_LENGTH || isLoading) return
+    if (searchQuery.length < SEARCH_MIN_LENGTH || isLoading || isSearchCoolingDown) return
 
     Keyboard.dismiss()
+    setShowSearchTip(false)
     setIsSearching(true)
     setNoMatches(false)
     setNotice(null)
@@ -157,7 +173,14 @@ export function SearchScreen() {
       }
     } finally {
       setIsSearching(false)
+      setIsSearchCoolingDown(true)
+      searchCooldownRef.current = setTimeout(() => setIsSearchCoolingDown(false), 3000)
     }
+  }
+
+  // Search button and return: only for a changed query (see canSearch).
+  function submitSearch(): void {
+    if (canSearch) runSearch(query)
   }
 
   function onChangeQuery(text: string): void {
@@ -232,9 +255,22 @@ export function SearchScreen() {
         >
           <View style={styles.controlSection}>
             <View style={styles.labelRow}>
-              <Text style={styles.sectionLabel} nativeID="searchLabel" accessibilityRole="header">
-                SEARCH EXERCISES
-              </Text>
+              <View style={styles.labelGroup}>
+                <Text style={styles.sectionLabel} nativeID="searchLabel" accessibilityRole="header">
+                  SEARCH EXERCISES
+                </Text>
+                <Pressable
+                  onPress={() => setShowSearchTip((shown) => !shown)}
+                  style={({ pressed }) => [styles.tipButton, pressed && styles.pressed]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Searching again"
+                  accessibilityHint="Explains how to see other workouts for the same search"
+                  accessibilityState={{ expanded: showSearchTip }}
+                  hitSlop={12}
+                >
+                  <Feather name="info" size={15} color={showSearchTip ? palette.accent : palette.textMuted} />
+                </Pressable>
+              </View>
               <Text style={styles.counter}>
                 {query.length} / {SEARCH_MAX_LENGTH}
               </Text>
@@ -246,7 +282,7 @@ export function SearchScreen() {
                   ref={inputRef}
                   value={query}
                   onChangeText={onChangeQuery}
-                  onSubmitEditing={() => runSearch(query)}
+                  onSubmitEditing={submitSearch}
                   onFocus={() => setIsInputFocused(true)}
                   onBlur={() => setIsInputFocused(false)}
                   placeholder="e.g. dumbbell chest"
@@ -272,7 +308,7 @@ export function SearchScreen() {
                 ) : null}
               </View>
               <Pressable
-                onPress={() => runSearch(query)}
+                onPress={submitSearch}
                 disabled={!canSearch}
                 style={({ pressed }) => [
                   styles.searchButton,
@@ -285,6 +321,27 @@ export function SearchScreen() {
                 <Text style={styles.searchButtonText}>Search</Text>
               </Pressable>
             </View>
+            {showSearchTip ? (
+              <View style={styles.tip}>
+                <Feather name="shuffle" size={15} color={palette.accent} style={styles.tipIcon} />
+                <Text style={styles.tipText}>
+                  Search is disabled by default, if you want a random workout generated go to the
+                  Randomize tab. Searches that are not changed will result in a disabled search
+                  button. For other workouts using the same keywords, click shuffle on the list below
+                  if you want something different, it's there when there are more matches than the
+                  list shows.
+                </Text>
+                <Pressable
+                  onPress={() => setShowSearchTip(false)}
+                  style={({ pressed }) => [styles.tipClose, pressed && styles.pressed]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Close tip"
+                  hitSlop={10}
+                >
+                  <Feather name="x" size={16} color={palette.textMuted} />
+                </Pressable>
+              </View>
+            ) : null}
             {noticeText ? <Text style={styles.notice}>{noticeText}</Text> : null}
           </View>
 
@@ -387,11 +444,11 @@ export function SearchScreen() {
                   results.length >= SEARCH_SAMPLE_SIZE ? (
                     <Pressable
                       onPress={() => runSearch(resultsQuery)}
-                      disabled={isLoading}
+                      disabled={isLoading || isSearchCoolingDown}
                       style={({ pressed }) => [
                         styles.shuffleButton,
                         pressed && styles.pressed,
-                        isLoading && styles.disabled,
+                        (isLoading || isSearchCoolingDown) && styles.disabled,
                       ]}
                       accessibilityRole="button"
                       accessibilityLabel="Shuffle: show a different set of matches"
