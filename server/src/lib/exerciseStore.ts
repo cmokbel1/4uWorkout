@@ -66,16 +66,42 @@ export async function randomExercisesByBodyPart(
   return rows.map((row) => ({ ...toListItem(row.data), id: row.public_id }))
 }
 
+// A column lower-cased with every run of other characters as one space, the
+// way queries and suggestions are normalised ("T-Bar" → "t bar"). Only ever
+// called with a column name, never with input.
+const normalised = (column: string) => `btrim(regexp_replace(lower(${column}), '[^a-z0-9]+', ' ', 'g'))`
+
 // Exercises where every word appears somewhere in the name, aliases, target,
 // body part or equipment, ignoring case. Words must be lower-case letters and
-// digits only (the route checks), so they can't carry LIKE wildcards. Random
-// order, like the body part sample, so repeating a search can bring a new set.
+// digits only (the route checks), so they can't carry LIKE wildcards.
+//
+// Closest names come first: the name is the query, then starts with it, then
+// contains it as whole words, then holds every word, then name and aliases
+// do; the rest only match through target, body part or equipment. Random
+// within each rank, so repeating a search (Shuffle) can bring a new set below
+// the best matches. A query that is a whole target, body part or equipment
+// (a suggestion pill, e.g. "chest") is browsing a category, so it isn't
+// ranked by name — "chest-supported row" isn't a better "chest" match.
 export async function randomExercisesByKeywords(words: string[], limit: number): Promise<ExerciseData[]> {
   const { rows } = await getPool().query<{ public_id: string; data: ExerciseData }>(
     `SELECT public_id, data FROM exercises
      WHERE lower(concat_ws(' ', name, target, body_part, equipment, data->>'aliases')) LIKE ALL ($1::text[])
-     ORDER BY random() LIMIT $2`,
-    [words.map((word) => `%${word}%`), limit],
+     ORDER BY
+       CASE
+         WHEN EXISTS (
+           SELECT 1 FROM exercises
+           WHERE $2::text IN (${normalised('target')}, ${normalised('body_part')}, ${normalised('equipment')})
+         ) THEN 0
+         WHEN ${normalised('name')} = $2 THEN 0
+         WHEN ${normalised('name')} || ' ' LIKE $2 || ' %' THEN 1
+         WHEN ' ' || ${normalised('name')} || ' ' LIKE '% ' || $2 || ' %' THEN 2
+         WHEN lower(name) LIKE ALL ($1::text[]) THEN 3
+         WHEN lower(concat_ws(' ', name, data->>'aliases')) LIKE ALL ($1::text[]) THEN 4
+         ELSE 5
+       END,
+       random()
+     LIMIT $3`,
+    [words.map((word) => `%${word}%`), words.join(' '), limit],
   )
   return rows.map((row) => ({ ...toListItem(row.data), id: row.public_id }))
 }
