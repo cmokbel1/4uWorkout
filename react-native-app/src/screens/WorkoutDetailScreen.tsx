@@ -175,7 +175,7 @@ export function WorkoutDetailScreen({ route, navigation }: Props) {
             title: "Randomize",
             subtitle: "Generate a workout",
             icon: "shuffle",
-            onPress: () => navigation.navigate("Training"),
+            onPress: () => navigation.navigate("Tabs", { screen: "Training" }),
           },
           {
             title: "Saved Workouts",

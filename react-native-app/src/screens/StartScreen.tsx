@@ -106,7 +106,7 @@ export function StartScreen({ navigation }: Props) {
           label="Start Training"
           icon="arrow-right"
           iconAfter
-          onPress={() => navigation.navigate("Training")}
+          onPress={() => navigation.navigate("Tabs", { screen: "Training" })}
         />
       </View>
     </SafeAreaView>

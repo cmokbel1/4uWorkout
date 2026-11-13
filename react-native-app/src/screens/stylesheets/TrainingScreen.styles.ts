@@ -3,7 +3,8 @@ import { StyleSheet } from 'react-native'
 import { fonts, radius, type Palette } from '../../theme'
 
 // Room under the scroll content so the sticky Find / Save bar never covers it.
-export const BOTTOM_BAR_SPACE = 112
+// (The tab bar sits below the screen, so no safe-area inset is needed here.)
+export const BOTTOM_BAR_SPACE = 100
 
 export function makeStyles(c: Palette) {
   return StyleSheet.create({
@@ -142,7 +143,7 @@ export function makeStyles(c: Palette) {
       flexDirection: 'row',
       gap: 12,
       paddingHorizontal: 20,
-      paddingTop: 12,
+      paddingVertical: 12,
       backgroundColor: c.dock,
       borderTopWidth: 1,
       borderTopColor: c.dockEdge,

@@ -2,28 +2,26 @@ import { Feather } from "@expo/vector-icons"
 import { StatusBar } from "expo-status-bar"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ActivityIndicator, Animated, Keyboard, Pressable, Text, TextInput, View } from "react-native"
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { useFocusEffect } from "@react-navigation/native"
-import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
 import { AppMenu } from "../components/AppMenu"
 import { CollapsingTopBar, useCollapsingTopBar } from "../components/CollapsingTopBar"
-import { NavCard } from "../components/NavCard"
 import { SaveWorkoutModal } from "../components/SaveWorkoutModal"
 import { SimilarWorkoutsList } from "../components/SimilarWorkoutsList"
 import { SuggestionPills } from "../components/SuggestionPills"
 import { ThemedButton } from "../components/ThemedButton"
 import { WorkoutPanel } from "../components/WorkoutPanel"
 import { useSavedWorkouts } from "../hooks/useSavedWorkouts"
+import { useTabBarTheme } from "../hooks/useTabBarTheme"
 import { useWorkoutViewer } from "../hooks/useWorkoutViewer"
 import { ApiError, getSearchSuggestions, searchExercises } from "../services/workoutApi"
 import { searchSession } from "../state/searchSession"
 import { notesForExercise } from "../storage/savedWorkouts"
-import { readDarkMode, writeDarkMode } from "../storage/theme"
+import { getLastKnownDarkMode, readDarkMode, writeDarkMode } from "../storage/theme"
 import { getPalette } from "../theme"
 import { SEARCH_MAX_LENGTH, SEARCH_MIN_LENGTH, SEARCH_SAMPLE_SIZE } from "../types/search"
 import type { Workout, WorkoutSet } from "../types/workout"
-import type { RootStackParamList } from "../../App"
 import { todayKey } from "../utils/date"
 import {
   cleanSearchInput,
@@ -35,8 +33,6 @@ import {
 } from "../utils/search"
 import { makeStyles } from "./stylesheets/SearchScreen.styles"
 
-type Props = NativeStackScreenProps<RootStackParamList, "Search">
-
 // Space between the expanded top bar and the first card.
 const CONTENT_TOP_GAP = 16
 
@@ -44,16 +40,16 @@ const CONTENT_TOP_GAP = 16
 // the matches in Training's workout panel and list, with Shuffle for another
 // sample. Searches only run on Search or return, never as the user types or
 // taps suggestions, so the rate limit isn't spent on half-built queries.
-export function SearchScreen({ navigation, route }: Props) {
+export function SearchScreen() {
   const topBar = useCollapsingTopBar()
-  const insets = useSafeAreaInsets()
   // The workout on show, hydrated from the session so it survives a remount.
   const viewer = useWorkoutViewer(searchSession.currentWorkout, topBar.collapsedTopBarHeight)
   const { currentWorkout, isImageLoading } = viewer
   const { savedMap, saveForToday } = useSavedWorkouts()
   const inputRef = useRef<TextInput>(null)
 
-  const [isDark, setIsDark] = useState<boolean>(route.params.isDark)
+  // Re-read on focus below; this avoids flashing the light theme first.
+  const [isDark, setIsDark] = useState<boolean>(getLastKnownDarkMode)
   const [menuVisible, setMenuVisible] = useState<boolean>(false)
   // Hydrated from the session, like the results below.
   const [query, setQuery] = useState<string>(() => searchSession.query)
@@ -76,6 +72,7 @@ export function SearchScreen({ navigation, route }: Props) {
 
   const palette = getPalette(isDark)
   const styles = useMemo(() => makeStyles(palette), [palette])
+  useTabBarTheme(palette)
 
   const isLoading = isSearching || isImageLoading
   const canSearch = isSearchable(query) && !isLoading
@@ -185,18 +182,6 @@ export function SearchScreen({ navigation, route }: Props) {
     } finally {
       setIsSearching(false)
     }
-  }
-
-  function openTraining(): void {
-    navigation.navigate("Training")
-  }
-
-  function openTodaysWorkouts(): void {
-    navigation.navigate("SavedWorkouts", { isDark })
-  }
-
-  function openCalendar(): void {
-    navigation.navigate("SavedWorkouts", { isDark, initialView: "calendar" })
   }
 
   function onToggleDark(value: boolean): void {
@@ -412,25 +397,10 @@ export function SearchScreen({ navigation, route }: Props) {
           )}
         </Animated.ScrollView>
 
-        <CollapsingTopBar palette={palette} bar={topBar.bar} onOpenMenu={() => setMenuVisible(true)}>
-          <NavCard
-            palette={palette}
-            icon="shuffle"
-            title="Randomize"
-            subtitle="Generate a workout"
-            onPress={openTraining}
-          />
-          <NavCard
-            palette={palette}
-            icon="zap"
-            title="Today's workouts"
-            subtitle="Your plan"
-            onPress={openTodaysWorkouts}
-          />
-        </CollapsingTopBar>
+        <CollapsingTopBar palette={palette} bar={topBar.bar} onOpenMenu={() => setMenuVisible(true)} />
       </View>
 
-      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+      <View style={styles.bottomBar}>
         <ThemedButton
           palette={palette}
           label={isCurrentSavedToday ? "Saved" : "Save workout"}
@@ -446,11 +416,8 @@ export function SearchScreen({ navigation, route }: Props) {
         palette={palette}
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
-        links={[
-          { title: "Randomize", subtitle: "Generate a workout", icon: "shuffle", onPress: openTraining },
-          { title: "Today's workouts", subtitle: "Your plan", icon: "zap", onPress: openTodaysWorkouts },
-          { title: "Calendar", subtitle: "Schedule", icon: "calendar", onPress: openCalendar },
-        ]}
+        // The tab bar does the navigating.
+        links={[]}
         isDark={isDark}
         onToggleDark={onToggleDark}
       />

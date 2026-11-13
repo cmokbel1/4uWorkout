@@ -2,19 +2,18 @@ import { Feather } from "@expo/vector-icons"
 import { StatusBar } from "expo-status-bar"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ActivityIndicator, Alert, Animated, Text, View } from "react-native"
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { useFocusEffect } from "@react-navigation/native"
-import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
 import { AppMenu } from "../components/AppMenu"
 import { CollapsingTopBar, useCollapsingTopBar } from "../components/CollapsingTopBar"
 import { FilterCard } from "../components/FilterCard"
-import { NavCard } from "../components/NavCard"
 import { SaveWorkoutModal } from "../components/SaveWorkoutModal"
 import { SimilarWorkoutsList } from "../components/SimilarWorkoutsList"
 import { ThemedButton } from "../components/ThemedButton"
 import { WorkoutPanel } from "../components/WorkoutPanel"
 import { useSavedWorkouts } from "../hooks/useSavedWorkouts"
+import { useTabBarTheme } from "../hooks/useTabBarTheme"
 import { useWorkoutViewer } from "../hooks/useWorkoutViewer"
 import {
   getAllowedBodyParts,
@@ -27,14 +26,11 @@ import { trainingSession } from "../state/trainingSession"
 import { getPalette } from "../theme"
 import type { ExerciseFilters, FilterOptionsByBodyPart } from "../types/filters"
 import type { Workout, WorkoutSet } from "../types/workout"
-import type { RootStackParamList } from "../../App"
 import { todayKey } from "../utils/date"
 import { hasActiveFilters, keepFiltersOffered } from "../utils/filters"
 import { getErrorMessage } from "../utils/formatting"
 import { shuffled } from "../utils/random"
 import { makeStyles } from "./stylesheets/TrainingScreen.styles"
-
-type Props = NativeStackScreenProps<RootStackParamList, "Training">
 
 // Upper bound, not a requirement: a filtered search can match fewer, and the
 // list shows however many there are (possibly none).
@@ -43,17 +39,17 @@ const MAX_SIMILAR_WORKOUTS = 10
 // Space between the expanded top bar and the first card.
 const CONTENT_TOP_GAP = 16
 
-export function TrainingScreen({ navigation }: Props) {
+// The Randomize tab: generates workouts from the user's filters.
+export function TrainingScreen() {
   // Collapses as the content scrolls; see CollapsingTopBar.
   const topBar = useCollapsingTopBar()
-  const insets = useSafeAreaInsets()
   // The workout on show, hydrated from the session so it survives a remount.
   const viewer = useWorkoutViewer(trainingSession.currentWorkout, topBar.collapsedTopBarHeight)
   const { currentWorkout } = viewer
   const { savedMap, saveForToday } = useSavedWorkouts()
 
   const [isDark, setIsDark] = useState<boolean>(false)
-  // The cog's menu: Today's workouts, Calendar and the dark mode switch.
+  // The cog's menu: the dark mode switch.
   const [menuVisible, setMenuVisible] = useState<boolean>(false)
   const [isBootstrapping, setIsBootstrapping] = useState<boolean>(true)
   const [isSearching, setIsSearching] = useState<boolean>(false)
@@ -88,6 +84,7 @@ export function TrainingScreen({ navigation }: Props) {
 
   const palette = getPalette(isDark)
   const styles = useMemo(() => makeStyles(palette), [palette])
+  useTabBarTheme(palette)
 
   // A workout is only "loaded" once every request has finished (isSearching)
   // AND its image has drawn (see useWorkoutViewer). Until then the card shows
@@ -210,18 +207,6 @@ export function TrainingScreen({ navigation }: Props) {
   function onChangeBodyPart(bodyPart: string): void {
     setSelectedBodyPart(bodyPart)
     setFilters((prev) => keepFiltersOffered(prev, filterOptions[bodyPart]))
-  }
-
-  function openSearch(): void {
-    navigation.navigate("Search", { isDark })
-  }
-
-  function openTodaysWorkouts(): void {
-    navigation.navigate("SavedWorkouts", { isDark })
-  }
-
-  function openCalendar(): void {
-    navigation.navigate("SavedWorkouts", { isDark, initialView: "calendar" })
   }
 
   async function onSelectSimilarWorkout(item: Workout): Promise<void> {
@@ -386,25 +371,10 @@ export function TrainingScreen({ navigation }: Props) {
           )}
         </Animated.ScrollView>
 
-        <CollapsingTopBar palette={palette} bar={topBar.bar} onOpenMenu={() => setMenuVisible(true)}>
-          <NavCard
-            palette={palette}
-            icon="zap"
-            title="Today's workouts"
-            subtitle="Your plan"
-            onPress={openTodaysWorkouts}
-          />
-          <NavCard
-            palette={palette}
-            icon="calendar"
-            title="Calendar"
-            subtitle="Schedule"
-            onPress={openCalendar}
-          />
-        </CollapsingTopBar>
+        <CollapsingTopBar palette={palette} bar={topBar.bar} onOpenMenu={() => setMenuVisible(true)} />
       </View>
 
-      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+      <View style={styles.bottomBar}>
         <ThemedButton
           palette={palette}
           label={isLoading ? "Loading…" : "Find"}
@@ -429,11 +399,8 @@ export function TrainingScreen({ navigation }: Props) {
         palette={palette}
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
-        links={[
-          { title: "Search", subtitle: "Find by keyword", icon: "search", onPress: openSearch },
-          { title: "Today's workouts", subtitle: "Your plan", icon: "zap", onPress: openTodaysWorkouts },
-          { title: "Calendar", subtitle: "Schedule", icon: "calendar", onPress: openCalendar },
-        ]}
+        // The tab bar does the navigating.
+        links={[]}
         isDark={isDark}
         onToggleDark={onToggleDark}
       />
