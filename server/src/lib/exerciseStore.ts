@@ -19,6 +19,11 @@ function toListItem(data: ExerciseData): ExerciseData {
   return item
 }
 
+type PublicRow = { public_id: string; data: ExerciseData }
+
+// A list item as the API serves it: under its public id, never the delivered one.
+const toPublicListItem = (row: PublicRow): ExerciseData => ({ ...toListItem(row.data), id: row.public_id })
+
 export async function listBodyParts(): Promise<string[]> {
   const { rows } = await getPool().query<{ body_part: string }>(
     'SELECT DISTINCT body_part FROM exercises ORDER BY body_part',
@@ -54,7 +59,7 @@ export async function randomExercisesByBodyPart(
   filters: ExerciseFilters,
   limit: number,
 ): Promise<ExerciseData[]> {
-  const { rows } = await getPool().query<{ public_id: string; data: ExerciseData }>(
+  const { rows } = await getPool().query<PublicRow>(
     `SELECT public_id, data FROM exercises
      WHERE body_part = $1
        AND ($2::text[] IS NULL OR difficulty = ANY($2))
@@ -63,7 +68,7 @@ export async function randomExercisesByBodyPart(
      ORDER BY random() LIMIT $5`,
     [bodyPart, filters.difficulties ?? null, filters.target ?? null, filters.equipmentTypes ?? null, limit],
   )
-  return rows.map((row) => ({ ...toListItem(row.data), id: row.public_id }))
+  return rows.map(toPublicListItem)
 }
 
 // A column lower-cased with every run of other characters as one space, the
@@ -83,7 +88,7 @@ const normalised = (column: string) => `btrim(regexp_replace(lower(${column}), '
 // whole query (a suggestion pill, e.g. "chest") ranks first too, so browsing a
 // category shows that category: "chest-supported row" isn't a "chest" match.
 export async function randomExercisesByKeywords(words: string[], limit: number): Promise<ExerciseData[]> {
-  const { rows } = await getPool().query<{ public_id: string; data: ExerciseData }>(
+  const { rows } = await getPool().query<PublicRow>(
     `SELECT public_id, data FROM exercises
      WHERE lower(concat_ws(' ', name, target, body_part, equipment, data->>'aliases')) LIKE ALL ($1::text[])
      ORDER BY
@@ -100,7 +105,55 @@ export async function randomExercisesByKeywords(words: string[], limit: number):
      LIMIT $3`,
     [words.map((word) => `%${word}%`), words.join(' '), limit],
   )
-  return rows.map((row) => ({ ...toListItem(row.data), id: row.public_id }))
+  return rows.map(toPublicListItem)
+}
+
+// Up to `limit` exercises like the one with this public id, to fill out a
+// search that found fewer than a full sample: its similar exercises, then its
+// substitutions, best score first; if that's still short, random ones with the
+// same target and body part. Never the exercise itself or one in
+// `excludePublicIds` (the matches already being returned). Each is marked
+// `similar: true` so the app can list them apart from the matches. List
+// fields only, like the rest of /search.
+export async function similarExercisesFor(
+  publicId: string,
+  excludePublicIds: string[],
+  limit: number,
+): Promise<ExerciseData[]> {
+  // links ranks every linked id: similar exercises before substitutions, best
+  // score first, an id in both lists keeping its better place. Exercises with
+  // no rank are the same-target fallback, in random order after the links.
+  const { rows } = await getPool().query<PublicRow>(
+    `WITH source AS (
+       SELECT id, target, body_part, data FROM exercises WHERE public_id = $1
+     ),
+     links AS (
+       SELECT id, min(rank) AS rank
+       FROM (
+         SELECT relation->>'id' AS id,
+                row_number() OVER (
+                  ORDER BY list, coalesce((relation->>'score')::numeric, 0) DESC, position
+                ) AS rank
+         FROM source,
+              LATERAL (VALUES
+                (1, coalesce(data->'similarExercises', '[]')),
+                (2, coalesce(data->'substitutions', '[]'))
+              ) AS lists (list, relations),
+              jsonb_array_elements(relations) WITH ORDINALITY AS elements (relation, position)
+       ) AS ranked
+       GROUP BY id
+     )
+     SELECT exercises.public_id, exercises.data
+     FROM source
+     JOIN exercises ON exercises.id <> source.id
+     LEFT JOIN links ON links.id = exercises.id
+     WHERE exercises.public_id <> ALL($2)
+       AND (links.id IS NOT NULL OR (exercises.target = source.target AND exercises.body_part = source.body_part))
+     ORDER BY links.rank NULLS LAST, random()
+     LIMIT $3`,
+    [publicId, excludePublicIds, limit],
+  )
+  return rows.map((row) => ({ ...toPublicListItem(row), similar: true }))
 }
 
 type Suggestion = { value: string; count: number }
@@ -204,7 +257,7 @@ type Relation = { id: string } & Record<string, unknown>
 // ids. A relation whose exercise isn't in the table is dropped rather than
 // sent with its delivered id.
 export async function getExercise(publicId: string): Promise<ExerciseData | undefined> {
-  const { rows } = await getPool().query<{ public_id: string; data: ExerciseData }>(
+  const { rows } = await getPool().query<PublicRow>(
     'SELECT public_id, data FROM exercises WHERE public_id = $1',
     [publicId],
   )

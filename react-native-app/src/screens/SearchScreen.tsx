@@ -86,7 +86,14 @@ export function SearchScreen() {
   const isSameSearch = normalizeQuery(query).toLowerCase() === resultsQuery.toLowerCase()
   const canSearch = isSearchable(query) && !isLoading && !isSearchCoolingDown && !isSameSearch
   const typedLength = normalizeQuery(query).length
-  const otherResults = results.filter((workout) => workout.id !== currentWorkout?.id)
+  // The server fills out a search with few matches with exercises like the
+  // closest one, flagged `similar`; they're listed apart from the matches.
+  const matches = results.filter((workout) => !workout.similar)
+  const otherMatches = matches.filter((workout) => workout.id !== currentWorkout?.id)
+  const otherSimilar = results.filter((workout) => workout.similar && workout.id !== currentWorkout?.id)
+  // With similar workouts to show, a lone match needs no "That's the only
+  // match" list above them.
+  const showMatchesList = otherMatches.length > 0 || otherSimilar.length === 0
 
   const isCurrentSavedToday = Boolean(
     currentWorkout && (savedMap[todayKey()] ?? []).some((w) => w.id === currentWorkout.id),
@@ -233,7 +240,7 @@ export function SearchScreen() {
   // Fewer than a full sample is every match, and Shuffle is hidden then.
   const sameSearchHint =
     isSameSearch && results.length > 0 && !isLoading
-      ? results.length >= SEARCH_SAMPLE_SIZE
+      ? matches.length >= SEARCH_SAMPLE_SIZE
         ? "Showing results for these words. Tap Shuffle for others."
         : "Showing every match for these words."
       : null
@@ -430,42 +437,58 @@ export function SearchScreen() {
             // length when the image draws and the scroll runs. Hidden and not
             // tappable until then, it fades in with the card.
             <Animated.View
-              style={{ opacity: viewer.resultOpacity }}
+              style={[styles.resultLists, { opacity: viewer.resultOpacity }]}
               pointerEvents={isImageLoading ? "none" : "auto"}
             >
-              <SimilarWorkoutsList
-                palette={palette}
-                workouts={otherResults}
-                onSelect={onSelectResult}
-                showFilterTip={false}
-                title="More matches"
-                helperText={
-                  results.length < SEARCH_SAMPLE_SIZE
-                    ? `All ${results.length} matches. Tap one to view it.`
-                    : "The closest matches, then a mix. Tap one to view it."
-                }
-                emptyText="That's the only match."
-                headerAction={
-                  // Fewer than a full sample means every match is already
-                  // here, so shuffling would only reorder them.
-                  results.length >= SEARCH_SAMPLE_SIZE ? (
-                    <Pressable
-                      onPress={() => runSearch(resultsQuery)}
-                      disabled={isLoading || isSearchCoolingDown}
-                      style={({ pressed }) => [
-                        styles.shuffleButton,
-                        pressed && styles.pressed,
-                        (isLoading || isSearchCoolingDown) && styles.disabled,
-                      ]}
-                      accessibilityRole="button"
-                      accessibilityLabel="Shuffle: show a different set of matches"
-                    >
-                      <Feather name="shuffle" size={15} color={palette.accent} />
-                      <Text style={styles.shuffleText}>Shuffle</Text>
-                    </Pressable>
-                  ) : null
-                }
-              />
+              {showMatchesList ? (
+                <SimilarWorkoutsList
+                  palette={palette}
+                  workouts={otherMatches}
+                  onSelect={onSelectResult}
+                  showFilterTip={false}
+                  title="More matches"
+                  helperText={
+                    matches.length < SEARCH_SAMPLE_SIZE
+                      ? `All ${matches.length} matches. Tap one to view it.`
+                      : "The closest matches, then a mix. Tap one to view it."
+                  }
+                  emptyText="That's the only match."
+                  headerAction={
+                    // Fewer than a full sample means every match is already
+                    // here, so shuffling would only reorder them.
+                    matches.length >= SEARCH_SAMPLE_SIZE ? (
+                      <Pressable
+                        onPress={() => runSearch(resultsQuery)}
+                        disabled={isLoading || isSearchCoolingDown}
+                        style={({ pressed }) => [
+                          styles.shuffleButton,
+                          pressed && styles.pressed,
+                          (isLoading || isSearchCoolingDown) && styles.disabled,
+                        ]}
+                        accessibilityRole="button"
+                        accessibilityLabel="Shuffle: show a different set of matches"
+                      >
+                        <Feather name="shuffle" size={15} color={palette.accent} />
+                        <Text style={styles.shuffleText}>Shuffle</Text>
+                      </Pressable>
+                    ) : null
+                  }
+                />
+              ) : null}
+              {otherSimilar.length > 0 ? (
+                <SimilarWorkoutsList
+                  palette={palette}
+                  workouts={otherSimilar}
+                  onSelect={onSelectResult}
+                  showFilterTip={false}
+                  title="Similar workouts"
+                  helperText={
+                    matches.length === 1
+                      ? `Not matches, but like ${matches[0].name}. Tap one to view it.`
+                      : "Not matches, but like the closest one. Tap one to view it."
+                  }
+                />
+              ) : null}
             </Animated.View>
           )}
         </Animated.ScrollView>

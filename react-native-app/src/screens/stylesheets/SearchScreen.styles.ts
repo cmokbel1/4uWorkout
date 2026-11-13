@@ -113,6 +113,10 @@ export function makeStyles(c: Palette) {
         fontSize: 13,
         lineHeight: 18,
       },
+      // "More matches" and "Similar workouts" under the result card.
+      resultLists: {
+        gap: 28,
+      },
       shuffleButton: {
         flexDirection: 'row',
         alignItems: 'center',
