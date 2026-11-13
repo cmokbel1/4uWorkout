@@ -21,7 +21,7 @@ import {
   searchExercisesByBodyPart,
 } from "../services/workoutApi"
 import { notesForExercise } from "../storage/savedWorkouts"
-import { readDarkMode, writeDarkMode } from "../storage/theme"
+import { getLastKnownDarkMode, readDarkMode, writeDarkMode } from "../storage/theme"
 import { trainingSession } from "../state/trainingSession"
 import { getPalette } from "../theme"
 import type { ExerciseFilters, FilterOptionsByBodyPart } from "../types/filters"
@@ -48,7 +48,7 @@ export function TrainingScreen() {
   const { currentWorkout } = viewer
   const { savedMap, saveForToday } = useSavedWorkouts()
 
-  const [isDark, setIsDark] = useState<boolean>(false)
+  const [isDark, setIsDark] = useState<boolean>(getLastKnownDarkMode)
   // The cog's menu: the dark mode switch.
   const [menuVisible, setMenuVisible] = useState<boolean>(false)
   const [isBootstrapping, setIsBootstrapping] = useState<boolean>(true)
@@ -192,9 +192,11 @@ export function TrainingScreen() {
       // fewer when filters narrow the search) become the similar list.
       const shuffledResults = shuffled(results)
       const [selected, ...others] = shuffledResults
+      // The new list only replaces the old one once its image is in, so a
+      // failed image leaves the previous result and list together.
+      await viewer.loadListWorkout(selected)
       setAllResults(shuffledResults)
       setSearchResults(others.slice(0, MAX_SIMILAR_WORKOUTS))
-      await viewer.loadListWorkout(selected)
     } catch (error: unknown) {
       Alert.alert("Search failed", getErrorMessage(error))
     } finally {

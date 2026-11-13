@@ -229,11 +229,20 @@ export function SearchScreen() {
     await saveForToday(currentWorkout, setDetails)
   }
 
+  // Why Search is greyed out when the field holds the search on screen.
+  // Fewer than a full sample is every match, and Shuffle is hidden then.
+  const sameSearchHint =
+    isSameSearch && results.length > 0 && !isLoading
+      ? results.length >= SEARCH_SAMPLE_SIZE
+        ? "Showing results for these words. Tap Shuffle for others."
+        : "Showing every match for these words."
+      : null
+
   const noticeText =
     notice ??
     (typedLength > 0 && typedLength < SEARCH_MIN_LENGTH
       ? `Type at least ${SEARCH_MIN_LENGTH} letters to search.`
-      : null)
+      : sameSearchHint)
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
@@ -263,7 +272,7 @@ export function SearchScreen() {
                   onPress={() => setShowSearchTip((shown) => !shown)}
                   style={({ pressed }) => [styles.tipButton, pressed && styles.pressed]}
                   accessibilityRole="button"
-                  accessibilityLabel="Searching again"
+                  accessibilityLabel="Search tips"
                   accessibilityHint="Explains how to see other workouts for the same search"
                   accessibilityState={{ expanded: showSearchTip }}
                   hitSlop={12}
@@ -325,11 +334,9 @@ export function SearchScreen() {
               <View style={styles.tip}>
                 <Feather name="shuffle" size={15} color={palette.accent} style={styles.tipIcon} />
                 <Text style={styles.tipText}>
-                  Search is disabled by default, if you want a random workout generated go to the
-                  Randomize tab. Searches that are not changed will result in a disabled search
-                  button. For other workouts using the same keywords, click shuffle on the list below
-                  if you want something different, it's there when there are more matches than the
-                  list shows.
+                  Each search runs once. For other matches with the same words, tap Shuffle above the
+                  list (it shows when there are more than 10 matches). For a random workout, use the
+                  Randomize tab.
                 </Text>
                 <Pressable
                   onPress={() => setShowSearchTip(false)}
