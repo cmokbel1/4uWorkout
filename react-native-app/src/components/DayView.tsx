@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
+import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs"
 import { StatusBar } from "expo-status-bar"
 import { useMemo, useState } from "react"
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
@@ -8,7 +8,7 @@ import { SafeAreaView } from "react-native-safe-area-context"
 
 import { fonts, getPalette, radius, type Palette } from "../theme"
 import type { Workout } from "../types/workout"
-import type { RootStackParamList } from "../../App"
+import type { TabParamList } from "../../App"
 import { notesForExercise, type SavedWorkoutsByDate } from "../storage/savedWorkouts"
 import { formatDateLabel, formatShortDate, todayKey } from "../utils/date"
 import { AppMenu } from "./AppMenu"
@@ -28,7 +28,8 @@ interface DayViewProps {
   workouts: Workout[]
   // Every saved day, for the notes left on earlier days.
   savedWorkouts: SavedWorkoutsByDate
-  onBack: () => void
+  // Back to the previous view (the calendar); absent when there's none.
+  onBack?: () => void
   onOpenCalendar: () => void
   onOpenWorkout: (workout: Workout) => void
   onDelete: (workout: Workout) => void
@@ -69,7 +70,7 @@ export function DayView({
   onSaveSets,
   onChangeNote,
 }: DayViewProps) {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>()
   const palette = getPalette(isDark)
   const styles = useMemo(() => makeStyles(palette), [palette])
   const [menuVisible, setMenuVisible] = useState(false)
@@ -96,20 +97,13 @@ export function DayView({
         <View style={styles.buttonRow}>
           <NavCard
             palette={palette}
-            icon="shuffle"
-            title="Training"
-            subtitle="Find a workout"
-            onPress={openTraining}
-          />
-          <NavCard
-            palette={palette}
             icon="calendar"
             title="Calendar"
             subtitle="Schedule"
             onPress={onOpenCalendar}
           />
         </View>
-        {/* Sets the nav cards off from the content, as on the Calendar. */}
+        {/* Sets the card off from the content, as on the Calendar. */}
         <View style={styles.divider} />
 
         <View>
@@ -296,7 +290,7 @@ export function DayView({
             <Text style={styles.emptyTitle}>No workouts saved for this day</Text>
             <Text style={styles.emptyText}>
               {isToday
-                ? "Find a workout on Training and save it to see it here."
+                ? "Generate a workout on Randomize and save it to see it here."
                 : "Pick another day on the calendar."}
             </Text>
             {/* Workouts are always saved for today, so finding one only helps
@@ -332,7 +326,6 @@ export function DayView({
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
         links={[
-          { title: "Training", subtitle: "Find a workout", icon: "shuffle", onPress: openTraining },
           { title: "Calendar", subtitle: "Schedule", icon: "calendar", onPress: onOpenCalendar },
         ]}
         isDark={isDark}

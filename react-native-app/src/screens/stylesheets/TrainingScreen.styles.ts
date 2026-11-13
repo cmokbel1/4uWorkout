@@ -3,7 +3,8 @@ import { StyleSheet } from 'react-native'
 import { fonts, radius, type Palette } from '../../theme'
 
 // Room under the scroll content so the sticky Find / Save bar never covers it.
-export const BOTTOM_BAR_SPACE = 112
+// (The tab bar sits below the screen, so no safe-area inset is needed here.)
+export const BOTTOM_BAR_SPACE = 100
 
 export function makeStyles(c: Palette) {
   return StyleSheet.create({
@@ -33,6 +34,18 @@ export function makeStyles(c: Palette) {
     // the top of the safe area.
     body: {
       flex: 1,
+    },
+
+    // A small caps heading over the screen's main control ("FIND A WORKOUT
+    // FOR ME" here, "SEARCH EXERCISES" on Search), and its wrapper.
+    controlSection: {
+      gap: 8,
+    },
+    sectionLabel: {
+      color: c.textMuted,
+      fontFamily: fonts.bold,
+      fontSize: 12,
+      letterSpacing: 1,
     },
 
     // Result area
@@ -130,7 +143,7 @@ export function makeStyles(c: Palette) {
       flexDirection: 'row',
       gap: 12,
       paddingHorizontal: 20,
-      paddingTop: 12,
+      paddingVertical: 12,
       backgroundColor: c.dock,
       borderTopWidth: 1,
       borderTopColor: c.dockEdge,

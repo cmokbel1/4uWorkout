@@ -16,7 +16,7 @@ interface AppMenuProps {
   palette: Palette
   visible: boolean
   onClose: () => void
-  // Navigation rows; each screen lists the other places you can go.
+  // Navigation rows (none on the tab screens, where the tab bar navigates).
   links: MenuLink[]
   isDark: boolean
   onToggleDark: (value: boolean) => void
@@ -58,7 +58,7 @@ export function AppMenu({
             <Feather name="chevron-right" size={18} color={palette.textMuted} />
           </Pressable>
         ))}
-        <View style={styles.divider} />
+        {links.length > 0 && <View style={styles.divider} />}
         <View style={styles.row}>
           <View style={styles.icon}>
             <Feather name="moon" size={17} color={palette.accent} />

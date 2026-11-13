@@ -1,6 +1,18 @@
 import { ExerciseFilters, FilterOptionsByBodyPart } from '../types/filters';
+import { SearchSuggestions } from '../types/search';
 import { Workout } from '../types/workout';
 import { getAppCheckHeaders } from './appCheck';
+
+// A non-2xx response. `status` lets a caller tell a route the server doesn't
+// have yet (404) or the rate limit (429) from other failures.
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(status: number) {
+    super(`Request failed with status ${status}`);
+    this.status = status;
+  }
+}
 
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL;
 
@@ -18,10 +30,21 @@ async function requestBuilder<T>(path: string): Promise<T> {
   })
 
   if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
+    throw new ApiError(response.status);
   }
 
   return response.json() as Promise<T>;
+}
+
+// Up to SEARCH_SAMPLE_SIZE exercises matching every word, closest names first
+// (random within each rank), or none. `query` must already be clean (see utils/search): the server
+// answers 400 to anything else.
+export async function searchExercises(query: string): Promise<Workout[]> {
+  return requestBuilder<Workout[]>(`/exercises/search?q=${encodeURIComponent(query)}`);
+}
+
+export async function getSearchSuggestions(): Promise<SearchSuggestions> {
+  return requestBuilder<SearchSuggestions>('/exercises/search/suggestions');
 }
 
 // Returns up to 11 random matches; filters can make it fewer, or none.
@@ -72,7 +95,7 @@ export async function getExerciseImageById(id: string): Promise<string> {
   const response = await fetch(url, { method: 'GET', headers: await getAppCheckHeaders() });
 
   if (!response.ok) {
-    throw new Error(`Image request failed with status ${response.status}`);
+    throw new ApiError(response.status);
   }
 
   const blob = await response.blob();

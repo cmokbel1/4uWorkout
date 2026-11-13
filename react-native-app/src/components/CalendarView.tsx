@@ -1,6 +1,4 @@
 import { Feather } from "@expo/vector-icons"
-import { useNavigation } from "@react-navigation/native"
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import { StatusBar } from "expo-status-bar"
 import { useMemo, useState } from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
@@ -8,7 +6,6 @@ import { SafeAreaView } from "react-native-safe-area-context"
 import { Calendar } from "react-native-calendars"
 
 import { fonts, getPalette, radius, type Palette } from "../theme"
-import type { RootStackParamList } from "../../App"
 import type { SavedWorkoutsByDate } from "../storage/savedWorkouts"
 import { formatDateLabel, toDateKey, todayKey } from "../utils/date"
 import { toTitleCase } from "../utils/formatting"
@@ -27,11 +24,13 @@ interface CalendarViewProps {
   onSelectDate: (date: string) => void
   // Opens the day view for today ("Today's workouts" in the menu).
   onOpenToday: () => void
+  // Back to the previous view (the day view); absent when there's none.
+  onBack?: () => void
 }
 
-// The month view of the Saved Workouts screen, in the redesigned look. Same
-// header as Training (brand, title, cog menu) plus a back button. Tapping a day opens the day view
-// for it — the same screen Training's "Today's workouts" opens.
+// The month view of the Saved tab, in the redesigned look: the app header
+// (with a back button when the day view is underneath), a card back to today,
+// the month, and recent days. Tapping a day opens the day view for it.
 export function CalendarView({
   isDark,
   onToggleDark,
@@ -39,8 +38,8 @@ export function CalendarView({
   savedWorkouts,
   onSelectDate,
   onOpenToday,
+  onBack,
 }: CalendarViewProps) {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
   const palette = getPalette(isDark)
   const styles = useMemo(() => makeStyles(palette), [palette])
   const calendarTheme = useMemo(() => makeCalendarTheme(palette), [palette])
@@ -51,7 +50,6 @@ export function CalendarView({
   // there's nothing to save in the future.
   const currentMonth = today.slice(0, 7)
   const [visibleMonth, setVisibleMonth] = useState(currentMonth)
-  const openTraining = () => navigation.navigate("Training")
 
   const summary = useMemo(
     () => summarizeMonth(savedWorkouts, visibleMonth, visibleMonth === currentMonth),
@@ -71,25 +69,15 @@ export function CalendarView({
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <StatusBar style={isDark ? "light" : "dark"} />
-      {/* Back is a GO_BACK like Android's back button, so it follows the Saved
-          Workouts screen's view history: back to the day view if that's where
-          the calendar was opened from, otherwise out to Training. */}
       <ScreenHeader
         palette={palette}
         title="Trainer"
-        onBack={() => navigation.goBack()}
+        onBack={onBack}
         onOpenMenu={() => setMenuVisible(true)}
       />
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.navRow}>
-          <NavCard
-            palette={palette}
-            icon="shuffle"
-            title="Training"
-            subtitle="Find a workout"
-            onPress={openTraining}
-          />
           <NavCard
             palette={palette}
             icon="zap"
@@ -98,7 +86,7 @@ export function CalendarView({
             onPress={onOpenToday}
           />
         </View>
-        {/* Sets the nav cards off from the content, like the header's divider. */}
+        {/* Sets the card off from the content, like the header's divider. */}
         <View style={styles.divider} />
 
         <View style={styles.card}>
@@ -188,7 +176,6 @@ export function CalendarView({
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
         links={[
-          { title: "Training", subtitle: "Find a workout", icon: "shuffle", onPress: openTraining },
           { title: "Today's workouts", subtitle: "Your plan", icon: "zap", onPress: onOpenToday },
         ]}
         isDark={isDark}
