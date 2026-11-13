@@ -13,6 +13,7 @@ import {
   randomExercisesByBodyPart,
   randomExercisesByKeywords,
   searchSuggestions,
+  similarExercisesFor,
 } from '../lib/exerciseStore'
 
 const router = Router()
@@ -140,7 +141,7 @@ router.get('/search/suggestions', async (_req: Request, res: Response) => {
 })
 
 // GET /exercises/search?q= — up to BODY_PART_SAMPLE_SIZE matches, closest names first,
-// list fields only. Same licence limits as /bodyPart: never page
+// topped up with similar exercises when there are fewer, list fields only. Same licence limits as /bodyPart: never page
 // through matches or let a request exclude ones already seen.
 router.get('/search', async (req: Request, res: Response) => {
   try {
@@ -151,7 +152,19 @@ router.get('/search', async (req: Request, res: Response) => {
       return
     }
     const words = query.toLowerCase().split(' ')
-    res.json(await randomExercisesByKeywords(words, BODY_PART_SAMPLE_SIZE))
+    const matches = await randomExercisesByKeywords(words, BODY_PART_SAMPLE_SIZE)
+    // A specific search (often an exact name) can match only a few, leaving
+    // the app's list empty: fill the rest of the sample with exercises like
+    // the closest match, marked `similar: true`. Still never more than the
+    // sample size.
+    const similar = matches.length > 0 && matches.length < BODY_PART_SAMPLE_SIZE
+      ? await similarExercisesFor(
+          String(matches[0].id),
+          matches.map((match) => String(match.id)),
+          BODY_PART_SAMPLE_SIZE - matches.length,
+        )
+      : []
+    res.json([...matches, ...similar])
   } catch (err) {
     console.error('[search] error:', err instanceof Error ? err.message : err)
     res.status(500).json({ error: 'Internal server error' })

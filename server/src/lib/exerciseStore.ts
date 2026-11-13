@@ -103,6 +103,69 @@ export async function randomExercisesByKeywords(words: string[], limit: number):
   return rows.map((row) => ({ ...toListItem(row.data), id: row.public_id }))
 }
 
+// Up to `limit` exercises like the one with this public id, to fill out a
+// search that found fewer than a full sample: its similar exercises, then its
+// substitutions, best score first; if that's still short, random ones with the
+// same target and body part. Never the exercise itself or one in
+// `excludePublicIds` (the matches already being returned). Each is marked
+// `similar: true` so the app can list them apart from the matches. List
+// fields only, like the rest of /search.
+export async function similarExercisesFor(
+  publicId: string,
+  excludePublicIds: string[],
+  limit: number,
+): Promise<ExerciseData[]> {
+  const pool = getPool()
+  const { rows: sourceRows } = await pool.query<{
+    id: string
+    target: string
+    body_part: string
+    similar: Relation[] | null
+    substitutions: Relation[] | null
+  }>(
+    `SELECT id, target, body_part, data->'similarExercises' AS similar, data->'substitutions' AS substitutions
+     FROM exercises WHERE public_id = $1`,
+    [publicId],
+  )
+  const source = sourceRows[0]
+  if (!source || limit <= 0) return []
+
+  const byScore = (relations: Relation[] | null) =>
+    [...(relations ?? [])].sort((a, b) => Number(b.score ?? 0) - Number(a.score ?? 0))
+  const linkedIds = [...new Set(
+    [...byScore(source.similar), ...byScore(source.substitutions)].map((relation) => relation.id),
+  )].filter((id) => id !== source.id)
+
+  const { rows: linkedRows } = linkedIds.length
+    ? await pool.query<{ id: string; public_id: string; data: ExerciseData }>(
+        'SELECT id, public_id, data FROM exercises WHERE id = ANY($1) AND public_id <> ALL($2)',
+        [linkedIds, excludePublicIds],
+      )
+    : { rows: [] }
+  const rank = new Map(linkedIds.map((id, index) => [id, index]))
+  const picked = linkedRows
+    .sort((a, b) => (rank.get(a.id) ?? 0) - (rank.get(b.id) ?? 0))
+    .slice(0, limit)
+
+  if (picked.length < limit) {
+    const { rows: sameTargetRows } = await pool.query<{ id: string; public_id: string; data: ExerciseData }>(
+      `SELECT id, public_id, data FROM exercises
+       WHERE target = $1 AND body_part = $2 AND id <> $3 AND public_id <> ALL($4)
+       ORDER BY random() LIMIT $5`,
+      [
+        source.target,
+        source.body_part,
+        source.id,
+        [...excludePublicIds, ...picked.map((row) => row.public_id)],
+        limit - picked.length,
+      ],
+    )
+    picked.push(...sameTargetRows)
+  }
+
+  return picked.map((row) => ({ ...toListItem(row.data), id: row.public_id, similar: true }))
+}
+
 type Suggestion = { value: string; count: number }
 
 type SearchSuggestions = {

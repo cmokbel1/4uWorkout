@@ -49,7 +49,7 @@ export function useSavedWorkouts() {
   // starts without one. No alert on success: Save then reads "Saved".
   async function saveForToday(workout: Workout, setDetails: WorkoutSet[]): Promise<void> {
     try {
-      const next = await addWorkoutForToday({ ...workout, setDetails, note: undefined })
+      const next = await addWorkoutForToday({ ...workout, setDetails, note: undefined, similar: undefined })
       setSavedMap(next)
       // savedMap already reflects the write, so don't re-read on next focus.
       loadedVersionRef.current = getSavedWorkoutsVersion()
