@@ -61,8 +61,9 @@ function countInDifficultyRange(
     : option.count
 }
 
-// "Any", then each option with its count in the difficulty range. An option
-// with nothing in range is shown with its 0 but can't be picked.
+// "Any", then each option. An option with nothing in the difficulty range is
+// greyed out and can't be picked. Counts aren't shown: users read them as how
+// many workouts a search would list, not the pool its 11 are drawn from.
 function toSelectOptions(
   options: FilterOption[] | undefined,
   difficulties: Difficulty[] | undefined,
@@ -71,12 +72,10 @@ function toSelectOptions(
   return [
     ANY_OPTION,
     ...(options ?? []).map((option) => {
-      const count = countInDifficultyRange(option, difficulties)
       return {
         value: option.value,
         label: label(option.value),
-        detail: String(count),
-        disabled: count === 0,
+        disabled: countInDifficultyRange(option, difficulties) === 0,
       }
     }),
   ]

@@ -109,7 +109,7 @@ export function FilterCard({
           <View style={styles.filterHint}>
             <Feather name="info" size={14} color={palette.accent} style={styles.filterHintIcon} />
             <Text style={styles.filterHintText}>
-              Target and Equipment counts update to match your difficulty range.
+              Targets and equipment with no workouts in your difficulty range are greyed out.
             </Text>
           </View>
         ) : null}
