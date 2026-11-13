@@ -140,9 +140,10 @@ router.get('/search/suggestions', async (_req: Request, res: Response) => {
   }
 })
 
-// GET /exercises/search?q= — up to BODY_PART_SAMPLE_SIZE matches, closest names first,
-// topped up with similar exercises when there are fewer, list fields only. Same licence limits as /bodyPart: never page
-// through matches or let a request exclude ones already seen.
+// GET /exercises/search?q= — up to BODY_PART_SAMPLE_SIZE matches, closest
+// names first, topped up with similar exercises when there are fewer, list
+// fields only. Same licence limits as /bodyPart: never page through matches or
+// let a request exclude ones already seen.
 router.get('/search', async (req: Request, res: Response) => {
   try {
     const { q } = req.query

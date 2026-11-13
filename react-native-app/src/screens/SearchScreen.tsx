@@ -91,6 +91,9 @@ export function SearchScreen() {
   const matches = results.filter((workout) => !workout.similar)
   const otherMatches = matches.filter((workout) => workout.id !== currentWorkout?.id)
   const otherSimilar = results.filter((workout) => workout.similar && workout.id !== currentWorkout?.id)
+  // With similar workouts to show, a lone match needs no "That's the only
+  // match" list above them.
+  const showMatchesList = otherMatches.length > 0 || otherSimilar.length === 0
 
   const isCurrentSavedToday = Boolean(
     currentWorkout && (savedMap[todayKey()] ?? []).some((w) => w.id === currentWorkout.id),
@@ -437,9 +440,7 @@ export function SearchScreen() {
               style={[styles.resultLists, { opacity: viewer.resultOpacity }]}
               pointerEvents={isImageLoading ? "none" : "auto"}
             >
-              {/* With similar workouts to show, a lone match needs no "That's
-                  the only match" list above them. */}
-              {otherMatches.length > 0 || otherSimilar.length === 0 ? (
+              {showMatchesList ? (
                 <SimilarWorkoutsList
                   palette={palette}
                   workouts={otherMatches}
