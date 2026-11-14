@@ -128,6 +128,24 @@ export function DayView({
   const listOverflowed = useRef(false)
   const [listEdges, setListEdges] = useState({ above: false, below: false })
 
+  // The card just opened, scrolled into view when its new size is laid out.
+  const revealOnLayout = useRef<string | null>(null)
+
+  // Scrolls the list just enough to show a whole card (its y and height within
+  // the list), with the list's padding around it. A card taller than the frame
+  // is shown from its top, so its name stays in view. Does nothing when the
+  // card already fits in view.
+  function revealCard(y: number, height: number): void {
+    const top = y - LIST_PADDING
+    const bottom = y + height + LIST_PADDING
+    const viewTop = listScrollY.current
+    const viewBottom = viewTop + listHeight.current
+    let target = viewTop
+    if (bottom > viewBottom) target = bottom - listHeight.current
+    if (top < target) target = top
+    if (target !== viewTop) listRef.current?.scrollTo({ y: Math.max(target, 0), animated: true })
+  }
+
   function updateListEdges(): void {
     const above = listScrollY.current > 1
     const below = listContentHeight.current - listScrollY.current - listHeight.current > 1
@@ -260,12 +278,24 @@ export function DayView({
               const isExpanded = Boolean(expanded[workout.id])
               const sets = workout.setDetails ?? []
               return (
-                <View key={workout.id} style={styles.card}>
+                <View
+                  key={workout.id}
+                  style={styles.card}
+                  onLayout={(event) => {
+                    if (revealOnLayout.current !== workout.id) return
+                    revealOnLayout.current = null
+                    const { y, height } = event.nativeEvent.layout
+                    revealCard(y, height)
+                  }}
+                >
                   <View style={styles.cardHeader}>
                     <Pressable
-                      onPress={() =>
+                      onPress={() => {
+                        // Opening a card grows it; once it has its new height,
+                        // scroll it fully into view.
+                        if (!isExpanded) revealOnLayout.current = workout.id
                         setExpanded((prev) => ({ ...prev, [workout.id]: !prev[workout.id] }))
-                      }
+                      }}
                       style={styles.cardTitlePress}
                       accessibilityRole="button"
                       // The note icon below sits inside this button, so the
