@@ -1,11 +1,12 @@
 import { useCallback, useMemo, useState } from "react"
-import { Alert, BackHandler } from "react-native"
+import { Alert } from "react-native"
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs"
 import { useFocusEffect, type CompositeScreenProps } from "@react-navigation/native"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
 import { CalendarView } from "../components/CalendarView"
 import { DayView, type SetField } from "../components/DayView"
+import type { SavedView } from "../components/SavedViewSwitch"
 import { useTabBarTheme } from "../hooks/useTabBarTheme"
 import { getExerciseById } from "../services/workoutApi"
 import {
@@ -36,8 +37,6 @@ type Props = CompositeScreenProps<
   NativeStackScreenProps<RootStackParamList>
 >
 
-type ViewMode = "day" | "calendar"
-
 // The Saved tab: the day view ("Today's workouts") and the calendar.
 export function SavedWorkoutsScreen({ navigation }: Props) {
   // Re-read on focus below; this avoids flashing the light theme first. The
@@ -49,14 +48,10 @@ export function SavedWorkoutsScreen({ navigation }: Props) {
 
   const [map, setMap] = useState<SavedWorkoutsByDate>({})
   const [routines, setRoutines] = useState<Routine[]>([])
-  // The day and calendar views are modes of this one screen, so the navigator
-  // never sees moves between them. Their back history is kept here instead:
-  // the last entry is the view on screen.
-  const [viewHistory, setViewHistory] = useState<ViewMode[]>(["day"])
-  const viewMode = viewHistory[viewHistory.length - 1]
-  const showView = (mode: ViewMode) => setViewHistory((prev) => [...prev, mode])
-  const hasPreviousView = viewHistory.length > 1
-  const showPreviousView = () => setViewHistory((prev) => prev.slice(0, -1))
+  // The day and calendar views are two views of this one screen, picked with
+  // the Day | Calendar switch at the top of each; the navigator never sees
+  // moves between them, and they keep no back history.
+  const [viewMode, setViewMode] = useState<SavedView>("day")
   const [selectedDate, setSelectedDate] = useState<string>(todayKey())
 
   // Dark mode can also be changed from another tab's or Workout Detail's menu
@@ -92,21 +87,6 @@ export function SavedWorkoutsScreen({ navigation }: Props) {
         active = false
       }
     }, []),
-  )
-
-  // While there's a previous view, the header's back button and Android's
-  // back button return to it. (A tab is never removed, so this can't be done
-  // by intercepting the screen being closed.) With none, Android's back
-  // button does what the tabs do: back to the first tab.
-  useFocusEffect(
-    useCallback(() => {
-      if (!hasPreviousView) return
-      const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
-        setViewHistory((prev) => prev.slice(0, -1))
-        return true
-      })
-      return () => subscription.remove()
-    }, [hasPreviousView]),
   )
 
   const dayWorkouts = map[selectedDate] ?? []
@@ -287,15 +267,11 @@ export function SavedWorkoutsScreen({ navigation }: Props) {
         onToggleDark={onToggleDark}
         markedDates={markedDates}
         savedWorkouts={map}
-        onBack={hasPreviousView ? showPreviousView : undefined}
         onSelectDate={(date) => {
           setSelectedDate(date)
-          showView("day")
+          setViewMode("day")
         }}
-        onOpenToday={() => {
-          setSelectedDate(todayKey())
-          showView("day")
-        }}
+        onOpenDay={() => setViewMode("day")}
       />
     )
   }
@@ -307,8 +283,8 @@ export function SavedWorkoutsScreen({ navigation }: Props) {
       date={selectedDate}
       workouts={dayWorkouts}
       savedWorkouts={map}
-      onBack={hasPreviousView ? showPreviousView : undefined}
-      onOpenCalendar={() => showView("calendar")}
+      onOpenCalendar={() => setViewMode("calendar")}
+      onOpenToday={() => setSelectedDate(todayKey())}
       onOpenWorkout={(workout) => navigation.navigate("WorkoutDetail", { workout, isDark })}
       onDelete={onDelete}
       onChangeSet={onChangeSet}

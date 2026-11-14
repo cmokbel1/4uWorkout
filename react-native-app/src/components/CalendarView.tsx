@@ -10,7 +10,7 @@ import type { SavedWorkoutsByDate } from "../storage/savedWorkouts"
 import { formatDateLabel, toDateKey, todayKey } from "../utils/date"
 import { toTitleCase } from "../utils/formatting"
 import { AppMenu } from "./AppMenu"
-import { NavCard } from "./NavCard"
+import { SavedViewSwitch } from "./SavedViewSwitch"
 import { ScreenHeader } from "./ScreenHeader"
 
 interface CalendarViewProps {
@@ -22,23 +22,20 @@ interface CalendarViewProps {
   savedWorkouts: SavedWorkoutsByDate
   // Opens the day view for the tapped date.
   onSelectDate: (date: string) => void
-  // Opens the day view for today ("Today's workouts" in the menu).
-  onOpenToday: () => void
-  // Back to the previous view (the day view); absent when there's none.
-  onBack?: () => void
+  // Switches the Saved tab to the day view (the day last shown).
+  onOpenDay: () => void
 }
 
-// The month view of the Saved tab, in the redesigned look: the app header
-// (with a back button when the day view is underneath), a card back to today,
-// the month, and recent days. Tapping a day opens the day view for it.
+// The month view of the Saved tab, in the redesigned look: the app header,
+// the Day | Calendar switch, the month, and recent days. Tapping a day opens
+// the day view for it.
 export function CalendarView({
   isDark,
   onToggleDark,
   markedDates,
   savedWorkouts,
   onSelectDate,
-  onOpenToday,
-  onBack,
+  onOpenDay,
 }: CalendarViewProps) {
   const palette = getPalette(isDark)
   const styles = useMemo(() => makeStyles(palette), [palette])
@@ -72,22 +69,17 @@ export function CalendarView({
       <ScreenHeader
         palette={palette}
         title="Trainer"
-        onBack={onBack}
         onOpenMenu={() => setMenuVisible(true)}
       />
 
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.navRow}>
-          <NavCard
-            palette={palette}
-            icon="zap"
-            title="Today's workouts"
-            subtitle="Your plan"
-            onPress={onOpenToday}
-          />
-        </View>
-        {/* Sets the card off from the content, like the header's divider. */}
-        <View style={styles.divider} />
+        <SavedViewSwitch
+          palette={palette}
+          value="calendar"
+          onChange={(view) => {
+            if (view === "day") onOpenDay()
+          }}
+        />
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Select a date</Text>
@@ -175,9 +167,7 @@ export function CalendarView({
         palette={palette}
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
-        links={[
-          { title: "Today's workouts", subtitle: "Your plan", icon: "zap", onPress: onOpenToday },
-        ]}
+        links={[]}
         isDark={isDark}
         onToggleDark={onToggleDark}
       />
@@ -275,16 +265,6 @@ function makeStyles(c: Palette) {
       paddingTop: 16,
       paddingBottom: 32,
       gap: 16,
-    },
-    navRow: {
-      flexDirection: "row",
-      gap: 12,
-    },
-    // Full width (past the content's padding), matching ScreenHeader's divider.
-    divider: {
-      height: 1,
-      marginHorizontal: -20,
-      backgroundColor: c.border,
     },
     card: {
       backgroundColor: c.surface,

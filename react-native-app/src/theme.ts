@@ -11,13 +11,8 @@ export interface Palette {
   surfaceRaised: string
   border: string
   borderStrong: string
-  // NavCard. In dark mode, where shadows barely show, the card is lighter than
-  // other surfaces and its top edge is lit; in light mode it matches a plain
-  // surface card and the shadow does the lifting.
-  navCard: string
-  navCardIcon: string
+  // The tab bar's top edge. (Named for the navigation card it was made for.)
   navCardBorder: string
-  navCardTopEdge: string
   // Training's bottom bar (Find / Save workout): its own surface with a lit
   // top edge, so it reads as separate from the content scrolling under it.
   dock: string
@@ -28,6 +23,11 @@ export interface Palette {
   accent: string
   onAccent: string
   onAccentMuted: string
+  // ThemedButton's "tonal" fill and label: the accent mixed into the page
+  // background (opaque, so its iOS shadow doesn't show through the fill), with
+  // a label that reaches 4.5:1 on it.
+  accentTint: string
+  onAccentTint: string
   sliderHandle: string
   scrim: string
   beginner: string
@@ -46,10 +46,7 @@ const dark: Palette = {
   // Brighter than the mockup's #34536F so field outlines and the inactive
   // slider track reach 3:1 against the card (#0E1D30) and field fill.
   borderStrong: "#4F7299",
-  navCard: "#132539",
-  navCardIcon: "#1C3352",
   navCardBorder: "#1C3352",
-  navCardTopEdge: "#2A4566",
   dock: "#162B45",
   dockEdge: "#2E4B6E",
   text: "#EAF2FB",
@@ -58,6 +55,9 @@ const dark: Palette = {
   accent: "#4CC9F0",
   onAccent: "#04121F",
   onAccentMuted: "#123749",
+  // 16% accent over bg; the accent label is 7.3:1 on it.
+  accentTint: "#122F40",
+  onAccentTint: "#4CC9F0",
   sliderHandle: "#EAF2FB",
   scrim: "rgba(2, 8, 15, 0.72)",
   beginner: "#4ADE80",
@@ -73,10 +73,7 @@ const light: Palette = {
   surfaceRaised: "#ECEEF2",
   border: "#E6E8EC",
   borderStrong: "#DBDEE3",
-  navCard: "#FFFFFF",
-  navCardIcon: "#ECEEF2",
   navCardBorder: "#E6E8EC",
-  navCardTopEdge: "#E6E8EC",
   dock: "#FFFFFF",
   dockEdge: "#DBDEE3",
   text: "#0F1115",
@@ -86,6 +83,10 @@ const light: Palette = {
   onAccent: "#FFFFFF",
   // 4.6:1 on the accent; the mockup's #D5DEFF was 3.9:1.
   onAccentMuted: "#EEF2FF",
+  // 10% accent over bg. The accent itself is only 4.1:1 on it, so the label
+  // is a darker accent (5.3:1).
+  accentTint: "#DFE5F8",
+  onAccentTint: "#284DD9",
   sliderHandle: "#FFFFFF",
   scrim: "rgba(15, 17, 21, 0.4)",
   beginner: "#16A34A",
