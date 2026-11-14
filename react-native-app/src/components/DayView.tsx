@@ -3,17 +3,21 @@ import { useNavigation } from "@react-navigation/native"
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs"
 import { StatusBar } from "expo-status-bar"
 import { useMemo, useState } from "react"
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 
 import { fonts, getPalette, radius, type Palette } from "../theme"
+import type { Routine } from "../types/routine"
 import type { Workout } from "../types/workout"
 import type { TabParamList } from "../../App"
+import { routineMatchesDay } from "../storage/routines"
 import { notesForExercise, type SavedWorkoutsByDate } from "../storage/savedWorkouts"
 import { formatDateLabel, formatShortDate, todayKey } from "../utils/date"
 import { AppMenu } from "./AppMenu"
 import { NoteModal } from "./NoteModal"
 import { PreviousNotes } from "./PreviousNotes"
+import { RoutineNameModal } from "./RoutineNameModal"
+import { RoutinesSheet } from "./RoutinesSheet"
 import { ScreenHeader } from "./ScreenHeader"
 import { NavCard } from "./NavCard"
 import { ThemedButton } from "./ThemedButton"
@@ -45,6 +49,13 @@ interface DayViewProps {
   onSaveSets: () => void
   // Sets or clears (undefined) a workout's note, saving it straight away.
   onChangeNote: (workoutId: string, note: string | undefined) => void
+  routines: Routine[]
+  // Saves this day's workouts as a new routine.
+  onSaveRoutine: (name: string) => void
+  // Replaces a routine's exercises with this day's workouts.
+  onOverwriteRoutine: (routine: Routine) => void
+  onAddRoutine: (routine: Routine) => void
+  onDeleteRoutine: (routine: Routine) => void
 }
 
 // The two stepper columns of each set row. Reps step by 1, weight by 5 lb;
@@ -69,6 +80,11 @@ export function DayView({
   onChangeSet,
   onSaveSets,
   onChangeNote,
+  routines,
+  onSaveRoutine,
+  onOverwriteRoutine,
+  onAddRoutine,
+  onDeleteRoutine,
 }: DayViewProps) {
   const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>()
   const palette = getPalette(isDark)
@@ -78,10 +94,50 @@ export function DayView({
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   // The workout whose note is open in the note dialog.
   const [noteWorkout, setNoteWorkout] = useState<Workout | null>(null)
+  const [routineNameVisible, setRoutineNameVisible] = useState(false)
+  const [routinesVisible, setRoutinesVisible] = useState(false)
+  // A routine that already holds exactly this day's exercises: saving would
+  // add nothing, so "Save as routine" reads "Routine saved" and is disabled,
+  // as Save reads "Saved" on Randomize.
+  const isRoutineSaved = routines.some((routine) => routineMatchesDay(routine, workouts))
+  // The routine this day was saved as or added from (if it still exists),
+  // which Save offers to update once the day's exercises differ from it. With
+  // several, the one most of the day's workouts came from.
+  const linkedRoutine = useMemo(() => {
+    let best: Routine | undefined
+    let bestCount = 0
+    for (const routine of routines) {
+      const count = workouts.filter((w) => w.routineId === routine.id).length
+      if (count > bestCount) {
+        best = routine
+        bestCount = count
+      }
+    }
+    return best
+  }, [routines, workouts])
+  const dayWorkoutIds = useMemo(() => new Set(workouts.map((w) => w.id)), [workouts])
 
   const isToday = date === todayKey()
   const count = `${workouts.length} ${workouts.length === 1 ? "workout" : "workouts"}`
   const openTraining = () => navigation.navigate("Training")
+
+  // A day linked to a routine asks whether to update it or save a new one;
+  // otherwise Save goes straight to naming the new routine.
+  function onPressSaveRoutine(): void {
+    if (!linkedRoutine) {
+      setRoutineNameVisible(true)
+      return
+    }
+    Alert.alert(
+      "Save routine",
+      `This day's exercises have changed since "${linkedRoutine.name}" was added. Update that routine, or save them as a new one?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Save as new", onPress: () => setRoutineNameVisible(true) },
+        { text: "Update", onPress: () => onOverwriteRoutine(linkedRoutine) },
+      ],
+    )
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
@@ -117,6 +173,26 @@ export function DayView({
           </View>
           {workouts.length ? (
             <Text style={styles.helper}>Tap a workout to edit its sets and note.</Text>
+          ) : null}
+        </View>
+
+        <View style={styles.buttonRow}>
+          <ThemedButton
+            palette={palette}
+            label="Add routine"
+            icon="plus"
+            variant="secondary"
+            onPress={() => setRoutinesVisible(true)}
+          />
+          {workouts.length ? (
+            <ThemedButton
+              palette={palette}
+              label={isRoutineSaved ? "Routine saved" : "Save as routine"}
+              icon={isRoutineSaved ? "check" : "bookmark"}
+              variant="secondary"
+              disabled={isRoutineSaved}
+              onPress={onPressSaveRoutine}
+            />
           ) : null}
         </View>
 
@@ -319,6 +395,30 @@ export function DayView({
           if (noteWorkout) onChangeNote(noteWorkout.id, note)
           setNoteWorkout(null)
         }}
+      />
+
+      <RoutineNameModal
+        palette={palette}
+        visible={routineNameVisible}
+        workoutCount={workouts.length}
+        onCancel={() => setRoutineNameVisible(false)}
+        onSave={(name) => {
+          setRoutineNameVisible(false)
+          onSaveRoutine(name)
+        }}
+      />
+
+      <RoutinesSheet
+        palette={palette}
+        visible={routinesVisible}
+        onClose={() => setRoutinesVisible(false)}
+        routines={routines}
+        dayWorkoutIds={dayWorkoutIds}
+        onPick={(routine) => {
+          setRoutinesVisible(false)
+          onAddRoutine(routine)
+        }}
+        onDelete={onDeleteRoutine}
       />
 
       <AppMenu

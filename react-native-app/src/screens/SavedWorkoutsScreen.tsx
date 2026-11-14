@@ -8,11 +8,20 @@ import { CalendarView } from "../components/CalendarView"
 import { DayView, type SetField } from "../components/DayView"
 import { useTabBarTheme } from "../hooks/useTabBarTheme"
 import {
+  deleteRoutine,
+  overwriteRoutine,
+  readRoutines,
+  saveRoutineFromDay,
+} from "../storage/routines"
+import {
+  addRoutineToDay,
   readSavedWorkouts,
   removeSavedWorkout,
+  tagDayWithRoutine,
   writeSavedWorkouts,
   type SavedWorkoutsByDate,
 } from "../storage/savedWorkouts"
+import type { Routine } from "../types/routine"
 import type { Workout } from "../types/workout"
 import type { RootStackParamList, TabParamList } from "../../App"
 import { getLastKnownDarkMode, readDarkMode, writeDarkMode } from "../storage/theme"
@@ -37,6 +46,7 @@ export function SavedWorkoutsScreen({ navigation }: Props) {
   useTabBarTheme(palette)
 
   const [map, setMap] = useState<SavedWorkoutsByDate>({})
+  const [routines, setRoutines] = useState<Routine[]>([])
   // The day and calendar views are modes of this one screen, so the navigator
   // never sees moves between them. Their back history is kept here instead:
   // the last entry is the view on screen.
@@ -68,6 +78,13 @@ export function SavedWorkoutsScreen({ navigation }: Props) {
         })
         .catch(() => {
           // Keep current data if storage is unavailable.
+        })
+      readRoutines()
+        .then((items) => {
+          if (active) setRoutines(items)
+        })
+        .catch(() => {
+          // Keep current routines if storage is unavailable.
         })
       return () => {
         active = false
@@ -180,6 +197,59 @@ export function SavedWorkoutsScreen({ navigation }: Props) {
     )
   }
 
+  // Saves the selected day's workouts as a new routine and links the day to
+  // it, so later changes to the day offer to update that routine.
+  async function onSaveRoutine(name: string): Promise<void> {
+    try {
+      const next = await saveRoutineFromDay(name, dayWorkouts)
+      setRoutines(next)
+      setMap(await tagDayWithRoutine(selectedDate, next[0].id))
+    } catch {
+      Alert.alert("Save failed", "Could not write to local storage.")
+    }
+  }
+
+  // Replaces a routine's exercises with the selected day's workouts, and
+  // links the day's workouts (including ones added since) to it.
+  async function onOverwriteRoutine(routine: Routine): Promise<void> {
+    try {
+      setRoutines(await overwriteRoutine(routine.id, dayWorkouts))
+      setMap(await tagDayWithRoutine(selectedDate, routine.id))
+    } catch {
+      Alert.alert("Save failed", "Could not write to local storage.")
+    }
+  }
+
+  // Adds a routine's exercises to the selected day with blank sets.
+  async function onAddRoutine(routine: Routine): Promise<void> {
+    try {
+      setMap(await addRoutineToDay(selectedDate, routine))
+    } catch {
+      Alert.alert("Add failed", "Could not update local storage.")
+    }
+  }
+
+  function onDeleteRoutine(routine: Routine): void {
+    Alert.alert(
+      "Delete routine?",
+      `Delete "${routine.name}"? Workouts already added from it stay on their days.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setRoutines(await deleteRoutine(routine.id))
+            } catch {
+              Alert.alert("Delete failed", "Could not update local storage.")
+            }
+          },
+        },
+      ],
+    )
+  }
+
   if (viewMode === "calendar") {
     return (
       <CalendarView
@@ -214,6 +284,11 @@ export function SavedWorkoutsScreen({ navigation }: Props) {
       onChangeSet={onChangeSet}
       onSaveSets={() => persist(map)}
       onChangeNote={onChangeNote}
+      routines={routines}
+      onSaveRoutine={onSaveRoutine}
+      onOverwriteRoutine={onOverwriteRoutine}
+      onAddRoutine={onAddRoutine}
+      onDeleteRoutine={onDeleteRoutine}
     />
   )
 }

@@ -46,10 +46,17 @@ export function useSavedWorkouts() {
 
   // Saves under today's date with the sets from the save dialog. A workout
   // picked from the saved list still carries that day's note; a new save
-  // starts without one. No alert on success: Save then reads "Saved".
+  // starts without one, and without the routine tag (it isn't from a
+  // routine). No alert on success: Save then reads "Saved".
   async function saveForToday(workout: Workout, setDetails: WorkoutSet[]): Promise<void> {
     try {
-      const next = await addWorkoutForToday({ ...workout, setDetails, note: undefined, similar: undefined })
+      const next = await addWorkoutForToday({
+        ...workout,
+        setDetails,
+        note: undefined,
+        similar: undefined,
+        routineId: undefined,
+      })
       setSavedMap(next)
       // savedMap already reflects the write, so don't re-read on next focus.
       loadedVersionRef.current = getSavedWorkoutsVersion()

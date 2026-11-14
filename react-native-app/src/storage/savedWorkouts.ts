@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { Routine } from '../types/routine';
 import { Workout } from '../types/workout';
 import { todayKey } from '../utils/date';
 
@@ -75,6 +76,46 @@ export async function addWorkoutForToday(
   const day = map[key] ?? [];
   if (day.some((saved) => saved.id === workout.id)) return map;
   const next: SavedWorkoutsByDate = { ...map, [key]: [workout, ...day] };
+  await writeSavedWorkouts(next);
+  return next;
+}
+
+// Adds a routine's exercises to a day, in the routine's order, ahead of the
+// day's existing workouts. Each gets `setCount` blank sets (no reps or
+// weight), no note, and the routine's id. Exercises already on that day are
+// skipped, so the day never holds the same workout twice.
+export async function addRoutineToDay(
+  date: string,
+  routine: Routine,
+): Promise<SavedWorkoutsByDate> {
+  const map = await readSavedWorkouts();
+  const day = map[date] ?? [];
+  const onDay = new Set(day.map((workout) => workout.id));
+  const added: Workout[] = routine.exercises
+    .filter((exercise) => !onDay.has(exercise.id))
+    .map(({ setCount, ...exercise }) => ({
+      ...exercise,
+      setDetails: Array.from({ length: setCount }, () => ({})),
+      routineId: routine.id,
+    }));
+  if (!added.length) return map;
+  const next: SavedWorkoutsByDate = { ...map, [date]: [...added, ...day] };
+  await writeSavedWorkouts(next);
+  return next;
+}
+
+// Tags every workout on a day with a routine's id, after the day was saved
+// as that routine (or updated it), so the day stays linked to it. Returns the
+// new map.
+export async function tagDayWithRoutine(
+  date: string,
+  routineId: string,
+): Promise<SavedWorkoutsByDate> {
+  const map = await readSavedWorkouts();
+  const next: SavedWorkoutsByDate = {
+    ...map,
+    [date]: (map[date] ?? []).map((workout) => ({ ...workout, routineId })),
+  };
   await writeSavedWorkouts(next);
   return next;
 }
