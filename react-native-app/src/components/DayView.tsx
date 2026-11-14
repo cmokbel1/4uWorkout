@@ -129,7 +129,7 @@ export function DayView({
     }
     Alert.alert(
       "Save routine",
-      `This day's exercises have changed since "${linkedRoutine.name}" was added. Update that routine, or save them as a new one?`,
+      `This day differs from "${linkedRoutine.name}" routine. Update "${linkedRoutine.name}" to match it, or save it as a new routine?`,
       [
         { text: "Cancel", style: "cancel" },
         { text: "Save as new", onPress: () => setRoutineNameVisible(true) },
