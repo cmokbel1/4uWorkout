@@ -80,44 +80,58 @@ export async function addWorkoutForToday(
   return next;
 }
 
-// Adds a routine's exercises to a day, in the routine's order, ahead of the
-// day's existing workouts. Each gets `setCount` blank sets (no reps or
-// weight), no note, and the routine's id. Exercises already on that day are
-// skipped, so the day never holds the same workout twice.
-export async function addRoutineToDay(
-  date: string,
-  routine: Routine,
-): Promise<SavedWorkoutsByDate> {
-  const map = await readSavedWorkouts();
-  const day = map[date] ?? [];
-  const onDay = new Set(day.map((workout) => workout.id));
-  const added: Workout[] = routine.exercises
-    .filter((exercise) => !onDay.has(exercise.id))
-    .map(({ setCount, ...exercise }) => ({
-      ...exercise,
-      setDetails: Array.from({ length: setCount }, () => ({})),
-      routineId: routine.id,
-    }));
-  if (!added.length) return map;
-  const next: SavedWorkoutsByDate = { ...map, [date]: [...added, ...day] };
-  await writeSavedWorkouts(next);
-  return next;
+// The newest saved copy of an exercise on any day, or undefined if no day
+// has it. Date keys are YYYY-MM-DD, so they sort as strings.
+export function latestSavedCopy(
+  map: SavedWorkoutsByDate,
+  exerciseId: string,
+): Workout | undefined {
+  for (const date of Object.keys(map).sort().reverse()) {
+    const workout = map[date].find((saved) => saved.id === exerciseId);
+    if (workout) return workout;
+  }
+  return undefined;
 }
 
-// Tags every workout on a day with a routine's id, after the day was saved
-// as that routine (or updated it), so the day stays linked to it. Returns the
-// new map.
-export async function tagDayWithRoutine(
+// The map with a routine's exercises added to a day, in the routine's order,
+// ahead of the day's existing workouts. Each is built from its full workout in
+// `copies` (by exercise id), with `setCount` blank sets (no reps or weight),
+// no note, and the routine's id. Exercises already on the day, or missing from
+// `copies`, are skipped, so the day never holds the same workout twice.
+export function withRoutineAdded(
+  map: SavedWorkoutsByDate,
+  date: string,
+  routine: Routine,
+  copies: Map<string, Workout>,
+): SavedWorkoutsByDate {
+  const day = map[date] ?? [];
+  const onDay = new Set(day.map((workout) => workout.id));
+  const added: Workout[] = [];
+  for (const { id, setCount } of routine.exercises) {
+    const copy = copies.get(id);
+    if (onDay.has(id) || !copy) continue;
+    added.push({
+      ...copy,
+      setDetails: Array.from({ length: setCount }, () => ({})),
+      note: undefined,
+      similar: undefined,
+      routineId: routine.id,
+    });
+  }
+  return added.length ? { ...map, [date]: [...added, ...day] } : map;
+}
+
+// The map with every workout on a day tagged with a routine's id, after the
+// day was saved as that routine (or updated it), so the day stays linked to it.
+export function withDayTagged(
+  map: SavedWorkoutsByDate,
   date: string,
   routineId: string,
-): Promise<SavedWorkoutsByDate> {
-  const map = await readSavedWorkouts();
-  const next: SavedWorkoutsByDate = {
+): SavedWorkoutsByDate {
+  return {
     ...map,
     [date]: (map[date] ?? []).map((workout) => ({ ...workout, routineId })),
   };
-  await writeSavedWorkouts(next);
-  return next;
 }
 
 export interface DatedNote {

@@ -1,13 +1,13 @@
-import { Workout } from './workout';
-
-// An exercise in a routine: the workout as it was saved, without that day's
-// sets, note or routine tag. `setCount` is how many blank set rows it gets
-// when the routine is added to a day.
-export type RoutineExercise = Omit<Workout, 'setDetails' | 'note' | 'similar' | 'routineId'> & {
+// An exercise in a routine: which one, and how many blank set rows it gets
+// when the routine is added to a day. The rest of the workout (name, image,
+// instructions) comes from the newest saved copy when it's added, so the
+// routine doesn't store a second copy of its image.
+export interface RoutineExercise {
+  id: string;
   setCount: number;
-};
+}
 
-// A named copy of one day's exercises, to add to other days.
+// A named list of one day's exercises, to add to other days.
 export interface Routine {
   id: string;
   name: string;

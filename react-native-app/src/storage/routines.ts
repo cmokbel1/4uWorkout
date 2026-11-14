@@ -23,13 +23,15 @@ async function writeRoutines(routines: Routine[]): Promise<void> {
   await AsyncStorage.setItem(ROUTINES_KEY, JSON.stringify(routines));
 }
 
+// How many sets a saved workout has.
+export function setCountOf(workout: Workout): number {
+  return workout.setDetails?.length ?? 1;
+}
+
 // A day's workouts as routine exercises: each exercise and how many sets it
 // had, not the day's reps, weights or notes.
 function toRoutineExercises(workouts: Workout[]): RoutineExercise[] {
-  return workouts.map(({ setDetails, note, similar, routineId, ...exercise }) => ({
-    ...exercise,
-    setCount: setDetails?.length ?? 1,
-  }));
+  return workouts.map((workout) => ({ id: workout.id, setCount: setCountOf(workout) }));
 }
 
 // True when a day holds exactly the routine's exercises with the same set
@@ -39,7 +41,7 @@ export function routineMatchesDay(routine: Routine, workouts: Workout[]): boolea
   if (routine.exercises.length !== workouts.length) return false;
   const setCounts = new Map(routine.exercises.map((ex) => [ex.id, ex.setCount]));
   return workouts.every(
-    (workout) => setCounts.get(workout.id) === (workout.setDetails?.length ?? 1),
+    (workout) => setCounts.get(workout.id) === setCountOf(workout),
   );
 }
 

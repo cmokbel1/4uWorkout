@@ -7,18 +7,17 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { SafeAreaView } from "react-native-safe-area-context"
 
 import { fonts, getPalette, radius, type Palette } from "../theme"
-import type { Routine } from "../types/routine"
-import type { Workout } from "../types/workout"
+import { ROUTINE_NAME_MAX_LENGTH, type Routine } from "../types/routine"
+import { NOTE_MAX_LENGTH, type Workout } from "../types/workout"
 import type { TabParamList } from "../../App"
 import { routineMatchesDay } from "../storage/routines"
 import { notesForExercise, type SavedWorkoutsByDate } from "../storage/savedWorkouts"
 import { formatDateLabel, formatShortDate, todayKey } from "../utils/date"
 import { AppMenu } from "./AppMenu"
-import { NoteModal } from "./NoteModal"
 import { PreviousNotes } from "./PreviousNotes"
-import { RoutineNameModal } from "./RoutineNameModal"
 import { RoutinesSheet } from "./RoutinesSheet"
 import { ScreenHeader } from "./ScreenHeader"
+import { TextEntryModal } from "./TextEntryModal"
 import { NavCard } from "./NavCard"
 import { ThemedButton } from "./ThemedButton"
 
@@ -385,11 +384,16 @@ export function DayView({
         )}
       </ScrollView>
 
-      <NoteModal
+      <TextEntryModal
         palette={palette}
         visible={noteWorkout !== null}
-        workoutName={noteWorkout?.name ?? ""}
-        initialNote={noteWorkout?.note}
+        title="Note"
+        subtitle={noteWorkout?.name ?? ""}
+        initialValue={noteWorkout?.note}
+        placeholder="e.g. Used the cable machine, left shoulder tight"
+        maxLength={NOTE_MAX_LENGTH}
+        multiline
+        accessibilityLabel={`Note for ${noteWorkout?.name ?? ""}`}
         onCancel={() => setNoteWorkout(null)}
         onSave={(note) => {
           if (noteWorkout) onChangeNote(noteWorkout.id, note)
@@ -397,14 +401,19 @@ export function DayView({
         }}
       />
 
-      <RoutineNameModal
+      <TextEntryModal
         palette={palette}
         visible={routineNameVisible}
-        workoutCount={workouts.length}
+        title="Save as routine"
+        helper={`${count}. Reps, weight and notes aren't saved with the routine.`}
+        placeholder="e.g. Push day"
+        maxLength={ROUTINE_NAME_MAX_LENGTH}
+        required
+        accessibilityLabel="Routine name"
         onCancel={() => setRoutineNameVisible(false)}
         onSave={(name) => {
           setRoutineNameVisible(false)
-          onSaveRoutine(name)
+          if (name) onSaveRoutine(name)
         }}
       />
 

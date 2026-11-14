@@ -11,42 +11,64 @@ import {
 } from "react-native"
 
 import { fonts, radius, type Palette } from "../theme"
-import { ROUTINE_NAME_MAX_LENGTH } from "../types/routine"
 import { ThemedButton } from "./ThemedButton"
 
-interface RoutineNameModalProps {
+interface TextEntryModalProps {
   palette: Palette
   visible: boolean
-  // How many workouts the routine will hold, shown under the title.
-  workoutCount: number
+  title: string
+  // A workout's name under the title (capitalized, as names are stored in
+  // lower case); omitted when there's none.
+  subtitle?: string
+  // A muted line under the subtitle.
+  helper?: string
+  // The text being edited; empty when adding.
+  initialValue?: string
+  placeholder: string
+  maxLength: number
+  // Wraps onto a few lines (a note) rather than one (a name). Either way
+  // Return saves, and pasted line breaks become spaces.
+  multiline?: boolean
+  // Disables Save while the field is blank.
+  required?: boolean
+  accessibilityLabel: string
   onCancel: () => void
-  // The trimmed name; never empty.
-  onSave: (name: string) => void
+  // The trimmed text, or undefined when it was cleared.
+  onSave: (value: string | undefined) => void
 }
 
-// The day view's "Save as routine" dialog: one name field. Laid out like
-// NoteModal.
-export function RoutineNameModal({
+// A dialog with one short text field: the day view's note editor and its
+// "Save as routine" name. On its own so the keyboard has nothing else to crowd.
+export function TextEntryModal({
   palette,
   visible,
-  workoutCount,
+  title,
+  subtitle,
+  helper,
+  initialValue,
+  placeholder,
+  maxLength,
+  multiline = false,
+  required = false,
+  accessibilityLabel,
   onCancel,
   onSave,
-}: RoutineNameModalProps) {
+}: TextEntryModalProps) {
   const styles = useMemo(() => makeStyles(palette), [palette])
-  const [draft, setDraft] = useState("")
-  const name = draft.trim()
+  const [draft, setDraft] = useState(initialValue ?? "")
+  const trimmed = draft.trim()
 
-  // Start empty each time the dialog opens. Done while rendering (not in an
-  // effect) so the old name never shows for a frame.
+  // Start from the saved text each time the dialog opens. Done while
+  // rendering (not in an effect) so the old draft never shows for a frame.
   const [wasVisible, setWasVisible] = useState(visible)
   if (visible !== wasVisible) {
     setWasVisible(visible)
-    if (visible) setDraft("")
+    if (visible) setDraft(initialValue ?? "")
   }
 
   function save(): void {
-    if (name) onSave(name)
+    if (required && !trimmed) return
+    onSave(trimmed === "" ? undefined : trimmed)
   }
 
   return (
@@ -54,7 +76,7 @@ export function RoutineNameModal({
       <KeyboardAvoidingView behavior="padding" style={styles.overlay}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <Text style={styles.title}>Save as routine</Text>
+            <Text style={styles.title}>{title}</Text>
             <Pressable
               style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
               onPress={onCancel}
@@ -65,24 +87,24 @@ export function RoutineNameModal({
               <MaterialCommunityIcons name="close-thick" size={20} color={palette.text} />
             </Pressable>
           </View>
-          <Text style={styles.subtitle}>
-            {workoutCount} {workoutCount === 1 ? "workout" : "workouts"}. Reps, weight and notes
-            aren't saved with the routine.
-          </Text>
+          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+          {helper ? <Text style={styles.helper}>{helper}</Text> : null}
           <TextInput
-            style={styles.input}
+            style={[styles.input, multiline && styles.inputMultiline]}
             value={draft}
-            onChangeText={setDraft}
+            onChangeText={(text) => setDraft(text.replace(/\s*\n\s*/g, " "))}
+            multiline={multiline}
+            submitBehavior="blurAndSubmit"
             returnKeyType="done"
             onSubmitEditing={save}
             autoFocus
-            maxLength={ROUTINE_NAME_MAX_LENGTH}
-            placeholder="e.g. Push day"
+            maxLength={maxLength}
+            placeholder={placeholder}
             placeholderTextColor={palette.textDisabled}
-            accessibilityLabel="Routine name"
+            accessibilityLabel={accessibilityLabel}
           />
           <Text style={styles.counter}>
-            {draft.length}/{ROUTINE_NAME_MAX_LENGTH}
+            {draft.length}/{maxLength}
           </Text>
           <View style={styles.actions}>
             <ThemedButton palette={palette} label="Cancel" variant="secondary" onPress={onCancel} />
@@ -91,7 +113,7 @@ export function RoutineNameModal({
               label="Save"
               icon="check"
               onPress={save}
-              disabled={!name}
+              disabled={required && !trimmed}
             />
           </View>
         </View>
@@ -100,7 +122,7 @@ export function RoutineNameModal({
   )
 }
 
-// Matches NoteModal's dialog.
+// Matches SaveWorkoutModal's dialog.
 function makeStyles(c: Palette) {
   return StyleSheet.create({
     overlay: {
@@ -142,6 +164,12 @@ function makeStyles(c: Palette) {
     },
     subtitle: {
       color: c.textMuted,
+      fontFamily: fonts.semibold,
+      fontSize: 15,
+      textTransform: "capitalize",
+    },
+    helper: {
+      color: c.textMuted,
       fontFamily: fonts.medium,
       fontSize: 14,
       lineHeight: 20,
@@ -152,10 +180,16 @@ function makeStyles(c: Palette) {
       backgroundColor: c.surfaceSunken,
       borderRadius: radius.sm,
       paddingHorizontal: 12,
-      paddingVertical: 12,
+      paddingTop: 12,
+      paddingBottom: 12,
       color: c.text,
-      fontFamily: fonts.semibold,
-      fontSize: 16,
+      fontFamily: fonts.medium,
+      fontSize: 15,
+      lineHeight: 21,
+    },
+    inputMultiline: {
+      minHeight: 88,
+      textAlignVertical: "top",
     },
     counter: {
       alignSelf: "flex-end",
