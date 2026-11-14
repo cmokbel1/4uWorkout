@@ -11,45 +11,63 @@ import {
 } from "react-native"
 
 import { fonts, radius, type Palette } from "../theme"
-import { NOTE_MAX_LENGTH } from "../types/workout"
 import { ThemedButton } from "./ThemedButton"
 
-interface NoteModalProps {
+interface TextEntryModalProps {
   palette: Palette
   visible: boolean
-  // Shown under the title.
-  workoutName: string
-  // The note being edited; empty when adding one.
-  initialNote?: string
+  title: string
+  // A workout's name under the title (capitalized, as names are stored in
+  // lower case); omitted when there's none.
+  subtitle?: string
+  // A muted line under the subtitle.
+  helper?: string
+  // The text being edited; empty when adding.
+  initialValue?: string
+  placeholder: string
+  maxLength: number
+  // Wraps onto a few lines (a note) rather than one (a name). Either way
+  // Return saves, and pasted line breaks become spaces.
+  multiline?: boolean
+  // Disables Save while the field is blank.
+  required?: boolean
+  accessibilityLabel: string
   onCancel: () => void
-  // The trimmed note, or undefined when it was cleared.
-  onSave: (note: string | undefined) => void
+  // The trimmed text, or undefined when it was cleared.
+  onSave: (value: string | undefined) => void
 }
 
-// The day view's note editor: one short field, on its own so the keyboard
-// has nothing else to crowd. Return saves instead of adding a line, keeping
-// notes to a line or two.
-export function NoteModal({
+// A dialog with one short text field: the day view's note editor and its
+// "Save as routine" name. On its own so the keyboard has nothing else to crowd.
+export function TextEntryModal({
   palette,
   visible,
-  workoutName,
-  initialNote,
+  title,
+  subtitle,
+  helper,
+  initialValue,
+  placeholder,
+  maxLength,
+  multiline = false,
+  required = false,
+  accessibilityLabel,
   onCancel,
   onSave,
-}: NoteModalProps) {
+}: TextEntryModalProps) {
   const styles = useMemo(() => makeStyles(palette), [palette])
-  const [draft, setDraft] = useState(initialNote ?? "")
+  const [draft, setDraft] = useState(initialValue ?? "")
+  const trimmed = draft.trim()
 
-  // Start from the saved note each time the dialog opens. Done while
+  // Start from the saved text each time the dialog opens. Done while
   // rendering (not in an effect) so the old draft never shows for a frame.
   const [wasVisible, setWasVisible] = useState(visible)
   if (visible !== wasVisible) {
     setWasVisible(visible)
-    if (visible) setDraft(initialNote ?? "")
+    if (visible) setDraft(initialValue ?? "")
   }
 
   function save(): void {
-    const trimmed = draft.trim()
+    if (required && !trimmed) return
     onSave(trimmed === "" ? undefined : trimmed)
   }
 
@@ -58,7 +76,7 @@ export function NoteModal({
       <KeyboardAvoidingView behavior="padding" style={styles.overlay}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <Text style={styles.title}>Note</Text>
+            <Text style={styles.title}>{title}</Text>
             <Pressable
               style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
               onPress={onCancel}
@@ -69,28 +87,34 @@ export function NoteModal({
               <MaterialCommunityIcons name="close-thick" size={20} color={palette.text} />
             </Pressable>
           </View>
-          <Text style={styles.subtitle}>{workoutName}</Text>
+          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+          {helper ? <Text style={styles.helper}>{helper}</Text> : null}
           <TextInput
-            style={styles.input}
+            style={[styles.input, multiline && styles.inputMultiline]}
             value={draft}
-            // Pasted line breaks become spaces; Return saves instead.
             onChangeText={(text) => setDraft(text.replace(/\s*\n\s*/g, " "))}
-            multiline
+            multiline={multiline}
             submitBehavior="blurAndSubmit"
             returnKeyType="done"
             onSubmitEditing={save}
             autoFocus
-            maxLength={NOTE_MAX_LENGTH}
-            placeholder="e.g. Used the cable machine, left shoulder tight"
+            maxLength={maxLength}
+            placeholder={placeholder}
             placeholderTextColor={palette.textDisabled}
-            accessibilityLabel={`Note for ${workoutName}`}
+            accessibilityLabel={accessibilityLabel}
           />
           <Text style={styles.counter}>
-            {draft.length}/{NOTE_MAX_LENGTH}
+            {draft.length}/{maxLength}
           </Text>
           <View style={styles.actions}>
             <ThemedButton palette={palette} label="Cancel" variant="secondary" onPress={onCancel} />
-            <ThemedButton palette={palette} label="Save" icon="check" onPress={save} />
+            <ThemedButton
+              palette={palette}
+              label="Save"
+              icon="check"
+              onPress={save}
+              disabled={required && !trimmed}
+            />
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -144,8 +168,13 @@ function makeStyles(c: Palette) {
       fontSize: 15,
       textTransform: "capitalize",
     },
+    helper: {
+      color: c.textMuted,
+      fontFamily: fonts.medium,
+      fontSize: 14,
+      lineHeight: 20,
+    },
     input: {
-      minHeight: 88,
       borderWidth: 1,
       borderColor: c.borderStrong,
       backgroundColor: c.surfaceSunken,
@@ -157,6 +186,9 @@ function makeStyles(c: Palette) {
       fontFamily: fonts.medium,
       fontSize: 15,
       lineHeight: 21,
+    },
+    inputMultiline: {
+      minHeight: 88,
       textAlignVertical: "top",
     },
     counter: {
