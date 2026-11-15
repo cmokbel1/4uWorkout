@@ -14,7 +14,7 @@ export function useTabBarTheme(palette: Palette): void {
     navigation.setOptions({
       tabBarStyle: {
         backgroundColor: palette.surface,
-        borderTopColor: palette.navCardBorder,
+        borderTopColor: palette.tabBarBorder,
       },
       tabBarActiveTintColor: palette.accent,
       tabBarInactiveTintColor: palette.textMuted,

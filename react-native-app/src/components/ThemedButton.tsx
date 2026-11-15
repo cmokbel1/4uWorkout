@@ -1,8 +1,18 @@
 import { Feather } from "@expo/vector-icons"
 import type { ComponentProps, ReactNode } from "react"
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text } from "react-native"
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native"
 
 import { fonts, radius, type Palette } from "../theme"
+
+type Variant = "primary" | "secondary" | "action" | "actionOutline" | "tonal"
 
 interface ThemedButtonProps {
   palette: Palette
@@ -14,7 +24,7 @@ interface ThemedButtonProps {
   // read as those buttons. "tonal" is an accent-tinted fill with a soft shadow,
   // for actions that sit next to white cards (the day view's
   // routine buttons); it fades when disabled too.
-  variant?: "primary" | "secondary" | "action" | "actionOutline" | "tonal"
+  variant?: Variant
   icon?: ComponentProps<typeof Feather>["name"]
   // Used instead of `icon` for an icon from another set (e.g. a dumbbell);
   // the caller colours it to match the label.
@@ -39,24 +49,10 @@ export function ThemedButton({
   disabled = false,
   loading = false,
 }: ThemedButtonProps) {
-  const isPrimary = variant === "primary"
-  const isAction = variant === "action" || variant === "actionOutline"
-  const isTonal = variant === "tonal"
   // A loading button can't be pressed but keeps its normal look, so it reads
   // as "working" rather than "unavailable".
   const looksDisabled = disabled && !loading
-  const color =
-    variant === "action"
-      ? palette.onAccent
-      : variant === "actionOutline"
-        ? palette.accent
-        : isTonal
-          ? palette.onAccentTint
-          : looksDisabled
-          ? palette.textDisabled
-          : isPrimary
-            ? palette.onAccent
-            : palette.text
+  const { color, background, fadesWhenDisabled } = variantLook(variant, palette, looksDisabled)
   const iconNode = iconElement ?? (icon ? <Feather name={icon} size={18} color={color} /> : null)
 
   return (
@@ -65,22 +61,10 @@ export function ThemedButton({
       disabled={disabled || loading}
       style={({ pressed }) => [
         styles.button,
-        variant === "action"
-          ? { backgroundColor: palette.accent }
-          : variant === "actionOutline"
-            ? [styles.outline, { borderColor: palette.accent }]
-            : isTonal
-              ? [styles.raised, { backgroundColor: palette.accentTint }]
-              : isPrimary
-              ? { backgroundColor: looksDisabled ? palette.surfaceRaised : palette.accent }
-              : {
-                  backgroundColor: palette.surface,
-                  borderWidth: 1,
-                  borderColor: palette.border,
-                },
-        (isAction || isTonal) && looksDisabled && styles.faded,
+        background,
+        fadesWhenDisabled && looksDisabled && styles.faded,
         pressed && !disabled && !loading && styles.pressed,
-        pressed && isTonal && styles.pressedFlat,
+        pressed && variant === "tonal" && styles.pressedFlat,
       ]}
       accessibilityRole="button"
       accessibilityLabel={label}
@@ -93,6 +77,52 @@ export function ThemedButton({
       {!loading && iconAfter ? iconNode : null}
     </Pressable>
   )
+}
+
+// How each variant looks: its label and icon colour, its background, and
+// whether it fades when disabled (rather than turning grey, so it still reads
+// as that button).
+function variantLook(
+  variant: Variant,
+  palette: Palette,
+  looksDisabled: boolean,
+): { color: string; background: StyleProp<ViewStyle>; fadesWhenDisabled: boolean } {
+  switch (variant) {
+    case "action":
+      return {
+        color: palette.onAccent,
+        background: { backgroundColor: palette.accent },
+        fadesWhenDisabled: true,
+      }
+    case "actionOutline":
+      return {
+        color: palette.accent,
+        background: [styles.outline, { borderColor: palette.accent }],
+        fadesWhenDisabled: true,
+      }
+    case "tonal":
+      return {
+        color: palette.onAccentTint,
+        background: [styles.raised, { backgroundColor: palette.accentTint }],
+        fadesWhenDisabled: true,
+      }
+    case "primary":
+      return {
+        color: looksDisabled ? palette.textDisabled : palette.onAccent,
+        background: { backgroundColor: looksDisabled ? palette.surfaceRaised : palette.accent },
+        fadesWhenDisabled: false,
+      }
+    case "secondary":
+      return {
+        color: looksDisabled ? palette.textDisabled : palette.text,
+        background: {
+          backgroundColor: palette.surface,
+          borderWidth: 1,
+          borderColor: palette.border,
+        },
+        fadesWhenDisabled: false,
+      }
+  }
 }
 
 const styles = StyleSheet.create({

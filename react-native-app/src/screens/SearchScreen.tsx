@@ -301,7 +301,7 @@ export function SearchScreen() {
                   onSubmitEditing={submitSearch}
                   onFocus={() => setIsInputFocused(true)}
                   onBlur={() => setIsInputFocused(false)}
-                  placeholder="e.g. dumbbell chest"
+                  placeholder="e.g. dumbbell bench press"
                   placeholderTextColor={palette.textMuted}
                   maxLength={SEARCH_MAX_LENGTH}
                   autoCapitalize="none"
