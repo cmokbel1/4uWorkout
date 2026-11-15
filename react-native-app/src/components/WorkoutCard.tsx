@@ -13,18 +13,26 @@ import {
 
 import { notesForExercise, type SavedWorkoutsByDate } from "../storage/savedWorkouts"
 import { fonts, radius, type Palette } from "../theme"
-import { WEIGHT_DECIMALS, type Workout } from "../types/workout"
-import { cleanNumberInput, parseNumberInput, roundTo } from "../utils/numberInput"
+import type { Workout } from "../types/workout"
+import {
+  cleanNumberInput,
+  maxLengthFor,
+  maxValueFor,
+  parseNumberInput,
+  roundTo,
+  SET_INPUT_RULES,
+  type NumberRules,
+} from "../utils/numberInput"
 import { PreviousNotes } from "./PreviousNotes"
 
 export type SetField = "reps" | "weight"
 
-// The two stepper columns of each set row. Reps step by 1, weight by 5 lb;
-// tapping the number lets you type any value: whole reps, and weights with up
-// to WEIGHT_DECIMALS places (maxLength fits "9999.75").
+// The two stepper columns of each set row. Reps step by 1, weight by 5 lb,
+// from 0 up to the largest value the field holds; tapping the number lets you
+// type one (SET_INPUT_RULES: whole reps, weights with 2 decimal places).
 const SET_COLUMNS = [
-  { field: "reps", label: "Reps", step: 1, decimals: 0, maxLength: 3 },
-  { field: "weight", label: "Weight (lb)", step: 5, decimals: WEIGHT_DECIMALS, maxLength: 7 },
+  { field: "reps", label: "Reps", step: 1, rules: SET_INPUT_RULES.reps },
+  { field: "weight", label: "Weight (lb)", step: 5, rules: SET_INPUT_RULES.weight },
 ] as const
 
 interface WorkoutCardProps {
@@ -147,7 +155,7 @@ export function WorkoutCard({
                         onChangeSet(
                           index,
                           column.field,
-                          Math.max(roundTo((value ?? 0) - column.step, column.decimals), 0),
+                          Math.max(roundTo((value ?? 0) - column.step, column.rules.decimals), 0),
                           true,
                         )
                       }
@@ -161,8 +169,7 @@ export function WorkoutCard({
                       style={styles.stepperValue}
                       placeholderColor={palette.textDisabled}
                       value={value}
-                      decimals={column.decimals}
-                      maxLength={column.maxLength}
+                      rules={column.rules}
                       keyboardDoneBarID={keyboardDoneBarID}
                       accessibilityLabel={`${column.label} for set ${index + 1} of ${workout.name}`}
                       onChange={(next) => onChangeSet(index, column.field, next, false)}
@@ -173,7 +180,10 @@ export function WorkoutCard({
                         onChangeSet(
                           index,
                           column.field,
-                          roundTo((value ?? 0) + column.step, column.decimals),
+                          Math.min(
+                            roundTo((value ?? 0) + column.step, column.rules.decimals),
+                            maxValueFor(column.rules),
+                          ),
                           true,
                         )
                       }
@@ -220,8 +230,7 @@ interface SetValueInputProps {
   style: StyleProp<TextStyle>
   placeholderColor: string
   value: number | undefined
-  decimals: number
-  maxLength: number
+  rules: NumberRules
   keyboardDoneBarID: string
   accessibilityLabel: string
   onChange: (value: number | undefined) => void
@@ -237,8 +246,7 @@ function SetValueInput({
   style,
   placeholderColor,
   value,
-  decimals,
-  maxLength,
+  rules,
   keyboardDoneBarID,
   accessibilityLabel,
   onChange,
@@ -253,7 +261,7 @@ function SetValueInput({
       style={style}
       value={shown}
       onChangeText={(text) => {
-        const clean = cleanNumberInput(text, decimals)
+        const clean = cleanNumberInput(text, rules)
         setTyped(clean)
         onChange(parseNumberInput(clean))
       }}
@@ -261,12 +269,12 @@ function SetValueInput({
         setTyped(null)
         onEndEditing()
       }}
-      keyboardType={decimals ? "decimal-pad" : "number-pad"}
+      keyboardType={rules.decimals ? "decimal-pad" : "number-pad"}
       returnKeyType="done"
       inputAccessoryViewID={keyboardDoneBarID}
       placeholder="0"
       placeholderTextColor={placeholderColor}
-      maxLength={maxLength}
+      maxLength={maxLengthFor(rules)}
       accessibilityLabel={accessibilityLabel}
     />
   )

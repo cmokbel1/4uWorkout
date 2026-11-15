@@ -1,13 +1,40 @@
-// Helpers for the reps and weight fields (day view and the save dialog).
+// Rules and helpers for the reps and weight fields (day view and the save
+// dialog).
 
-// Cleans typed or pasted text for a number field: digits, plus (when
-// `decimals` > 0) one decimal point with at most that many digits after it.
-// A comma becomes a point, since some locales' decimal keypads type one.
-export function cleanNumberInput(text: string, decimals: number): string {
-  const digitsAndPoints = text.replace(/,/g, ".").replace(/[^0-9.]/g, "")
-  if (decimals === 0) return digitsAndPoints.replace(/\./g, "")
-  const [whole, ...fraction] = digitsAndPoints.split(".")
-  return fraction.length ? `${whole}.${fraction.join("").slice(0, decimals)}` : whole
+// How a number field can be filled: up to `wholeDigits` digits before the
+// point, and `decimals` places after it (0 for whole numbers).
+export interface NumberRules {
+  wholeDigits: number
+  decimals: number
+}
+
+// Reps are whole numbers up to 999; weights go up to 9999.99 lb (2 places
+// covers 22.5 and 1.25 lb plates).
+export const SET_INPUT_RULES = {
+  reps: { wholeDigits: 3, decimals: 0 },
+  weight: { wholeDigits: 4, decimals: 2 },
+} as const satisfies Record<"reps" | "weight", NumberRules>
+
+// The longest text a field can hold, for its maxLength (e.g. "9999.99").
+export function maxLengthFor(rules: NumberRules): number {
+  return rules.wholeDigits + (rules.decimals ? 1 + rules.decimals : 0)
+}
+
+// The largest value a field can hold (e.g. 999, 9999.99), which the steppers
+// stop at.
+export function maxValueFor(rules: NumberRules): number {
+  return roundTo(10 ** rules.wholeDigits - 10 ** -rules.decimals, rules.decimals)
+}
+
+// Cleans typed or pasted text for a number field: digits, cut at the first
+// decimal point for whole numbers and at a second one for decimals (so a
+// pasted "3.5" in reps is 3, not 35), then trimmed to the rules' digits. A
+// comma counts as the point, since some locales' decimal keypads type one.
+export function cleanNumberInput(text: string, rules: NumberRules): string {
+  const [whole, fraction] = text.replace(/,/g, ".").replace(/[^0-9.]/g, "").split(".")
+  const wholeDigits = whole.slice(0, rules.wholeDigits)
+  if (!rules.decimals || fraction === undefined) return wholeDigits
+  return `${wholeDigits}.${fraction.slice(0, rules.decimals)}`
 }
 
 // The number in a cleaned field, or undefined when it holds none ("" or ".").
