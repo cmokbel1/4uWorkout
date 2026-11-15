@@ -5,8 +5,9 @@ import { useFocusEffect, type CompositeScreenProps } from "@react-navigation/nat
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
 import { CalendarView } from "../components/CalendarView"
-import { DayView, type SetField } from "../components/DayView"
+import { DayView } from "../components/DayView"
 import type { SavedView } from "../components/SavedViewSwitch"
+import type { SetField } from "../components/WorkoutCard"
 import { useTabBarTheme } from "../hooks/useTabBarTheme"
 import { getExerciseById } from "../services/workoutApi"
 import {
@@ -37,7 +38,7 @@ type Props = CompositeScreenProps<
   NativeStackScreenProps<RootStackParamList>
 >
 
-// The Saved tab: the day view ("Today's workouts") and the calendar.
+// The Saved tab: the day view and the calendar.
 export function SavedWorkoutsScreen({ navigation }: Props) {
   // Re-read on focus below; this avoids flashing the light theme first. The
   // cog menus can change it.
@@ -49,8 +50,8 @@ export function SavedWorkoutsScreen({ navigation }: Props) {
   const [map, setMap] = useState<SavedWorkoutsByDate>({})
   const [routines, setRoutines] = useState<Routine[]>([])
   // The day and calendar views are two views of this one screen, picked with
-  // the Day | Calendar switch at the top of each; the navigator never sees
-  // moves between them, and they keep no back history.
+  // the Day | Calendar switch under the header of each; the navigator never
+  // sees moves between them, and they keep no back history.
   const [viewMode, setViewMode] = useState<SavedView>("day")
   const [selectedDate, setSelectedDate] = useState<string>(todayKey())
 
@@ -271,7 +272,7 @@ export function SavedWorkoutsScreen({ navigation }: Props) {
           setSelectedDate(date)
           setViewMode("day")
         }}
-        onOpenDay={() => setViewMode("day")}
+        onChangeView={setViewMode}
       />
     )
   }
@@ -283,7 +284,7 @@ export function SavedWorkoutsScreen({ navigation }: Props) {
       date={selectedDate}
       workouts={dayWorkouts}
       savedWorkouts={map}
-      onOpenCalendar={() => setViewMode("calendar")}
+      onChangeView={setViewMode}
       onOpenToday={() => setSelectedDate(todayKey())}
       onOpenWorkout={(workout) => navigation.navigate("WorkoutDetail", { workout, isDark })}
       onDelete={onDelete}

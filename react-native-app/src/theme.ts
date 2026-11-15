@@ -11,8 +11,8 @@ export interface Palette {
   surfaceRaised: string
   border: string
   borderStrong: string
-  // The tab bar's top edge. (Named for the navigation card it was made for.)
-  navCardBorder: string
+  // The tab bar's top edge.
+  tabBarBorder: string
   // Training's bottom bar (Find / Save workout): its own surface with a lit
   // top edge, so it reads as separate from the content scrolling under it.
   dock: string
@@ -23,9 +23,11 @@ export interface Palette {
   accent: string
   onAccent: string
   onAccentMuted: string
-  // ThemedButton's "tonal" fill and label: the accent mixed into the page
-  // background (opaque, so its iOS shadow doesn't show through the fill), with
-  // a label that reaches 4.5:1 on it.
+  // A soft accent fill and the accent text to use with it: ThemedButton's
+  // "tonal" variant and the Saved tab switch's chosen side. The fill is the
+  // accent mixed into the page background, opaque so a shadow under it doesn't
+  // show through. onAccentTint reaches 4.5:1 on the fill (and more on the plain
+  // background, where the day view's Today link uses it).
   accentTint: string
   onAccentTint: string
   sliderHandle: string
@@ -46,7 +48,7 @@ const dark: Palette = {
   // Brighter than the mockup's #34536F so field outlines and the inactive
   // slider track reach 3:1 against the card (#0E1D30) and field fill.
   borderStrong: "#4F7299",
-  navCardBorder: "#1C3352",
+  tabBarBorder: "#1C3352",
   dock: "#162B45",
   dockEdge: "#2E4B6E",
   text: "#EAF2FB",
@@ -73,7 +75,7 @@ const light: Palette = {
   surfaceRaised: "#ECEEF2",
   border: "#E6E8EC",
   borderStrong: "#DBDEE3",
-  navCardBorder: "#E6E8EC",
+  tabBarBorder: "#E6E8EC",
   dock: "#FFFFFF",
   dockEdge: "#DBDEE3",
   text: "#0F1115",
@@ -108,6 +110,9 @@ export const fonts = {
   bold: "Manrope_700Bold",
   extrabold: "Manrope_800ExtraBold",
 } as const
+
+// The screens' side padding.
+export const GUTTER = 20
 
 export const radius = {
   sm: 12,

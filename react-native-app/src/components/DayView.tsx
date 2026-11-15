@@ -1,27 +1,26 @@
-import { Feather } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs"
 import { StatusBar } from "expo-status-bar"
 import { useMemo, useRef, useState } from "react"
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 
-import { fonts, getPalette, radius, type Palette } from "../theme"
+import { fonts, getPalette, GUTTER, radius, type Palette } from "../theme"
 import { ROUTINE_NAME_MAX_LENGTH, type Routine } from "../types/routine"
 import { NOTE_MAX_LENGTH, type Workout } from "../types/workout"
 import type { TabParamList } from "../../App"
 import { routineMatchesDay } from "../storage/routines"
-import { notesForExercise, type SavedWorkoutsByDate } from "../storage/savedWorkouts"
+import type { SavedWorkoutsByDate } from "../storage/savedWorkouts"
 import { formatDateLabel, formatShortDate, todayKey } from "../utils/date"
 import { AppMenu } from "./AppMenu"
-import { PreviousNotes } from "./PreviousNotes"
+import { KeyboardDoneBar } from "./KeyboardDoneBar"
 import { RoutinesSheet } from "./RoutinesSheet"
-import { SavedViewSwitch } from "./SavedViewSwitch"
+import { SavedViewSwitch, type SavedView } from "./SavedViewSwitch"
 import { ScreenHeader } from "./ScreenHeader"
+import { ScrollFrame, type ScrollFrameHandle } from "./ScrollFrame"
 import { TextEntryModal } from "./TextEntryModal"
 import { ThemedButton } from "./ThemedButton"
-
-export type SetField = "reps" | "weight"
+import { WorkoutCard, type SetField } from "./WorkoutCard"
 
 interface DayViewProps {
   isDark: boolean
@@ -31,8 +30,8 @@ interface DayViewProps {
   workouts: Workout[]
   // Every saved day, for the notes left on earlier days.
   savedWorkouts: SavedWorkoutsByDate
-  // Switches the Saved tab to the calendar.
-  onOpenCalendar: () => void
+  // The Day | Calendar switch.
+  onChangeView: (view: SavedView) => void
   // Shows today, from a past day.
   onOpenToday: () => void
   onOpenWorkout: (workout: Workout) => void
@@ -58,25 +57,18 @@ interface DayViewProps {
   onDeleteRoutine: (routine: Routine) => void
 }
 
-// The two stepper columns of each set row. Reps step by 1, weight by 5 lb;
-// tapping the number lets you type any value.
-const SET_COLUMNS = [
-  { field: "reps", label: "Reps", step: 1, maxLength: 3 },
-  { field: "weight", label: "Weight (lb)", step: 5, maxLength: 4 },
-] as const
+// The Done bar above the iOS keypad for the cards' reps and weight fields.
+const KEYBOARD_DONE_BAR_ID = "day-view-set-entry"
 
-// Space between the workout list's frame and the cards in it.
-const LIST_PADDING = 8
-
-// The day view of the Saved Workouts screen ("Today's workouts"), in the
-// redesigned look: each saved workout as a card that expands to edit its sets.
+// The day view of the Saved tab: the day's heading, routine actions, and its
+// workouts in a scrolling frame, each a card that expands to edit its sets.
 export function DayView({
   isDark,
   onToggleDark,
   date,
   workouts,
   savedWorkouts,
-  onOpenCalendar,
+  onChangeView,
   onOpenToday,
   onOpenWorkout,
   onDelete,
@@ -99,10 +91,14 @@ export function DayView({
   const [noteWorkout, setNoteWorkout] = useState<Workout | null>(null)
   const [routineNameVisible, setRoutineNameVisible] = useState(false)
   const [routinesVisible, setRoutinesVisible] = useState(false)
-  // A routine that already holds exactly this day's exercises: saving would
+
+  // Whether a routine already holds exactly this day's exercises: saving would
   // add nothing, so "Save as routine" reads "Routine saved" and is disabled,
   // as Save reads "Saved" on Randomize.
-  const isRoutineSaved = routines.some((routine) => routineMatchesDay(routine, workouts))
+  const isRoutineSaved = useMemo(
+    () => routines.some((routine) => routineMatchesDay(routine, workouts)),
+    [routines, workouts],
+  )
   // The routine this day was saved as or added from (if it still exists),
   // which Save offers to update once the day's exercises differ from it. With
   // several, the one most of the day's workouts came from.
@@ -118,49 +114,16 @@ export function DayView({
     }
     return best
   }, [routines, workouts])
-  // Whether the workout list has more to scroll above or below what's shown,
-  // for the fades at its frame's edges. Sizes and offset are refs so scrolling
-  // only re-renders when an edge appears or goes.
-  const listRef = useRef<ScrollView>(null)
-  const listHeight = useRef(0)
-  const listContentHeight = useRef(0)
-  const listScrollY = useRef(0)
-  const listOverflowed = useRef(false)
-  const [listEdges, setListEdges] = useState({ above: false, below: false })
-
-  // The card just opened, scrolled into view when its new size is laid out.
-  const revealOnLayout = useRef<string | null>(null)
-
-  // Scrolls the list just enough to show a whole card (its y and height within
-  // the list), with the list's padding around it. A card taller than the frame
-  // is shown from its top, so its name stays in view. Does nothing when the
-  // card already fits in view.
-  function revealCard(y: number, height: number): void {
-    const top = y - LIST_PADDING
-    const bottom = y + height + LIST_PADDING
-    const viewTop = listScrollY.current
-    const viewBottom = viewTop + listHeight.current
-    let target = viewTop
-    if (bottom > viewBottom) target = bottom - listHeight.current
-    if (top < target) target = top
-    if (target !== viewTop) listRef.current?.scrollTo({ y: Math.max(target, 0), animated: true })
-  }
-
-  function updateListEdges(): void {
-    const above = listScrollY.current > 1
-    const below = listContentHeight.current - listScrollY.current - listHeight.current > 1
-    setListEdges((prev) => (prev.above === above && prev.below === below ? prev : { above, below }))
-    // Flash the scroll bar when the list first runs past its frame, so it's
-    // clear the list scrolls.
-    const overflowed = listContentHeight.current > listHeight.current + 1
-    if (overflowed && !listOverflowed.current) listRef.current?.flashScrollIndicators()
-    listOverflowed.current = overflowed
-  }
-
   const dayWorkoutIds = useMemo(() => new Set(workouts.map((w) => w.id)), [workouts])
 
+  // Opening a card grows it, so it's scrolled fully into view once it has its
+  // new size: onToggleExpanded notes which card is opening, and that card's
+  // next onLayout (with the new height) asks the frame to reveal it.
+  const frameRef = useRef<ScrollFrameHandle>(null)
+  const revealOnLayout = useRef<string | null>(null)
+
   const isToday = date === todayKey()
-  const count = `${workouts.length} ${workouts.length === 1 ? "workout" : "workouts"}`
+  const countLabel = `${workouts.length} ${workouts.length === 1 ? "workout" : "workouts"}`
   const openTraining = () => navigation.navigate("Training")
 
   // A day linked to a routine asks whether to update it or save a new one;
@@ -190,25 +153,19 @@ export function DayView({
         onOpenMenu={() => setMenuVisible(true)}
       />
 
-      <View style={styles.content}>
-        <SavedViewSwitch
-          palette={palette}
-          value="day"
-          onChange={(view) => {
-            if (view === "calendar") onOpenCalendar()
-          }}
-        />
+      <SavedViewSwitch palette={palette} value="day" onChange={onChangeView} />
 
+      {/* The part above the workout list; it doesn't scroll. */}
+      <View style={styles.content}>
         <View style={styles.dayHeader}>
           <Text style={styles.dayTitle} accessibilityRole="header">
             {formatDateLabel(date)}
           </Text>
           <View style={styles.dayHeaderEnd}>
             <Text style={styles.dayMeta}>
-              {isToday ? `${formatShortDate(date)} · ${count}` : count}
+              {isToday ? `${formatShortDate(date)} · ${countLabel}` : countLabel}
             </Text>
-            {/* The way back to today from a past day, now that the calendar
-                has no "Today's workouts" card. */}
+            {/* The quick way back to today from a past day. */}
             {isToday ? null : (
               <Pressable
                 onPress={onOpenToday}
@@ -248,216 +205,42 @@ export function DayView({
         {workouts.length ? (
           <Text style={styles.helper}>Tap a workout to edit its sets and note.</Text>
         ) : null}
-
       </View>
 
       {workouts.length ? (
-        // The list scrolls inside its own frame, which ends above the tab bar,
-        // so the frame's edge shows where the list stops. A fade at the top or
-        // bottom edge shows there's more to scroll.
-        <View style={styles.listFrame}>
-          <ScrollView
-            ref={listRef}
-            contentContainerStyle={styles.listContent}
-            keyboardShouldPersistTaps="handled"
-            scrollEventThrottle={16}
-            onLayout={(event) => {
-              listHeight.current = event.nativeEvent.layout.height
-              updateListEdges()
-            }}
-            onContentSizeChange={(_, height) => {
-              listContentHeight.current = height
-              updateListEdges()
-            }}
-            onScroll={(event) => {
-              listScrollY.current = event.nativeEvent.contentOffset.y
-              updateListEdges()
-            }}
-          >
-            {workouts.map((workout) => {
-              const isExpanded = Boolean(expanded[workout.id])
-              const sets = workout.setDetails ?? []
-              return (
-                <View
-                  key={workout.id}
-                  style={styles.card}
-                  onLayout={(event) => {
-                    if (revealOnLayout.current !== workout.id) return
-                    revealOnLayout.current = null
-                    const { y, height } = event.nativeEvent.layout
-                    revealCard(y, height)
-                  }}
-                >
-                  <View style={styles.cardHeader}>
-                    <Pressable
-                      onPress={() => {
-                        // Opening a card grows it; once it has its new height,
-                        // scroll it fully into view.
-                        if (!isExpanded) revealOnLayout.current = workout.id
-                        setExpanded((prev) => ({ ...prev, [workout.id]: !prev[workout.id] }))
-                      }}
-                      style={styles.cardTitlePress}
-                      accessibilityRole="button"
-                      // The note icon below sits inside this button, so the
-                      // label carries it for screen readers.
-                      accessibilityLabel={`${isExpanded ? "Collapse" : "Expand"} ${workout.name}${
-                        workout.note ? ", has a note" : ""
-                      }`}
-                      accessibilityState={{ expanded: isExpanded }}
-                    >
-                      <Feather
-                        name={isExpanded ? "chevron-down" : "chevron-right"}
-                        size={18}
-                        color={palette.textMuted}
-                      />
-                      <View style={styles.cardTitleText}>
-                        <Text style={styles.cardTitle} numberOfLines={2}>
-                          {workout.name}
-                        </Text>
-                        <View style={styles.cardSubRow}>
-                          <Text style={styles.cardSub}>
-                            {sets.length} {sets.length === 1 ? "set" : "sets"}
-                          </Text>
-                          {workout.note ? (
-                            <Feather name="file-text" size={13} color={palette.textMuted} />
-                          ) : null}
-                        </View>
-                      </View>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => onOpenWorkout(workout)}
-                      style={({ pressed }) => [styles.viewButton, pressed && styles.pressed]}
-                      accessibilityRole="button"
-                      accessibilityLabel={`View ${workout.name}`}
-                    >
-                      <Text style={styles.viewText}>View</Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => onDelete(workout)}
-                      style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Delete ${workout.name}`}
-                    >
-                      <Feather name="trash-2" size={18} color={palette.danger} />
-                    </Pressable>
-                  </View>
-
-                  {isExpanded ? (
-                    <View style={styles.setsTable}>
-                      <View style={styles.setsRow}>
-                        <Text style={[styles.setsHeaderText, styles.setCol]}>Set</Text>
-                        {SET_COLUMNS.map((column) => (
-                          <Text key={column.field} style={[styles.setsHeaderText, styles.stepperCol]}>
-                            {column.label}
-                          </Text>
-                        ))}
-                      </View>
-                      {sets.map((set, index) => (
-                        <View key={index} style={styles.setsRow}>
-                          <View style={styles.setCol}>
-                            <View style={styles.setNumber}>
-                              <Text style={styles.setNumberText}>{index + 1}</Text>
-                            </View>
-                          </View>
-                          {SET_COLUMNS.map((column) => {
-                            const value = set[column.field]
-                            const what = `${column.label.toLowerCase()} for set ${index + 1}`
-                            return (
-                              <View key={column.field} style={[styles.stepper, styles.stepperCol]}>
-                                <Pressable
-                                  onPress={() =>
-                                    onChangeSet(
-                                      workout.id,
-                                      index,
-                                      column.field,
-                                      Math.max((value ?? 0) - column.step, 0),
-                                      true,
-                                    )
-                                  }
-                                  style={({ pressed }) => [styles.stepperButton, pressed && styles.pressed]}
-                                  accessibilityRole="button"
-                                  accessibilityLabel={`Decrease ${what}`}
-                                >
-                                  <Feather name="minus" size={16} color={palette.text} />
-                                </Pressable>
-                                <TextInput
-                                  style={styles.stepperValue}
-                                  value={value != null ? String(value) : ""}
-                                  onChangeText={(text) => {
-                                    const digits = text.replace(/[^0-9]/g, "")
-                                    onChangeSet(
-                                      workout.id,
-                                      index,
-                                      column.field,
-                                      digits === "" ? undefined : Number(digits),
-                                      false,
-                                    )
-                                  }}
-                                  onEndEditing={onSaveSets}
-                                  keyboardType="number-pad"
-                                  placeholder="0"
-                                  placeholderTextColor={palette.textDisabled}
-                                  maxLength={column.maxLength}
-                                  accessibilityLabel={`${column.label} for set ${index + 1} of ${workout.name}`}
-                                />
-                                <Pressable
-                                  onPress={() =>
-                                    onChangeSet(
-                                      workout.id,
-                                      index,
-                                      column.field,
-                                      (value ?? 0) + column.step,
-                                      true,
-                                    )
-                                  }
-                                  style={({ pressed }) => [styles.stepperButton, pressed && styles.pressed]}
-                                  accessibilityRole="button"
-                                  accessibilityLabel={`Increase ${what}`}
-                                >
-                                  <Feather name="plus" size={16} color={palette.text} />
-                                </Pressable>
-                              </View>
-                            )
-                          })}
-                        </View>
-                      ))}
-                      <Pressable
-                        onPress={() => setNoteWorkout(workout)}
-                        style={({ pressed }) => [styles.noteRow, pressed && styles.pressed]}
-                        accessibilityRole="button"
-                        accessibilityLabel={
-                          workout.note
-                            ? `Edit note for ${workout.name}: ${workout.note}`
-                            : `Add a note for ${workout.name}`
-                        }
-                      >
-                        <Text
-                          style={workout.note ? styles.noteText : styles.notePlaceholder}
-                        >
-                          {workout.note ?? "Add a note"}
-                        </Text>
-                        <Feather name="edit-2" size={15} color={palette.textMuted} />
-                      </Pressable>
-                      {/* Until this day has its own note, show the last one. */}
-                      {workout.note ? null : (
-                        <PreviousNotes
-                          palette={palette}
-                          notes={notesForExercise(savedWorkouts, workout.id, date)}
-                        />
-                      )}
-                    </View>
-                  ) : null}
-                </View>
-              )
-            })}
-          </ScrollView>
-          {listEdges.above ? (
-            <View pointerEvents="none" style={[styles.listFade, styles.listFadeTop]} />
-          ) : null}
-          {listEdges.below ? (
-            <View pointerEvents="none" style={[styles.listFade, styles.listFadeBottom]} />
-          ) : null}
-        </View>
+        <ScrollFrame palette={palette} ref={frameRef}>
+          {workouts.map((workout) => {
+            const isExpanded = Boolean(expanded[workout.id])
+            return (
+              <WorkoutCard
+                key={workout.id}
+                palette={palette}
+                workout={workout}
+                date={date}
+                savedWorkouts={savedWorkouts}
+                expanded={isExpanded}
+                onToggleExpanded={() => {
+                  if (!isExpanded) revealOnLayout.current = workout.id
+                  setExpanded((prev) => ({ ...prev, [workout.id]: !prev[workout.id] }))
+                }}
+                onLayout={(event) => {
+                  if (revealOnLayout.current !== workout.id) return
+                  revealOnLayout.current = null
+                  const { y, height } = event.nativeEvent.layout
+                  frameRef.current?.reveal(y, height)
+                }}
+                onOpen={() => onOpenWorkout(workout)}
+                onDelete={() => onDelete(workout)}
+                onChangeSet={(setIndex, field, value, save) =>
+                  onChangeSet(workout.id, setIndex, field, value, save)
+                }
+                onSaveSets={onSaveSets}
+                onEditNote={() => setNoteWorkout(workout)}
+                keyboardDoneBarID={KEYBOARD_DONE_BAR_ID}
+              />
+            )
+          })}
+        </ScrollFrame>
       ) : (
         <View style={styles.emptyWrap}>
           <View style={styles.emptyCard}>
@@ -483,6 +266,8 @@ export function DayView({
         </View>
       )}
 
+      <KeyboardDoneBar palette={palette} nativeID={KEYBOARD_DONE_BAR_ID} />
+
       <TextEntryModal
         palette={palette}
         visible={noteWorkout !== null}
@@ -504,7 +289,7 @@ export function DayView({
         palette={palette}
         visible={routineNameVisible}
         title="Save as routine"
-        helper={`${count}. Reps, weight and notes aren't saved with the routine.`}
+        helper={`${countLabel}. Reps, weight and notes aren't saved with the routine.`}
         placeholder="e.g. Push day"
         maxLength={ROUTINE_NAME_MAX_LENGTH}
         required
@@ -547,45 +332,14 @@ function makeStyles(c: Palette) {
       flex: 1,
       backgroundColor: c.bg,
     },
-    // The part above the workout list; it doesn't scroll.
     content: {
-      paddingHorizontal: 20,
+      paddingHorizontal: GUTTER,
       paddingTop: 16,
       paddingBottom: 16,
       gap: 16,
     },
-    // Fills the rest of the screen above the tab bar. Its corners follow the
-    // cards' inside its padding.
-    listFrame: {
-      flex: 1,
-      marginHorizontal: 20 - LIST_PADDING,
-      marginBottom: 12,
-      borderWidth: 1,
-      borderColor: c.borderStrong,
-      borderRadius: radius.lg + LIST_PADDING,
-      backgroundColor: c.surfaceSunken,
-      overflow: "hidden",
-    },
-    listContent: {
-      padding: LIST_PADDING,
-      gap: 12,
-    },
-    listFade: {
-      position: "absolute",
-      left: 0,
-      right: 0,
-      height: 28,
-    },
-    listFadeTop: {
-      top: 0,
-      experimental_backgroundImage: `linear-gradient(to top, ${c.surfaceSunken}00, ${c.surfaceSunken})`,
-    },
-    listFadeBottom: {
-      bottom: 0,
-      experimental_backgroundImage: `linear-gradient(to bottom, ${c.surfaceSunken}00, ${c.surfaceSunken})`,
-    },
     emptyWrap: {
-      paddingHorizontal: 20,
+      paddingHorizontal: GUTTER,
     },
     pressed: {
       opacity: 0.75,
@@ -629,148 +383,6 @@ function makeStyles(c: Palette) {
       fontSize: 14,
       // Sits a little closer to the list it describes than to the buttons.
       marginBottom: -6,
-    },
-    card: {
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.border,
-      borderRadius: radius.lg,
-      overflow: "hidden",
-    },
-    cardHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      padding: 14,
-    },
-    cardTitlePress: {
-      flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      minHeight: 44,
-    },
-    cardTitleText: {
-      flex: 1,
-      gap: 2,
-    },
-    cardTitle: {
-      color: c.text,
-      fontFamily: fonts.bold,
-      fontSize: 16,
-      textTransform: "capitalize",
-    },
-    cardSubRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-    },
-    cardSub: {
-      color: c.textMuted,
-      fontFamily: fonts.medium,
-      fontSize: 13,
-    },
-    viewButton: {
-      minHeight: 44,
-      justifyContent: "center",
-      paddingHorizontal: 16,
-      borderRadius: radius.sm,
-      backgroundColor: c.surfaceRaised,
-    },
-    viewText: {
-      color: c.text,
-      fontFamily: fonts.bold,
-      fontSize: 14,
-    },
-    deleteButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      backgroundColor: c.surfaceRaised,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    setsTable: {
-      borderTopWidth: 1,
-      borderTopColor: c.border,
-      padding: 14,
-      gap: 10,
-    },
-    setsRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-    },
-    setsHeaderText: {
-      color: c.textMuted,
-      fontFamily: fonts.bold,
-      fontSize: 12,
-      textAlign: "center",
-    },
-    setCol: {
-      width: 32,
-      alignItems: "center",
-    },
-    stepperCol: {
-      flex: 1,
-    },
-    setNumber: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
-      backgroundColor: c.surfaceRaised,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    setNumberText: {
-      color: c.textMuted,
-      fontFamily: fonts.bold,
-      fontSize: 12,
-    },
-    stepper: {
-      flexDirection: "row",
-      alignItems: "center",
-      height: 44,
-      borderRadius: radius.sm,
-      backgroundColor: c.surfaceRaised,
-    },
-    stepperButton: {
-      width: 36,
-      height: 44,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    stepperValue: {
-      flex: 1,
-      padding: 0,
-      color: c.text,
-      fontFamily: fonts.bold,
-      fontSize: 16,
-      textAlign: "center",
-    },
-    noteRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      minHeight: 44,
-      marginTop: 4,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      borderRadius: radius.sm,
-      backgroundColor: c.surfaceSunken,
-    },
-    noteText: {
-      flex: 1,
-      color: c.text,
-      fontFamily: fonts.medium,
-      fontSize: 14,
-      lineHeight: 20,
-    },
-    notePlaceholder: {
-      flex: 1,
-      color: c.textMuted,
-      fontFamily: fonts.medium,
-      fontSize: 14,
     },
     emptyCard: {
       borderWidth: 1.5,

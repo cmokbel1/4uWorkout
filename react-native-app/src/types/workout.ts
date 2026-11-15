@@ -5,6 +5,10 @@ export interface WorkoutSet {
   reps?: number;
 }
 
+// Decimal places a weight can have (e.g. 22.5 or 1.25 lb plates). Reps are
+// whole numbers.
+export const WEIGHT_DECIMALS = 2;
+
 // How an exercise moves and is loaded, from the ExerciseDB Pro dataset.
 export interface ExerciseTaxonomy {
   movementFamily: string;

@@ -10,7 +10,7 @@ import type { SavedWorkoutsByDate } from "../storage/savedWorkouts"
 import { formatDateLabel, toDateKey, todayKey } from "../utils/date"
 import { toTitleCase } from "../utils/formatting"
 import { AppMenu } from "./AppMenu"
-import { SavedViewSwitch } from "./SavedViewSwitch"
+import { SavedViewSwitch, type SavedView } from "./SavedViewSwitch"
 import { ScreenHeader } from "./ScreenHeader"
 
 interface CalendarViewProps {
@@ -22,8 +22,8 @@ interface CalendarViewProps {
   savedWorkouts: SavedWorkoutsByDate
   // Opens the day view for the tapped date.
   onSelectDate: (date: string) => void
-  // Switches the Saved tab to the day view (the day last shown).
-  onOpenDay: () => void
+  // The Day | Calendar switch. Day shows the day last shown.
+  onChangeView: (view: SavedView) => void
 }
 
 // The month view of the Saved tab, in the redesigned look: the app header,
@@ -35,7 +35,7 @@ export function CalendarView({
   markedDates,
   savedWorkouts,
   onSelectDate,
-  onOpenDay,
+  onChangeView,
 }: CalendarViewProps) {
   const palette = getPalette(isDark)
   const styles = useMemo(() => makeStyles(palette), [palette])
@@ -72,15 +72,9 @@ export function CalendarView({
         onOpenMenu={() => setMenuVisible(true)}
       />
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <SavedViewSwitch
-          palette={palette}
-          value="calendar"
-          onChange={(view) => {
-            if (view === "day") onOpenDay()
-          }}
-        />
+      <SavedViewSwitch palette={palette} value="calendar" onChange={onChangeView} />
 
+      <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Select a date</Text>
           <View style={styles.hint}>

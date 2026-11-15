@@ -12,7 +12,9 @@ import {
 } from "react-native"
 
 import { fonts, radius, type Palette } from "../theme"
-import type { WorkoutSet } from "../types/workout"
+import { WEIGHT_DECIMALS, type WorkoutSet } from "../types/workout"
+import { cleanNumberInput, parseNumberInput } from "../utils/numberInput"
+import { KeyboardDoneBar } from "./KeyboardDoneBar"
 import { SelectField, type SelectOption } from "./SelectField"
 import { ThemedButton } from "./ThemedButton"
 
@@ -31,11 +33,16 @@ const SET_COUNT_OPTIONS: SelectOption[] = Array.from({ length: 10 }, (_, i) => (
   label: String(i + 1),
 }))
 
-// The two inputs on each set row.
+// The two inputs on each set row: weights with up to WEIGHT_DECIMALS places
+// (maxLength fits "9999.75"), whole reps.
 const SET_FIELDS = [
-  { field: "weight", label: "WEIGHT (LBS)", name: "Weight", maxLength: 4 },
-  { field: "reps", label: "REPS", name: "Reps", maxLength: 3 },
+  { field: "weight", label: "WEIGHT (LBS)", name: "Weight", decimals: WEIGHT_DECIMALS, maxLength: 7 },
+  { field: "reps", label: "REPS", name: "Reps", decimals: 0, maxLength: 3 },
 ] as const
+
+// The Done bar above the iOS keypad. The dialog has its own window, so it has
+// its own bar rather than sharing a screen's.
+const KEYBOARD_DONE_BAR_ID = "save-dialog-set-entry"
 
 // One {weight, reps} form per set, held as strings for controlled inputs.
 type SetForm = { weight: string; reps: string }
@@ -85,18 +92,18 @@ export function SaveWorkoutModal({
     })
   }
 
-  function onChangeSetField(index: number, field: keyof SetForm, text: string): void {
-    const digits = text.replace(/[^0-9]/g, "")
+  function onChangeSetField(index: number, field: keyof SetForm, text: string, decimals: number): void {
+    const clean = cleanNumberInput(text, decimals)
     setSetForms((prev) =>
-      prev.map((form, i) => (i === index ? { ...form, [field]: digits } : form)),
+      prev.map((form, i) => (i === index ? { ...form, [field]: clean } : form)),
     )
   }
 
   function onSave(): void {
     onConfirm(
       setForms.map((form) => ({
-        weight: form.weight === "" ? undefined : Number(form.weight),
-        reps: form.reps === "" ? undefined : Number(form.reps),
+        weight: parseNumberInput(form.weight),
+        reps: parseNumberInput(form.reps),
       })),
     )
   }
@@ -153,7 +160,9 @@ export function SaveWorkoutModal({
                       <TextInput
                         style={styles.numberInput}
                         value={form[input.field]}
-                        onChangeText={(text) => onChangeSetField(index, input.field, text)}
+                        onChangeText={(text) =>
+                          onChangeSetField(index, input.field, text, input.decimals)
+                        }
                         onFocus={() => {
                           focusedRow.current = index
                           scrollToFocusedRow()
@@ -161,7 +170,9 @@ export function SaveWorkoutModal({
                         onBlur={() => {
                           if (focusedRow.current === index) focusedRow.current = null
                         }}
-                        keyboardType="number-pad"
+                        keyboardType={input.decimals ? "decimal-pad" : "number-pad"}
+                        returnKeyType="done"
+                        inputAccessoryViewID={KEYBOARD_DONE_BAR_ID}
                         placeholder="0"
                         placeholderTextColor={palette.textDisabled}
                         maxLength={input.maxLength}
@@ -179,6 +190,7 @@ export function SaveWorkoutModal({
           </View>
         </View>
       </KeyboardAvoidingView>
+      <KeyboardDoneBar palette={palette} nativeID={KEYBOARD_DONE_BAR_ID} />
     </Modal>
   )
 }
